@@ -11,7 +11,9 @@ Commands:
   json         Format, minify and validate JSON, written as jq . writes it
   convert      Between JSON, YAML 1.2, TOML, CSV and XML
   base64       Encode and decode Base64 (RFC 4648)
-  url          Percent-encode and decode text for URLs
+  base32       Encode and decode Base32 (RFC 4648), as GNU base32 does
+  hex          Bytes as hexadecimal and back, as xxd -p and xxd -r -p
+  url          Percent-encode, decode and take URLs apart (RFC 3986, WHATWG)
   jwt          Decode, verify and create JSON Web Tokens (RFC 7519)
   md5sum       MD5 checksums of files, or check them
   sha1sum      SHA-1 checksums of files, or check them

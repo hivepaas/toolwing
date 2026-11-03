@@ -2,13 +2,14 @@
 source: crates/cli/tests/native.rs
 expression: run.stdout
 ---
-Percent-encode and decode text for URLs
+Percent-encode, decode and take URLs apart (RFC 3986, WHATWG)
 
 Usage: tw url <COMMAND>
 
 Commands:
   encode  Percent-encode text for a URL
   decode  Decode percent-encoded text
+  parse   Take a URL apart: scheme, user, host, port, path, query parameters, fragment
   help    Print this message or the help of the given subcommand(s)
 
 Options:
