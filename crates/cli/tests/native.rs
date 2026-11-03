@@ -409,3 +409,51 @@ fn a_reader_that_goes_ends_tw_quietly() {
     );
     assert_eq!(String::from_utf8_lossy(&out.stderr), "");
 }
+
+/// File names b3sum escapes, as b3sum 1.8.2 writes them (recorded in Alpine
+/// 3.22). Not compatibility cases: Windows cannot check out a file named
+/// with a backslash or a newline, so the files are made here, on Unix.
+#[cfg(unix)]
+#[test]
+fn b3sum_escapes_names_as_b3sum_does() {
+    let dir = std::env::temp_dir().join(format!("tw-b3sum-names-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("{e}"));
+    for (name, text) in [("new\nline", "y"), ("back\\slash", "z"), ("sp ace", "s")] {
+        std::fs::write(dir.join(name), text).unwrap_or_else(|e| panic!("{e}"));
+    }
+    let sums = "\\08112a9e334ce73042b531c25668cf5cb12a1ee040a4326afeac065461079a06  new\\nline\n";
+    std::fs::write(dir.join("sums"), sums).unwrap_or_else(|e| panic!("{e}"));
+    let run = |args: &[&str]| {
+        let out = Command::new(env!("CARGO_BIN_EXE_tw"))
+            .current_dir(&dir)
+            .arg("b3sum")
+            .args(args)
+            .output()
+            .unwrap_or_else(|e| panic!("tw: {e}"));
+        (
+            String::from_utf8_lossy(&out.stdout).into_owned(),
+            out.status.code(),
+        )
+    };
+    assert_eq!(
+        run(&["sp ace", "back\\slash"]),
+        (
+            "3d1d92230feb6db469532f26d9e2d7ab2b9a7982924c2706ac5a89679756e6bf  sp ace\n\
+             \\1104908ab930e671002c7cd7f3fc921570b1bf64ecfa12fe363585c630eaca6b  back\\\\slash\n"
+                .to_owned(),
+            Some(0)
+        )
+    );
+    assert_eq!(
+        run(&["--tag", "back\\slash"]),
+        (
+            "\\BLAKE3 (back\\\\slash) = 1104908ab930e671002c7cd7f3fc921570b1bf64ecfa12fe363585c630eaca6b\n".to_owned(),
+            Some(0)
+        )
+    );
+    assert_eq!(
+        run(&["-c", "sums"]),
+        ("\\new\\nline: OK\n".to_owned(), Some(0))
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

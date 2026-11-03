@@ -101,6 +101,36 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Every case's files can be checked out on Windows too: none is named with
+/// a character it refuses, or as a device. (A name b3sum escapes, with a
+/// backslash or a newline, is tested in native.rs instead, on Unix.)
+#[test]
+fn case_paths_are_portable() {
+    fn walk(dir: &Path, bad: &mut Vec<String>) {
+        for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let stem = name.split('.').next().unwrap_or("").to_ascii_lowercase();
+            let device = ["con", "prn", "aux", "nul"].contains(&stem.as_str())
+                || (stem.len() == 4 && (stem.starts_with("com") || stem.starts_with("lpt")));
+            let refused = name.chars().any(|c| c < ' ' || "<>:\"|?*\\".contains(c))
+                || name.ends_with([' ', '.'])
+                || device;
+            if refused {
+                bad.push(entry.path().display().to_string());
+            }
+            if entry.path().is_dir() {
+                walk(&entry.path(), bad);
+            }
+        }
+    }
+    let mut bad = Vec::new();
+    walk(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/compat"),
+        &mut bad,
+    );
+    assert!(bad.is_empty(), "names Windows refuses:\n{}", bad.join("\n"));
+}
+
 fn sorted_dirs(dir: &Path) -> Vec<std::path::PathBuf> {
     let mut dirs: Vec<_> = fs::read_dir(dir)
         .map(|entries| {
