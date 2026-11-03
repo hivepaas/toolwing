@@ -1,6 +1,7 @@
 //! Compatibility cases (docs/design/quality.md): each case under `compat/<group>/`
 //! was run against the reference tool by `scripts/compat_record.sh`, and `tw`
-//! must give the same stdout, byte for byte, and the same exit code.
+//! must give the same stdout, byte for byte, and the same exit code. A case's
+//! `files/` folder, when it has one, is where the command runs.
 
 use std::fs;
 use std::io::Write;
@@ -53,7 +54,13 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         .parse()
         .map_err(|e| format!("exit: {e}"))?;
 
+    let files = case.join("files");
     let mut child = Command::new(env!("CARGO_BIN_EXE_tw"))
+        .current_dir(if files.is_dir() {
+            files
+        } else {
+            case.to_owned()
+        })
         .arg(group)
         .args(&args)
         .stdin(Stdio::piped())

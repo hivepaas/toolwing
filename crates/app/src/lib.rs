@@ -1,5 +1,6 @@
 //! `toolwing`: the desktop app (docs/design/app.md).
 
+pub mod hashes;
 pub mod page;
 pub mod workspace;
 

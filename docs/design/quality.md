@@ -13,6 +13,7 @@ crates/cli/tests/compat/base64/no-wrap/
   stdin    abc
   stdout   YWJj      recorded from the reference
   exit     0         recorded from the reference
+  files/             optional: the folder the command runs in, with its files
 ```
 
 - **Recorded from the real tool, not written by hand.**

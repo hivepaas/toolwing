@@ -82,7 +82,9 @@ shellwing's palette.
 ## Custom pages
 
 Groups whose generic page would be poor register their own, calling the same
-tools: `color` (picker and contrast), `qr` (preview, save PNG/SVG), `diff`
+tools. A custom page may stand for several groups: **Hashes** is the five
+`*sum` commands on one page, every algorithm at once (BLAKE3 too), of text or
+a file read in one pass, with a hash to compare against. Then `color` (picker and contrast), `qr` (preview, save PNG/SVG), `diff`
 (side by side and inline), `cron` (the next runs on a calendar), `regex`
 (matches highlighted in the text, groups in a table), `time` (several zones at
 once, a live clock).

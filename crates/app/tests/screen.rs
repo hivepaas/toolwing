@@ -11,12 +11,15 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
-use gpui::{AnyWindowHandle, AppContext as _, Entity, HeadlessAppContext, px, size};
+use gpui::{
+    AnyWindowHandle, App, AppContext as _, Entity, HeadlessAppContext, WindowHandle, px, size,
+};
 use gpui_component::Root;
+use toolwing::hashes::HashesPage;
 use toolwing::page::ToolPage;
-use toolwing::workspace::Workspace;
+use toolwing::workspace::{Page, Workspace};
 use toolwing_core::Value;
-use toolwing_tools::GROUPS;
+use toolwing_tools::hash::Algorithm;
 
 fn save(cx: &mut HeadlessAppContext, window: AnyWindowHandle, name: &str) {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/shots");
@@ -31,107 +34,186 @@ fn save(cx: &mut HeadlessAppContext, window: AnyWindowHandle, name: &str) {
 
 /// Lets the debounce and the background run finish. The headless context runs
 /// on a test dispatcher, whose clock moves only when told.
-fn settle(cx: &mut HeadlessAppContext, page: &Entity<ToolPage>) {
+fn settle(cx: &mut HeadlessAppContext, settled: impl Fn(&App) -> bool) {
     for _ in 0..100 {
         cx.advance_clock(Duration::from_millis(100));
         cx.run_until_parked();
-        if cx.update(|cx| page.read(cx).settled()) {
+        if cx.update(|cx| settled(cx)) {
             return;
         }
     }
     panic!("the run did not finish");
 }
 
+struct Ui {
+    cx: HeadlessAppContext,
+    window: WindowHandle<Root>,
+    workspace: Entity<Workspace>,
+}
+
+impl Ui {
+    fn open() -> Ui {
+        let text = Arc::new(gpui_wgpu::CosmicTextSystem::new(toolwing::FONT));
+        let mut cx =
+            HeadlessAppContext::with_platform(text, Arc::new(gpui_kit_assets::Assets), || {
+                gpui_platform::current_headless_renderer()
+            });
+        cx.update(toolwing::init);
+        let workspace: Rc<RefCell<Option<Entity<Workspace>>>> = Rc::default();
+        let slot = workspace.clone();
+        let window = cx
+            .open_window(size(px(1200.), px(760.)), move |window, cx| {
+                let view = cx.new(|cx| Workspace::new(window, cx));
+                *slot.borrow_mut() = Some(view.clone());
+                cx.new(|cx| Root::new(view, window, cx))
+            })
+            .expect("cannot open a window");
+        let workspace = workspace.borrow().clone().expect("the workspace");
+        Ui {
+            cx,
+            window,
+            workspace,
+        }
+    }
+
+    fn go(&mut self, title: &str) -> Page {
+        let workspace = self.workspace.clone();
+        self.window
+            .update(&mut self.cx, |_, window, cx| {
+                workspace.update(cx, |w, cx| w.select_title(title, window, cx))
+            })
+            .expect("window");
+        self.cx.update(|cx| self.workspace.read(cx).page().clone())
+    }
+
+    fn tool(&mut self, title: &str) -> Entity<ToolPage> {
+        match self.go(title) {
+            Page::Tool(p) => p,
+            Page::Hashes(_) => panic!("{title} is not a tool page"),
+        }
+    }
+
+    fn hashes(&mut self) -> Entity<HashesPage> {
+        match self.go("Hashes") {
+            Page::Hashes(p) => p,
+            Page::Tool(_) => panic!("Hashes is not the hashes page"),
+        }
+    }
+
+    fn on<V: 'static>(
+        &mut self,
+        page: &Entity<V>,
+        f: impl FnOnce(&mut V, &mut gpui::Window, &mut gpui::Context<V>),
+    ) {
+        self.window
+            .update(&mut self.cx, |_, window, cx| {
+                page.update(cx, |p, cx| f(p, window, cx))
+            })
+            .expect("window");
+    }
+
+    fn save(&mut self, name: &str) {
+        let any: AnyWindowHandle = self.window.into();
+        save(&mut self.cx, any, name);
+    }
+}
+
 #[test]
 fn every_page_draws_and_runs() {
-    let text = Arc::new(gpui_wgpu::CosmicTextSystem::new(toolwing::FONT));
-    let mut cx = HeadlessAppContext::with_platform(text, Arc::new(gpui_kit_assets::Assets), || {
-        gpui_platform::current_headless_renderer()
-    });
-    cx.update(toolwing::init);
-    let workspace: Rc<RefCell<Option<Entity<Workspace>>>> = Rc::default();
-    let slot = workspace.clone();
-    let window = cx
-        .open_window(size(px(1200.), px(760.)), move |window, cx| {
-            let view = cx.new(|cx| Workspace::new(window, cx));
-            *slot.borrow_mut() = Some(view.clone());
-            cx.new(|cx| Root::new(view, window, cx))
-        })
-        .expect("cannot open a window");
-    let workspace = workspace.borrow().clone().expect("the workspace");
-    let any: AnyWindowHandle = window.into();
-    let page = |cx: &mut HeadlessAppContext| cx.update(|cx| workspace.read(cx).page().clone());
+    let mut ui = Ui::open();
 
-    // Base64: encode, then decode with an error underlined.
-    let p = page(&mut cx);
-    window
-        .update(&mut cx, |_, window, cx| {
-            p.update(cx, |p, cx| p.set_input("hello, toolwing ☕", window, cx))
-        })
-        .expect("window");
-    settle(&mut cx, &p);
+    // Base64: encode, then decode with an error.
+    let p = ui.tool("Base64");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("hello, toolwing ☕", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
     assert_eq!(
-        cx.update(|cx| p.read(cx).output(cx)),
+        ui.cx.update(|cx| p.read(cx).output(cx)),
         "aGVsbG8sIHRvb2x3aW5nIOKYlQ==\n"
     );
-    save(&mut cx, any, "1-base64-encode");
-    window
-        .update(&mut cx, |_, window, cx| {
-            p.update(cx, |p, cx| {
-                p.select_action(1, window, cx);
-                p.set_input("aGVsbG8sIHRvb2x3aW5nIOKYlQ== *", window, cx);
-            })
-        })
-        .expect("window");
-    settle(&mut cx, &p);
-    assert!(cx.update(|cx| p.read(cx).error().is_some()));
-    save(&mut cx, any, "2-base64-decode-error");
+    ui.save("1-base64-encode");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(1, window, cx);
+        p.set_input("aGVsbG8sIHRvb2x3aW5nIOKYlQ== *", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert!(ui.cx.update(|cx| p.read(cx).error().is_some()));
+    ui.save("2-base64-decode-error");
 
     // URL encoding.
-    let url = GROUPS.iter().position(|g| g.name == "url").expect("url");
-    window
-        .update(&mut cx, |_, window, cx| {
-            workspace.update(cx, |w, cx| w.select(url, window, cx))
-        })
-        .expect("window");
-    let p = page(&mut cx);
-    window
-        .update(&mut cx, |_, window, cx| {
-            p.update(cx, |p, cx| {
-                p.set_value("form", Value::Bool(true), window, cx);
-                p.set_input("q=tiếng việt & more", window, cx);
-            })
-        })
-        .expect("window");
-    settle(&mut cx, &p);
+    let p = ui.tool("URL encoding");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("form", Value::Bool(true), window, cx);
+        p.set_input("q=tiếng việt & more", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
     assert_eq!(
-        cx.update(|cx| p.read(cx).output(cx)),
+        ui.cx.update(|cx| p.read(cx).output(cx)),
         "q%3Dti%E1%BA%BFng+vi%E1%BB%87t+%26+more"
     );
-    save(&mut cx, any, "3-url-encode");
+    ui.save("3-url-encode");
 
     // UUID: no input; v7, five of them.
-    let uuid = GROUPS.iter().position(|g| g.name == "uuid").expect("uuid");
-    window
-        .update(&mut cx, |_, window, cx| {
-            workspace.update(cx, |w, cx| w.select(uuid, window, cx))
-        })
-        .expect("window");
-    let p = page(&mut cx);
-    window
-        .update(&mut cx, |_, window, cx| {
-            p.update(cx, |p, cx| {
-                p.set_value("version", Value::Text("v7".into()), window, cx);
-                p.set_value("count", Value::Int(5), window, cx);
-            })
-        })
-        .expect("window");
-    settle(&mut cx, &p);
-    let ids = cx.update(|cx| p.read(cx).output(cx));
+    let p = ui.tool("UUID");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("version", Value::Text("v7".into()), window, cx);
+        p.set_value("count", Value::Int(5), window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let ids = ui.cx.update(|cx| p.read(cx).output(cx));
     assert_eq!(ids.lines().count(), 5);
     assert!(
         ids.lines().all(|id| id.as_bytes().get(14) == Some(&b'7')),
         "{ids}"
     );
-    save(&mut cx, any, "4-uuid");
+    ui.save("4-uuid");
+
+    // Hashes: text, every algorithm, a pasted SHA-256 that matches.
+    let h = ui.hashes();
+    ui.on(&h, |h, window, cx| {
+        h.set_text("hello world", window, cx);
+        h.set_compare(
+            "B94D27B9934D3E08A52E52D7DA7DABFAC484EFE37A5380EE9088F7ACE2EFCDE9  a.txt",
+            window,
+            cx,
+        );
+    });
+    let q = h.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let shown = ui.cx.update(|cx| h.read(cx).shown());
+    assert_eq!(shown.len(), 6);
+    assert_eq!(
+        shown[2],
+        (
+            "SHA-256".into(),
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9".into()
+        )
+    );
+    assert_eq!(
+        ui.cx.update(|cx| h.read(cx).matched(cx)),
+        Some(Algorithm::Sha256)
+    );
+    ui.save("5-hashes-text");
+
+    // Hashes: a file, read in one pass.
+    let dir = std::env::temp_dir().join(format!("toolwing-screen-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let file = dir.join("release.tar");
+    std::fs::write(&file, vec![7u8; 3 * 1024 * 1024]).expect("temp file");
+    ui.on(&h, |h, window, cx| {
+        h.set_compare("", window, cx);
+        h.set_file(file.clone(), window, cx);
+    });
+    let q = h.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert!(ui.cx.update(|cx| h.read(cx).error().is_none()));
+    let shown = ui.cx.update(|cx| h.read(cx).shown());
+    assert_eq!(shown.len(), 6);
+    ui.save("6-hashes-file");
+    let _ = std::fs::remove_dir_all(&dir);
 }
