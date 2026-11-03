@@ -18,7 +18,16 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     // jq's arguments are read as jq reads them (jq.rs), not by clap.
     if args.get(1).is_some_and(|a| a == "jq") {
-        return ExitCode::from(jq::main(&args[2..]));
+        // On a large stack, as the app's jq worker: values nested 10,000
+        // deep, jq's limit, are read, compared and written by recursion.
+        let jq_args = args[2..].to_vec();
+        let run = std::thread::Builder::new()
+            .stack_size(jq::STACK)
+            .spawn(move || jq::main(&jq_args));
+        return ExitCode::from(match run.map(|t| t.join()) {
+            Ok(Ok(code)) => code,
+            _ => 101,
+        });
     }
     let matches = match commands::root().try_get_matches_from(&args) {
         Ok(m) => m,

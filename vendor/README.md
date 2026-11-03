@@ -31,4 +31,27 @@ Changed so that `tw jq` behaves as jq 1.8.2 (docs/design/jq.md):
   and jaq-std is a dev-dependency with its default features, as jaq's
   workspace gives it.
 
+- **Error messages** as jq writes them (`src/jq.rs`): `Cannot index object
+  with number (0)`, `Cannot iterate over number (123)`, `string ("a") and
+  number (1) cannot be subtracted`, `… cannot be negated`, values cut to 30
+  bytes as jq cuts them. With them, jq's rules: an object is indexed and set
+  by strings only, and `null` by a key, an index or a slice only.
+- `length` keeps a literal (`-1.50 | length` is `1.50`).
+
 Each change is marked with a `toolwing:` comment.
+
+## jaq-core 3.1.2
+
+jaq's parser, compiler and interpreter (MIT, `jaq-core/LICENSE-MIT`).
+Changed so that `tw jq` parses what jq 1.8.2 parses:
+
+- **`?//`, destructuring alternatives** (`. as [$a] ?// $a | ...`): the
+  parser rewrites `l as p1 ?// p2 | r` into `l as $v | try (nulls | $v as p1
+  | r) catch (nulls | $v as p2 | r)`, every pattern's variables first bound
+  to null, so an error in a pattern or in `r` tries the next pattern, as in
+  jq (`Parser::alternatives` in `src/load/parse.rs`).
+
+Each change is marked with a `toolwing:` comment. jaq-core's own tests use
+jaq-json through jaq's workspace, so they do not build on their own here;
+jq's suite and the compatibility cases cover the change.
+

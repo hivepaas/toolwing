@@ -1,0 +1,2 @@
+-c
+[(try ({} | .[0]) catch .), (try (123 | .[]) catch .), (try (123 | .a) catch .), (try ("abc" | .[0]) catch .), (try (null | .[true]) catch .), (try ("a" - 1) catch .), (try ({} * 2) catch .), (try ([] / 1) catch .), (try ("a" % 1) catch .), (try (- "foo") catch .), (try ({} | .[0] = 1) catch .), (try ([1,2,3] | .[nan] = 9) catch .)]

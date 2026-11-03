@@ -116,7 +116,8 @@ impl Num {
                 Sign::Plus | Sign::NoSign => Self::BigInt(i.clone()),
                 Sign::Minus => Self::BigInt(BigInt::from(i.magnitude().clone()).into()),
             },
-            Self::Dec(n) => Self::from_dec_str(n).length(),
+            // toolwing: a literal stays one, as jq's `length` keeps it
+            Self::Dec(n) => Self::Dec(n.strip_prefix('-').unwrap_or(n).to_string().into()),
             Self::Float(f) => Self::Float(f.abs()),
         }
     }
