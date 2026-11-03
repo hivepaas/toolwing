@@ -6,6 +6,7 @@
 
 use std::path::PathBuf;
 
+pub mod doc;
 mod natives;
 mod regex;
 

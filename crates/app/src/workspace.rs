@@ -1,7 +1,8 @@
 //! The window: title bar, the sidebar of pages by category, the open page.
 //!
 //! A page is a group's generic page (page.rs), or a custom one standing for
-//! several groups: Hashes for the five `*sum` commands (app.md).
+//! several groups: Hashes for the five `*sum` commands; or a group's own:
+//! jq, Diff (app.md).
 
 use gpui::{
     AnyView, AppContext as _, Context, Entity, IntoElement, ParentElement, Render, Styled, Window,
@@ -14,12 +15,14 @@ use toolwing_tools::{GROUPS, group, hash};
 
 use crate::diff_page::DiffPage;
 use crate::hashes::HashesPage;
+use crate::jq_page::JqPage;
 use crate::page::ToolPage;
 
 /// What the sidebar lists.
 #[derive(Clone, Copy)]
 pub enum Entry {
     Group(&'static Group),
+    Jq,
     Hashes,
     Diff,
 }
@@ -28,6 +31,7 @@ impl Entry {
     pub fn title(self) -> &'static str {
         match self {
             Entry::Group(g) => g.title,
+            Entry::Jq => "jq",
             Entry::Hashes => "Hashes",
             Entry::Diff => "Diff",
         }
@@ -36,6 +40,7 @@ impl Entry {
     fn category(self) -> Option<Category> {
         match self {
             Entry::Group(g) => group(g.name).first().map(|t| t.meta().category),
+            Entry::Jq => Some(Category::Data),
             Entry::Hashes => Some(Category::Crypto),
             Entry::Diff => Some(Category::Text),
         }
@@ -48,7 +53,9 @@ pub fn entries() -> Vec<Entry> {
     let mut entries = Vec::new();
     for g in GROUPS {
         let is_sum = hash::SUMS.iter().any(|s| s.meta().group == g.name);
-        if g.name == "diff" {
+        if g.name == "jq" {
+            entries.push(Entry::Jq);
+        } else if g.name == "diff" {
             entries.push(Entry::Diff);
         } else if !is_sum {
             entries.push(Entry::Group(g));
@@ -63,6 +70,7 @@ pub fn entries() -> Vec<Entry> {
 #[derive(Clone)]
 pub enum Page {
     Tool(Entity<ToolPage>),
+    Jq(Entity<JqPage>),
     Hashes(Entity<HashesPage>),
     Diff(Entity<DiffPage>),
 }
@@ -71,6 +79,7 @@ impl Page {
     fn view(&self) -> AnyView {
         match self {
             Page::Tool(p) => p.clone().into(),
+            Page::Jq(p) => p.clone().into(),
             Page::Hashes(p) => p.clone().into(),
             Page::Diff(p) => p.clone().into(),
         }
@@ -144,6 +153,7 @@ impl Workspace {
 fn open(entry: Entry, window: &mut Window, cx: &mut Context<Workspace>) -> Page {
     match entry {
         Entry::Group(g) => Page::Tool(cx.new(|cx| ToolPage::new(g, window, cx))),
+        Entry::Jq => Page::Jq(cx.new(|cx| JqPage::new(window, cx))),
         Entry::Hashes => Page::Hashes(cx.new(|cx| HashesPage::new(window, cx))),
         Entry::Diff => Page::Diff(cx.new(|cx| DiffPage::new(window, cx))),
     }

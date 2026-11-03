@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use std::io::{self, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 
+use toolwing_core::Tool as _;
 use toolwing_jq::json::write::{Pp, Styles};
 use toolwing_jq::write::{Writer, with_stdout, write};
 use toolwing_jq::{Format, Runner, Stop, Val, Vars, read};
@@ -20,7 +21,7 @@ use toolwing_jq::{Format, Runner, Stop, Val, Vars, read};
 /// `tw jq` in `tw --help` and completions; `main` reads its arguments.
 pub fn command() -> clap::Command {
     clap::Command::new("jq")
-        .about("Query and transform JSON, as jq 1.8 does")
+        .about(toolwing_tools::jq::Jq.meta().summary)
         .disable_help_flag(true)
         .arg(
             clap::Arg::new("args")
@@ -56,6 +57,7 @@ struct Cli {
     positional: Vec<Val>,
     exit_status: bool,
     unbuffered: bool,
+    ascii: bool,
     version: bool,
     help: bool,
 }
@@ -262,11 +264,7 @@ fn parse_short(cli: &mut Cli, c: char) -> Result<(), Usage> {
         'V' => cli.version = true,
         // Windows' binary mode: what tw always does.
         'b' => {}
-        'a' => {
-            return Err(Usage(
-                "-a, --ascii-output is not supported yet (docs/design/jq.md)".into(),
-            ));
-        }
+        'a' => cli.ascii = true,
         other => return Err(Usage(format!("Unknown option -{other}"))),
     }
     Ok(())
@@ -286,6 +284,7 @@ jq 1.8's command line on jaq's engine: query and transform JSON, and with
       --raw-output0         like -r, a NUL after each output
   -j, --join-output         like -r, no newline after each output
   -S, --sort-keys           sort the keys of objects
+  -a, --ascii-output        escape characters outside ASCII as \\uXXXX
   -C, --color-output        colour the output; -M, --monochrome-output not
       --tab, --indent N     indent with a tab, or N spaces (up to 7)
   -f, --from-file           read the filter from a file
@@ -403,8 +402,30 @@ fn run(cli: Cli) -> Result<u8, Failure> {
     let vars = Vars::new(values);
 
     let mut out = io::stdout();
+    // `-a`: as jq, a string is written as JSON even with `-r` or `-j`.
+    let json_writer = Writer {
+        format: Format::Json,
+        pp: writer(&cli).pp,
+        join: runner.writer.join,
+    };
     let emit = |w: &mut dyn Write, v: &Val| -> io::Result<()> {
-        write(w, &runner.writer, v)?;
+        if cli.ascii {
+            let raw = matches!(runner.writer.format, Format::Raw | Format::Raw0);
+            let as_json = raw && matches!(v, Val::TStr(_) | Val::BStr(_));
+            let mut buf = Vec::new();
+            write(
+                &mut buf,
+                if as_json {
+                    &json_writer
+                } else {
+                    &runner.writer
+                },
+                v,
+            )?;
+            w.write_all(toolwing_jq::doc::escape_ascii(&String::from_utf8_lossy(&buf)).as_bytes())?;
+        } else {
+            write(w, &runner.writer, v)?;
+        }
         if cli.unbuffered {
             w.flush()?;
         }

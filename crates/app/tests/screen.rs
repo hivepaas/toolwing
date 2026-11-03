@@ -17,6 +17,8 @@ use gpui::{
 use gpui_component::Root;
 use toolwing::diff_page::DiffPage;
 use toolwing::hashes::HashesPage;
+use toolwing::jq_page::JqPage;
+use toolwing::jq_worker::Request;
 use toolwing::page::ToolPage;
 use toolwing::workspace::{Page, Workspace};
 use toolwing_core::Value;
@@ -60,6 +62,9 @@ impl Ui {
                 gpui_platform::current_headless_renderer()
             });
         cx.update(toolwing::init);
+        // The jq worker is the app's binary, not this test's (jq_worker.rs);
+        // started before the window, which opens on the jq page.
+        cx.update(|cx| toolwing::jq_page::start_worker(env!("CARGO_BIN_EXE_toolwing").into(), cx));
         let workspace: Rc<RefCell<Option<Entity<Workspace>>>> = Rc::default();
         let slot = workspace.clone();
         let window = cx
@@ -105,6 +110,13 @@ impl Ui {
         match self.go("Diff") {
             Page::Diff(p) => p,
             _ => panic!("Diff is not the diff page"),
+        }
+    }
+
+    fn jq(&mut self) -> Entity<JqPage> {
+        match self.go("jq") {
+            Page::Jq(p) => p,
+            _ => panic!("jq is not the jq page"),
         }
     }
 
@@ -416,4 +428,88 @@ fn every_page_draws_and_runs() {
         Some("Tue 2026-11-03 13:30:00 +07:00 · in 4 minutes")
     );
     ui.save("15-cron");
+
+    // jq: the pods that are not running, as the sketch has it.
+    let pods = r#"{"kind": "List", "items": [
+  {"metadata": {"name": "web-7d9f"}, "status": {"phase": "Running"}},
+  {"metadata": {"name": "api-55c1"}, "status": {"phase": "CrashLoopBackOff"}},
+  {"metadata": {"name": "job-x"}, "status": {"phase": "Succeeded"}}
+]}"#;
+    let j = ui.jq();
+    ui.on(&j, |j, window, cx| {
+        j.set_options(
+            Request {
+                raw: true,
+                from: "json".into(),
+                to: "json".into(),
+                ..Request::default()
+            },
+            window,
+            cx,
+        );
+        j.set_texts(
+            r#".items[] | select(.status.phase != "Running") | .metadata.name"#,
+            pods,
+            window,
+            cx,
+        );
+    });
+    let q = j.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(ui.cx.update(|cx| j.read(cx).output(cx)), "api-55c1\njob-x");
+    ui.save("16-jq");
+
+    // A filter half typed: the error, and the last output dimmed under it.
+    ui.on(&j, |j, window, cx| {
+        j.set_texts(".items[] | select(", pods, window, cx)
+    });
+    let q = j.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert!(ui.cx.update(|cx| j.read(cx).reply().failure.is_some()));
+    assert_eq!(ui.cx.update(|cx| j.read(cx).output(cx)), "api-55c1\njob-x");
+    ui.save("17-jq-error");
+
+    // JSON: formatted as jq . writes it, and where it stops being JSON.
+    let p = ui.tool("JSON");
+    ui.on(&p, |p, window, cx| {
+        p.set_input(
+            r#"{"service": "billing", "replicas": 3, "ports": [8080, 9090], "ratio": 1.50}"#,
+            window,
+            cx,
+        )
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "{\n  \"service\": \"billing\",\n  \"replicas\": 3,\n  \"ports\": [\n    8080,\n    9090\n  ],\n  \"ratio\": 1.50\n}"
+    );
+    ui.save("18-json");
+    ui.on(&p, |p, window, cx| {
+        p.set_input(
+            "{\"service\": \"billing\",\n \"replicas\": 3,\n}",
+            window,
+            cx,
+        )
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let span = ui.cx.update(|cx| p.read(cx).error().and_then(|e| e.span));
+    assert_eq!(span.map(|s| s.line), Some(3));
+    ui.save("19-json-error");
+
+    // Convert: the sketch's ConfigMap, YAML to JSON.
+    let p = ui.tool("Convert");
+    ui.on(&p, |p, window, cx| {
+        p.set_input(
+            "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: billing\ndata:\n  LOG_LEVEL: info\n  ENABLE_V2: \"no\"\n  VERSION: \"1.10\"\n",
+            window,
+            cx,
+        )
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let json = ui.cx.update(|cx| p.read(cx).output(cx));
+    assert!(json.contains("\"VERSION\": \"1.10\""), "{json}");
+    ui.save("20-convert");
 }

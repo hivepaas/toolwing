@@ -13,7 +13,7 @@ tw sha256sum -c SHA256SUMS
 tw jwt decode "$TOKEN"
 tw time 1793692800 --tz Asia/Ho_Chi_Minh
 tw uuid --v7 -n 5
-kubectl get cm app -o yaml | tw convert yaml json | tw jq '.data'
+kubectl get cm app -o yaml | tw convert --to json | tw jq '.data'
 ```
 
 Two kinds of command, and every tool says which it is (tools.md):

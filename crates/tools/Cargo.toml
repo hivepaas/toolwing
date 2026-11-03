@@ -9,6 +9,8 @@ publish.workspace = true
 
 [dependencies]
 toolwing-core.workspace = true
+# JSON and the other formats, read and written as `tw jq` does.
+toolwing-jq.workspace = true
 data-encoding = "2.11"
 percent-encoding = "2.3"
 uuid = { version = "1.29", features = ["v4", "v7"] }

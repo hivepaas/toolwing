@@ -95,7 +95,7 @@ Both measurements run in CI, through the `tw` binary:
   look-around, modifiers, `@base64d`, `@urid`). `scripts/compat_record.sh
   jq` records each from jq 1.8.2's release binary (its sha256 checked) and
   `tw` must give the same stdout and exit code. A case that still differs
-  has a `known` file saying why (3 now: the flags not done yet); it must
+  has a `known` file saying why (2 now: the flags not done yet); it must
   keep differing, so a fix fails the test until its `known` is removed.
 - **jq's suite**, `crates/cli/tests/jq-suite/` (jq 1.8.2's `tests/*.test` and
   modules, MIT): `jq_suite.rs` judges each case as jq's runner does, and
@@ -127,8 +127,10 @@ describe. What it follows from jq:
   exits with its code.
 - Without a filter it runs `.`, unless stdin and stdout are both terminals.
 
-Not done yet, and refused with exit 2 and a message rather than ignored:
-`--seq`, `--stream`, `--stream-errors` and `-a`/`--ascii-output`.
+`-a`/`--ascii-output` escapes every character outside ASCII, and with `-r` or
+`-j` writes strings as JSON, as jq does. Not done yet, and refused with exit
+2 and a message rather than ignored: `--seq`, `--stream` and
+`--stream-errors`.
 `--stream` needs a streaming parser of its own; it is the largest of these.
 jaq's `--from`/`--to` (YAML, TOML, XML, CBOR, CSV) are kept under the same
 names.

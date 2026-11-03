@@ -20,7 +20,7 @@ parser.
 | --- | --- | --- | --- | --- |
 | `jq` | Query and transform JSON (and YAML, TOML, XML, CBOR, CSV with `--from`/`--to`) | jq 1.8.2 | drop-in | `toolwing-jq` on `jaq-core`, `jaq-std`, `jaq-fmts` (jaq 3.1), `onig` ([jq.md](jq.md)) |
 | `json` | Format, minify, validate, sort keys | `jq .`, `jq -c .`, `jq -S .` | output | `toolwing-jq`'s writer, so it formats as `tw jq` does |
-| `convert` | JSON ⇄ YAML ⇄ TOML ⇄ CSV ⇄ XML | YAML 1.2, TOML 1.1, RFC 4180 | standard | `jaq-fmts` |
+| `convert` | JSON ⇄ YAML ⇄ TOML ⇄ CSV ⇄ XML; the input's format found when not given; CSV's first row its header; XML as xmltodict maps it (`@` attributes, `#text`) | YAML 1.2, TOML 1.0, RFC 4180, XML 1.0 | standard | `jaq-fmts` |
 | `base64`, `base32` | Encode, decode (`-d`, `-w`, `-i`), URL-safe alphabet | GNU coreutils 9.7 | drop-in | `data-encoding` |
 | `hex` | Encode, decode | `xxd -p`, `xxd -r -p` | output | `data-encoding` |
 | `url` | Encode, decode, parse into fields | RFC 3986, WHATWG URL | standard | `percent-encoding`, `url` |
