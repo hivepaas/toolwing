@@ -42,8 +42,8 @@ Two kinds of command, and every tool says which it is (tools.md):
 ## Output
 
 - Results go to stdout, messages to stderr. Text results end with one newline;
-  `-n` / `--no-newline` drops it. Binary results are written as they are, and
-  refused on a terminal unless `--force` (as `gzip` does).
+  `--no-newline` drops it (long only: `-n` is a count, as in `head -n`).
+  Binary results are written as they are, and refused on a terminal.
 - **`--json`** on every command that produces `Fields` or several values: one
   JSON object, keys in a documented, stable order. Without it, aligned
   `key: value` lines meant for people, which scripts should not parse.
@@ -61,6 +61,7 @@ Two kinds of command, and every tool says which it is (tools.md):
 | 1 | A check failed: a signature, hash or password did not verify, a regex did not match (as `grep`) |
 | 2 | Usage error: unknown flag, missing argument |
 | 3 | Invalid input: not base64, not JSON, an expired JWT with `--require-valid` |
+| 4 | A file could not be read or written |
 
 Drop-in commands keep their reference's codes: `tw jq` exits 2 on a usage or
 system error, 3 on a filter that does not compile, 5 on a runtime error, and

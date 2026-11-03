@@ -1,0 +1,152 @@
+//! toolwing's tools and their registry (docs/design/architecture.md).
+
+pub mod base64;
+pub mod command;
+pub mod url;
+pub mod uuid;
+
+use toolwing_core::{Group, Tool, en};
+
+/// The groups, in the order `tw --help` and the app's sidebar show them.
+pub static GROUPS: &[Group] = &[
+    Group {
+        name: "base64",
+        title: en!("Base64"),
+        summary: en!("Encode and decode Base64 (RFC 4648)"),
+    },
+    Group {
+        name: "url",
+        title: en!("URL encoding"),
+        summary: en!("Percent-encode and decode text for URLs"),
+    },
+    Group {
+        name: "uuid",
+        title: en!("UUID"),
+        summary: en!("Generate UUIDs: random (v4) or time-ordered (v7)"),
+    },
+];
+
+/// Every tool, in the order `tw --help` and the app's sidebar show them. A
+/// group's first tool is its default action.
+pub static TOOLS: &[&dyn Tool] = &[
+    &base64::Encode,
+    &base64::Decode,
+    &url::Encode,
+    &url::Decode,
+    &uuid::Generate,
+];
+
+/// The group names, in order.
+pub fn groups() -> Vec<&'static str> {
+    GROUPS.iter().map(|g| g.name).collect()
+}
+
+pub fn group_info(name: &str) -> Option<&'static Group> {
+    GROUPS.iter().find(|g| g.name == name)
+}
+
+/// A group's tools, in registry order.
+pub fn group(name: &str) -> Vec<&'static dyn Tool> {
+    TOOLS
+        .iter()
+        .copied()
+        .filter(|t| t.meta().group == name)
+        .collect()
+}
+
+pub fn find(id: &str) -> Option<&'static dyn Tool> {
+    TOOLS.iter().copied().find(|t| t.meta().id == id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+    use toolwing_core::{Compat, ParamKind, Value};
+
+    #[test]
+    fn ids_are_unique_and_spelled_from_group_and_action() {
+        let mut seen = HashSet::new();
+        for tool in TOOLS {
+            let m = tool.meta();
+            assert!(seen.insert(m.id), "{} twice", m.id);
+            let want = if m.action.is_empty() {
+                m.group.to_owned()
+            } else {
+                format!("{}.{}", m.group, m.action)
+            };
+            assert_eq!(m.id, want);
+        }
+    }
+
+    #[test]
+    fn groups_are_listed_in_registry_order() {
+        let mut order: Vec<&str> = Vec::new();
+        for tool in TOOLS {
+            let g = tool.meta().group;
+            if !order.contains(&g) {
+                order.push(g);
+            }
+        }
+        assert_eq!(groups(), order);
+    }
+
+    #[test]
+    fn groups_are_contiguous_and_agree_on_their_shape() {
+        let order: Vec<_> = TOOLS.iter().map(|t| t.meta().group).collect();
+        for g in groups() {
+            let first = order.iter().position(|x| *x == g).unwrap_or(0);
+            let last = order.iter().rposition(|x| *x == g).unwrap_or(0);
+            assert!(order[first..=last].iter().all(|x| *x == g), "{g} is split");
+            let tools = group(g);
+            let single = tools.len() == 1;
+            for t in &tools {
+                let m = t.meta();
+                assert_eq!(m.action.is_empty(), single, "{}: action", m.id);
+                assert_eq!(m.drop_in(), tools[0].meta().drop_in(), "{}: compat", m.id);
+                if m.drop_in() && !single {
+                    // The first action is the default; the others have a flag.
+                    assert_eq!(
+                        m.action_flag.is_none(),
+                        m.id == tools[0].meta().id,
+                        "{}",
+                        m.id
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn params_are_documented_and_defaults_fit() {
+        for tool in TOOLS {
+            for p in tool.params() {
+                let id = tool.meta().id;
+                assert!(!p.help.is_empty() && !p.label.is_empty(), "{id}.{}", p.key);
+                let fits = match (p.kind, &p.default) {
+                    (ParamKind::Flag, Value::Bool(_)) => true,
+                    (ParamKind::Int { min, max }, Value::Int(n)) => (min..=max).contains(n),
+                    (ParamKind::Choice { options, .. }, Value::Text(s)) => {
+                        s.is_empty() || options.iter().any(|(o, _)| o == s)
+                    }
+                    (ParamKind::Text, Value::Text(_)) => true,
+                    _ => false,
+                };
+                assert!(fits, "{id}.{}: default", p.key);
+            }
+        }
+    }
+
+    #[test]
+    fn references_name_a_version() {
+        for tool in TOOLS {
+            let m = tool.meta();
+            if let Some(r) = m.reference {
+                assert!(!r.version.is_empty(), "{}", m.id);
+                if r.compat == Compat::DropIn {
+                    assert!(m.input != toolwing_core::InputKind::None, "{}", m.id);
+                }
+            }
+        }
+    }
+}

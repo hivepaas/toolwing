@@ -21,10 +21,10 @@ parser.
 | `jq` | Query and transform JSON (and YAML, TOML, XML, CBOR, CSV with `--from`/`--to`) | jq 1.8.2 | drop-in | `toolwing-jq` on `jaq-core`, `jaq-std`, `jaq-fmts` (jaq 3.1), `onig` ([jq.md](jq.md)) |
 | `json` | Format, minify, validate, sort keys | `jq .`, `jq -c .`, `jq -S .` | output | `toolwing-jq`'s writer, so it formats as `tw jq` does |
 | `convert` | JSON ⇄ YAML ⇄ TOML ⇄ CSV ⇄ XML | YAML 1.2, TOML 1.1, RFC 4180 | standard | `jaq-fmts` |
-| `base64`, `base32` | Encode, decode (`-d`, `-w`, `-i`), URL-safe alphabet | GNU coreutils 9.12 | drop-in | `data-encoding` |
+| `base64`, `base32` | Encode, decode (`-d`, `-w`, `-i`), URL-safe alphabet | GNU coreutils 9.7 | drop-in | `data-encoding` |
 | `hex` | Encode, decode | `xxd -p`, `xxd -r -p` | output | `data-encoding` |
 | `url` | Encode, decode, parse into fields | RFC 3986, WHATWG URL | standard | `percent-encoding`, `url` |
-| `md5sum`, `sha1sum`, `sha256sum`, `sha512sum`, `b2sum` | Hash files and check lists (`-c`, `--tag`, `-z`) | GNU coreutils 9.12 | drop-in | RustCrypto `md-5`, `sha1`, `sha2`, `blake2` |
+| `md5sum`, `sha1sum`, `sha256sum`, `sha512sum`, `b2sum` | Hash files and check lists (`-c`, `--tag`, `-z`) | GNU coreutils 9.7 | drop-in | RustCrypto `md-5`, `sha1`, `sha2`, `blake2` |
 | `b3sum` | BLAKE3 | b3sum 1.8 | drop-in | `blake3` |
 | `hmac` | HMAC-SHA1/256/512 of input with a key | `openssl dgst -hmac` | output | RustCrypto `hmac` |
 | `jwt` | Decode, verify (HS/RS/ES/PS/EdDSA, JWKS file), encode | RFC 7519, 7515 | standard | `jsonwebtoken` |

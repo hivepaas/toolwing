@@ -1,0 +1,42 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+repository = "https://github.com/hivepaas/toolwing"
+license = "GPL-3.0-or-later"
+publish = false
+
+[workspace.dependencies]
+toolwing-core = { path = "crates/core" }
+toolwing-tools = { path = "crates/tools" }
+# GPUI as published by Longbridge, a newer snapshot than the other -wing apps:
+# the one gpui-component 0.9.0 pins. The three move together (architecture.md).
+gpui = { package = "gpui-pre", version = "=0.3.11" }
+# font-kit and runtime_shaders only affect macOS; the Linux backends are app features.
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.11", default-features = false, features = ["font-kit", "runtime_shaders"] }
+gpui-component = "=0.9.0"
+# The icons gpui-component draws; the app hands them to GPUI as its assets.
+gpui-kit-assets = "=0.9.0"
+anyhow = "1"
+thiserror = "2"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+dbg_macro = "deny"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true
+
+# Dependencies optimised in dev builds too, so the app is usable while developing.
+[profile.dev.package."*"]
+opt-level = 2

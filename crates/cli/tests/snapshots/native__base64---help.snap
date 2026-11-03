@@ -1,0 +1,16 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+Encode and decode Base64 (RFC 4648)
+
+Usage: tw base64 [OPTIONS] [FILE]
+
+Arguments:
+  [FILE]  Read FILE; - or none for stdin
+
+Options:
+  -w, --wrap <N>        Wrap encoded lines after this many characters; 0 for no wrapping
+  -d, --decode          Decode Base64 back to bytes
+  -i, --ignore-garbage  When decoding, ignore characters outside the Base64 alphabet
+  -h, --help            Print help
