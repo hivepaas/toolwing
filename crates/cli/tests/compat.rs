@@ -73,6 +73,9 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         } else {
             case.to_owned()
         })
+        // As the reference ran, in Docker as root: a case may read $HOME, and
+        // a Windows runner has none.
+        .env("HOME", "/root")
         .arg(group)
         .args(&args)
         .stdin(Stdio::piped())
@@ -89,20 +92,47 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
     if exit != want_exit {
         return Err(format!("exit {exit}, the reference {want_exit}"));
     }
-    if out.stdout != want_stdout {
+    let stdout = unix_wording(out.stdout);
+    if stdout != want_stdout {
         return Err(format!(
             "stdout differs: {} bytes, the reference {} ({:?}… vs {:?}…)",
-            out.stdout.len(),
+            stdout.len(),
             want_stdout.len(),
-            String::from_utf8_lossy(&out.stdout[..out.stdout.len().min(40)]),
+            String::from_utf8_lossy(&stdout[..stdout.len().min(40)]),
             String::from_utf8_lossy(&want_stdout[..want_stdout.len().min(40)]),
         ));
     }
     Ok(())
 }
 
+/// The OS's own words for an error, as the reference (on Linux) printed
+/// them: tw prints what the system says, as b3sum built for Windows would.
+fn unix_wording(stdout: Vec<u8>) -> Vec<u8> {
+    if !cfg!(windows) {
+        return stdout;
+    }
+    const WORDS: [(&str, &str); 2] = [
+        (
+            "The system cannot find the file specified. (os error 2)",
+            "No such file or directory (os error 2)",
+        ),
+        (
+            "The system cannot find the path specified. (os error 3)",
+            "No such file or directory (os error 2)",
+        ),
+    ];
+    let mut text = String::from_utf8_lossy(&stdout).into_owned();
+    if !WORDS.iter().any(|(w, _)| text.contains(w)) {
+        return stdout;
+    }
+    for (windows, unix) in WORDS {
+        text = text.replace(windows, unix);
+    }
+    text.into_bytes()
+}
+
 /// Every case's files can be checked out on Windows too: none is named with
-/// a character it refuses, or as a device. (A name b3sum escapes, with a
+/// a character it refuses, or as a device, or as another is but for case. (A name b3sum escapes, with a
 /// backslash or a newline, is tested in native.rs instead, on Unix.)
 #[test]
 fn case_paths_are_portable() {
@@ -120,6 +150,22 @@ fn case_paths_are_portable() {
             }
             if entry.path().is_dir() {
                 walk(&entry.path(), bad);
+            }
+        }
+        // Windows (and macOS) names ignore case: two would be one file.
+        let mut names: Vec<String> = fs::read_dir(dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().to_lowercase())
+            .collect();
+        names.sort();
+        for pair in names.windows(2) {
+            if pair[0] == pair[1] {
+                bad.push(format!(
+                    "{} (twice, ignoring case)",
+                    dir.join(&pair[0]).display()
+                ));
             }
         }
     }
