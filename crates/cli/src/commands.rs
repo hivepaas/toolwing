@@ -32,7 +32,10 @@ pub fn root() -> Command {
         .subcommand_required(true)
         .arg_required_else_help(true);
     for g in groups() {
-        cmd = cmd.subcommand(group_command(g));
+        cmd = cmd.subcommand(match crate::sums::find(g) {
+            Some(sum) => crate::sums::command(sum),
+            None => group_command(g),
+        });
     }
     cmd.subcommand(
         Command::new("list")

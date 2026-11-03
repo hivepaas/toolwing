@@ -1,0 +1,3 @@
+a.txt: OK
+ we ird.txt: FAILED open or read
+*a.txt: FAILED open or read

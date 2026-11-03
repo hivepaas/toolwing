@@ -24,8 +24,8 @@ parser.
 | `base64`, `base32` | Encode, decode (`-d`, `-w`, `-i`), URL-safe alphabet | GNU coreutils 9.7 | drop-in | `data-encoding` |
 | `hex` | Encode, decode | `xxd -p`, `xxd -r -p` | output | `data-encoding` |
 | `url` | Encode, decode, parse into fields | RFC 3986, WHATWG URL | standard | `percent-encoding`, `url` |
-| `md5sum`, `sha1sum`, `sha256sum`, `sha512sum`, `b2sum` | Hash files and check lists (`-c`, `--tag`, `-z`) | GNU coreutils 9.7 | drop-in | RustCrypto `md-5`, `sha1`, `sha2`, `blake2` |
-| `b3sum` | BLAKE3 | b3sum 1.8 | drop-in | `blake3` |
+| `md5sum`, `sha1sum`, `sha256sum`, `sha512sum`, `b2sum` | Hash files and check lists (`-c`, `--tag`, `-z`, `-l`) | GNU coreutils 9.7 | drop-in | RustCrypto `md-5`, `sha1`, `sha2`; `blake2b_simd` (blake2 0.11 takes no length at run time) |
+| `b3sum` | BLAKE3 | b3sum 1.8 | drop-in | `blake3`; the app shows BLAKE3 already, the command waits for a reference image to record its cases from (`debian:13` has no b3sum) |
 | `hmac` | HMAC-SHA1/256/512 of input with a key | `openssl dgst -hmac` | output | RustCrypto `hmac` |
 | `jwt` | Decode, verify (HS/RS/ES/PS/EdDSA, JWKS file), encode | RFC 7519, 7515 | standard | `jsonwebtoken` |
 | `time` | Epoch ⇄ RFC 3339/ISO 8601/RFC 2822, time zones, relative ("in 3 days"), durations | `date -d @N`, IANA tz | output | `jiff` |

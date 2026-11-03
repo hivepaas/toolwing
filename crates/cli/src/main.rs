@@ -1,6 +1,7 @@
 //! `tw`: toolwing's tools on the command line (docs/design/cli.md).
 
 mod commands;
+mod sums;
 
 use std::fs::File;
 use std::io::{self, BufWriter, IsTerminal, Read, Write};
@@ -38,7 +39,10 @@ fn main() -> ExitCode {
             }
             Ok(())
         }
-        _ => run_group(name, sub),
+        _ => match sums::find(name) {
+            Some(sum) => return ExitCode::from(sums::run(sum, sub)),
+            None => run_group(name, sub),
+        },
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

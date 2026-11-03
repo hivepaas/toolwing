@@ -9,6 +9,11 @@ Usage: tw <COMMAND>
 Commands:
   base64       Encode and decode Base64 (RFC 4648)
   url          Percent-encode and decode text for URLs
+  md5sum       MD5 checksums of files, or check them
+  sha1sum      SHA-1 checksums of files, or check them
+  sha256sum    SHA-256 checksums of files, or check them
+  sha512sum    SHA-512 checksums of files, or check them
+  b2sum        BLAKE2b checksums of files, or check them
   uuid         Generate UUIDs: random (v4) or time-ordered (v7)
   list         List every tool
   completions  Print shell completions

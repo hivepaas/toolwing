@@ -2,6 +2,7 @@
 
 pub mod base64;
 pub mod command;
+pub mod hash;
 pub mod url;
 pub mod uuid;
 
@@ -20,6 +21,31 @@ pub static GROUPS: &[Group] = &[
         summary: en!("Percent-encode and decode text for URLs"),
     },
     Group {
+        name: "md5sum",
+        title: en!("MD5"),
+        summary: en!("MD5 checksums of files, or check them"),
+    },
+    Group {
+        name: "sha1sum",
+        title: en!("SHA-1"),
+        summary: en!("SHA-1 checksums of files, or check them"),
+    },
+    Group {
+        name: "sha256sum",
+        title: en!("SHA-256"),
+        summary: en!("SHA-256 checksums of files, or check them"),
+    },
+    Group {
+        name: "sha512sum",
+        title: en!("SHA-512"),
+        summary: en!("SHA-512 checksums of files, or check them"),
+    },
+    Group {
+        name: "b2sum",
+        title: en!("BLAKE2b"),
+        summary: en!("BLAKE2b checksums of files, or check them"),
+    },
+    Group {
         name: "uuid",
         title: en!("UUID"),
         summary: en!("Generate UUIDs: random (v4) or time-ordered (v7)"),
@@ -33,6 +59,11 @@ pub static TOOLS: &[&dyn Tool] = &[
     &base64::Decode,
     &url::Encode,
     &url::Decode,
+    &hash::MD5SUM,
+    &hash::SHA1SUM,
+    &hash::SHA256SUM,
+    &hash::SHA512SUM,
+    &hash::B2SUM,
     &uuid::Generate,
 ];
 
