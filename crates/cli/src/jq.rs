@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use std::io::{self, IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 
+use toolwing_core::Tool as _;
 use toolwing_jq::json::write::{Pp, Styles};
 use toolwing_jq::write::{Writer, with_stdout, write};
 use toolwing_jq::{Format, Runner, Stop, Val, Vars, read};
@@ -20,7 +21,7 @@ use toolwing_jq::{Format, Runner, Stop, Val, Vars, read};
 /// `tw jq` in `tw --help` and completions; `main` reads its arguments.
 pub fn command() -> clap::Command {
     clap::Command::new("jq")
-        .about("Query and transform JSON, as jq 1.8 does")
+        .about(toolwing_tools::jq::Jq.meta().summary)
         .disable_help_flag(true)
         .arg(
             clap::Arg::new("args")

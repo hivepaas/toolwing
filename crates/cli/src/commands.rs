@@ -35,24 +35,24 @@ pub fn root() -> Command {
         cmd = cmd.subcommand(match crate::sums::find(g) {
             Some(sum) => crate::sums::command(sum),
             None if g == "diff" => crate::diffs::command(),
+            None if g == "jq" => crate::jq::command(),
             None => group_command(g),
         });
     }
-    cmd.subcommand(crate::jq::command())
-        .subcommand(
-            Command::new("list")
-                .about("List every tool")
-                .arg(json_flag()),
-        )
-        .subcommand(
-            Command::new("completions")
-                .about("Print shell completions")
-                .arg(
-                    Arg::new("shell")
-                        .required(true)
-                        .value_parser(value_parser!(clap_complete::Shell)),
-                ),
-        )
+    cmd.subcommand(
+        Command::new("list")
+            .about("List every tool")
+            .arg(json_flag()),
+    )
+    .subcommand(
+        Command::new("completions")
+            .about("Print shell completions")
+            .arg(
+                Arg::new("shell")
+                    .required(true)
+                    .value_parser(value_parser!(clap_complete::Shell)),
+            ),
+    )
 }
 
 fn group_command(name: &'static str) -> Command {

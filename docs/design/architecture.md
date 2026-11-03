@@ -179,3 +179,13 @@ How the worker works:
   on Windows: safe APIs, so the `unsafe_code` lint stays as it is.
 - A killed or crashed worker shows as an error ("Stopped after 5 s",
   "Ran out of memory", "Too deeply nested") and is restarted.
+
+Built (`crates/app/src/jq_worker.rs`, tested in `crates/app/tests/jq_worker.rs`
+with the app's binary): the warm worker, length-prefixed JSON messages, the
+newer run killing the running one, the 5 s limit (a watchdog thread, real
+time: wall clock rather than CPU for now), 64 MB of output, 2 GB through
+`rlimit` on Linux, programs on a 256 MB stack, and each way a run ends told
+apart and the worker started again. Not yet: results arrive when the run
+ends, not as they come; the input goes in the request, not as a path; the
+app does not watch the worker's memory on macOS; Windows has no memory limit
+yet (`win32job`).

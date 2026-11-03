@@ -2,6 +2,8 @@
 
 pub mod diff_page;
 pub mod hashes;
+pub mod jq_page;
+pub mod jq_worker;
 pub mod page;
 pub mod workspace;
 

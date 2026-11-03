@@ -8,6 +8,7 @@ pub mod convert;
 pub mod cron;
 pub mod diff;
 pub mod hash;
+pub mod jq;
 pub mod json;
 pub mod jwt;
 pub mod regex;
@@ -19,6 +20,11 @@ use toolwing_core::{Group, Tool, en};
 
 /// The groups, in the order `tw --help` and the app's sidebar show them.
 pub static GROUPS: &[Group] = &[
+    Group {
+        name: "jq",
+        title: en!("jq"),
+        summary: en!("Query and transform JSON, YAML, TOML, XML and CSV, as jq 1.8 does"),
+    },
     Group {
         name: "json",
         title: en!("JSON"),
@@ -109,6 +115,7 @@ pub static GROUPS: &[Group] = &[
 /// Every tool, in the order `tw --help` and the app's sidebar show them. A
 /// group's first tool is its default action.
 pub static TOOLS: &[&dyn Tool] = &[
+    &jq::Jq,
     &json::Pretty,
     &json::Minify,
     &json::Validate,
