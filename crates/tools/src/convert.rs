@@ -175,59 +175,63 @@ impl Tool for Convert {
     }
 
     fn run(&self, _ctx: &Ctx, input: &[u8], values: &Values) -> Result<Output, Error> {
-        let from = format(&values.text(PARAMS, "from")).unwrap_or_else(|| detect(input));
-        let to = format(&values.text(PARAMS, "to")).unwrap_or(Format::Json);
-        let indent = usize::try_from(values.int(PARAMS, "indent")).unwrap_or(2);
-        let parsed = doc::parse(from, input).map_err(|e| {
-            let error = Error::input(format!("not {}: {}", name(from), e.message));
-            match e.offset {
-                Some(at) => error.at(Span::at(input, at.min(input.len()))),
-                None => error,
-            }
-        })?;
-        let parsed = match from {
-            Format::Csv => vec![from_rows(parsed)],
-            Format::Xml => parsed.iter().filter_map(from_xml).collect(),
-            _ => parsed,
-        };
-        let style = Style {
-            indent: (indent > 0 || matches!(to, Format::Yaml)).then(|| " ".repeat(indent.max(1))),
-            ..Style::default()
-        };
-        let one = |what: &str| -> Result<&Val, Error> {
-            match parsed.as_slice() {
-                [v] => Ok(v),
-                vs => Err(Error::input(format!(
-                    "{} documents: {} holds one{what}",
-                    vs.len(),
-                    name(to)
-                ))),
-            }
-        };
-        let fail = |e: String| Error::input(format!("not written as {}: {e}", name(to)));
-        let text = match to {
-            Format::Csv => to_rows(one("")?)?
-                .iter()
-                .map(|row| doc::write_one(Format::Csv, row, &style).map_err(fail))
-                .collect::<Result<String, _>>()?,
-            Format::Xml => {
-                doc::write_one(Format::Xml, &to_xml(one(", one root element")?)?, &style)
-                    .map_err(fail)?
-            }
-            Format::Toml => doc::write_one(Format::Toml, one("")?, &style).map_err(fail)?,
-            Format::Yaml => parsed
-                .iter()
-                .map(|v| doc::write_one(Format::Yaml, v, &style).map_err(fail))
-                .collect::<Result<Vec<_>, _>>()?
-                .join("---\n"),
-            _ => parsed
-                .iter()
-                .map(|v| doc::write_one(Format::Json, v, &style).map_err(fail))
-                .collect::<Result<String, _>>()?,
-        };
-        Ok(Output::Text(
-            text.strip_suffix('\n').unwrap_or(&text).to_owned(),
-        ))
+        // Values nest up to 10,000 deep: read and written on a large stack.
+        crate::on_large_stack(|| {
+            let from = format(&values.text(PARAMS, "from")).unwrap_or_else(|| detect(input));
+            let to = format(&values.text(PARAMS, "to")).unwrap_or(Format::Json);
+            let indent = usize::try_from(values.int(PARAMS, "indent")).unwrap_or(2);
+            let parsed = doc::parse(from, input).map_err(|e| {
+                let error = Error::input(format!("not {}: {}", name(from), e.message));
+                match e.offset {
+                    Some(at) => error.at(Span::at(input, at.min(input.len()))),
+                    None => error,
+                }
+            })?;
+            let parsed = match from {
+                Format::Csv => vec![from_rows(parsed)],
+                Format::Xml => parsed.iter().filter_map(from_xml).collect(),
+                _ => parsed,
+            };
+            let style = Style {
+                indent: (indent > 0 || matches!(to, Format::Yaml))
+                    .then(|| " ".repeat(indent.max(1))),
+                ..Style::default()
+            };
+            let one = |what: &str| -> Result<&Val, Error> {
+                match parsed.as_slice() {
+                    [v] => Ok(v),
+                    vs => Err(Error::input(format!(
+                        "{} documents: {} holds one{what}",
+                        vs.len(),
+                        name(to)
+                    ))),
+                }
+            };
+            let fail = |e: String| Error::input(format!("not written as {}: {e}", name(to)));
+            let text = match to {
+                Format::Csv => to_rows(one("")?)?
+                    .iter()
+                    .map(|row| doc::write_one(Format::Csv, row, &style).map_err(fail))
+                    .collect::<Result<String, _>>()?,
+                Format::Xml => {
+                    doc::write_one(Format::Xml, &to_xml(one(", one root element")?)?, &style)
+                        .map_err(fail)?
+                }
+                Format::Toml => doc::write_one(Format::Toml, one("")?, &style).map_err(fail)?,
+                Format::Yaml => parsed
+                    .iter()
+                    .map(|v| doc::write_one(Format::Yaml, v, &style).map_err(fail))
+                    .collect::<Result<Vec<_>, _>>()?
+                    .join("---\n"),
+                _ => parsed
+                    .iter()
+                    .map(|v| doc::write_one(Format::Json, v, &style).map_err(fail))
+                    .collect::<Result<String, _>>()?,
+            };
+            Ok(Output::Text(
+                text.strip_suffix('\n').unwrap_or(&text).to_owned(),
+            ))
+        })
     }
 }
 

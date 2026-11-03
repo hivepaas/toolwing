@@ -129,7 +129,13 @@ fn values(input: &[u8]) -> Result<Vec<toolwing_jq::Val>, Error> {
     })
 }
 
+/// Every value of `input` written in `style`, on a large stack: values may
+/// nest 10,000 deep.
 fn write(input: &[u8], style: &Style) -> Result<Output, Error> {
+    crate::on_large_stack(|| write_values(input, style))
+}
+
+fn write_values(input: &[u8], style: &Style) -> Result<Output, Error> {
     let mut out = String::new();
     for v in values(input)? {
         out.push_str(&doc::write_one(Format::Json, &v, style).map_err(Error::input)?);
@@ -190,23 +196,27 @@ impl Tool for Validate {
     /// Fails, with where, when the input is not JSON; RFC 8259 asks for one
     /// value at least, so empty input is not.
     fn run(&self, _ctx: &Ctx, input: &[u8], _values: &Values) -> Result<Output, Error> {
-        let vals = values(input)?;
-        if vals.is_empty() {
-            return Err(Error::input("no JSON value: the input is empty"));
-        }
-        let mut kinds: Vec<&str> = Vec::new();
-        for v in &vals {
-            let kind = kind(v);
-            if !kinds.contains(&kind) {
-                kinds.push(kind);
-            }
-        }
-        Ok(Output::Fields(vec![
-            Field::new("valid", en!("Valid"), "yes"),
-            Field::new("values", en!("Values"), vals.len().to_string()),
-            Field::new("types", en!("Types"), kinds.join(", ")),
-        ]))
+        crate::on_large_stack(|| validate(input))
     }
+}
+
+fn validate(input: &[u8]) -> Result<Output, Error> {
+    let vals = values(input)?;
+    if vals.is_empty() {
+        return Err(Error::input("no JSON value: the input is empty"));
+    }
+    let mut kinds: Vec<&str> = Vec::new();
+    for v in &vals {
+        let kind = kind(v);
+        if !kinds.contains(&kind) {
+            kinds.push(kind);
+        }
+    }
+    Ok(Output::Fields(vec![
+        Field::new("valid", en!("Valid"), "yes"),
+        Field::new("values", en!("Values"), vals.len().to_string()),
+        Field::new("types", en!("Types"), kinds.join(", ")),
+    ]))
 }
 
 /// A value's type, as jq's `type` names it.

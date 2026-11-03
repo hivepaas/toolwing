@@ -185,6 +185,19 @@ pub static TOOLS: &[&dyn Tool] = &[
     &base::Convert,
 ];
 
+/// Runs `f` on a large stack (toolwing-jq's `doc::on_large_stack`): for
+/// tools that read or write nested values, 10,000 levels deep at most.
+pub(crate) fn on_large_stack<T: Send>(
+    f: impl FnOnce() -> Result<T, toolwing_core::Error> + Send,
+) -> Result<T, toolwing_core::Error> {
+    toolwing_jq::doc::on_large_stack(f).map_err(|e| {
+        toolwing_core::Error::new(
+            toolwing_core::ErrorKind::Io,
+            format!("cannot start a thread: {e}"),
+        )
+    })?
+}
+
 /// The group names, in order.
 pub fn groups() -> Vec<&'static str> {
     GROUPS.iter().map(|g| g.name).collect()

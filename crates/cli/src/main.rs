@@ -5,6 +5,40 @@ mod diffs;
 mod jq;
 mod sums;
 
+/// stdout, as a command line tool's should be: when the reader has gone
+/// (`tw … | head`), the process ends quietly with 141, as SIGPIPE would end
+/// it, which Rust's runtime ignores.
+pub struct Stdout(io::StdoutLock<'static>);
+
+pub fn stdout() -> Stdout {
+    Stdout(io::stdout().lock())
+}
+
+impl Stdout {
+    fn check<T>(r: io::Result<T>) -> io::Result<T> {
+        if r.as_ref()
+            .is_err_and(|e| e.kind() == io::ErrorKind::BrokenPipe)
+        {
+            std::process::exit(141);
+        }
+        r
+    }
+
+    pub fn is_terminal(&self) -> bool {
+        self.0.is_terminal()
+    }
+}
+
+impl Write for Stdout {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        Self::check(self.0.write(buf))
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Self::check(self.0.flush())
+    }
+}
+
 use std::fs::File;
 use std::io::{self, BufWriter, IsTerminal, Read, Write};
 use std::process::ExitCode;
@@ -150,7 +184,7 @@ fn run_drop_in(name: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Failur
                 .map_err(|e| fail(Error::new(ErrorKind::Io, format!("{path}: {e}"))))?,
         ),
     };
-    let mut out = BufWriter::new(io::stdout().lock());
+    let mut out = BufWriter::new(stdout());
     let ran = tool.run_stream(&Ctx::new(), &mut input, &mut out, &values);
     // What was decoded before an error is written, as the reference does.
     let flushed = out.flush().map_err(Error::from);
@@ -167,7 +201,7 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
     let values = commands::values(m, tool.params()).map_err(fail)?;
     let input = read_input(tool.meta().input, m).map_err(fail)?;
     let output = tool.run(&Ctx::new(), &input, &values).map_err(fail)?;
-    let mut out = io::stdout().lock();
+    let mut out = stdout();
     let newline = !m.get_flag("no_newline");
     let written = if m.get_flag("json") {
         let json = match &output {
@@ -266,7 +300,7 @@ fn read_input(kind: InputKind, m: &ArgMatches) -> Result<Vec<u8>, Error> {
 
 fn list(json: bool) -> Result<(), Failure> {
     let rows: Vec<_> = TOOLS.iter().map(|t| t.meta()).collect();
-    let mut out = io::stdout().lock();
+    let mut out = stdout();
     let written = if json {
         let items: Vec<serde_json::Value> = rows
             .iter()

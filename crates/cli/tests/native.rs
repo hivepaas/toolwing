@@ -383,3 +383,29 @@ fn list_names_every_tool() {
         assert!(run.stdout.contains(&format!("\"id\":\"{id}\"")), "{id}");
     }
 }
+
+/// `tw … | head`: when the reader goes, tw ends quietly with 141, as a tool
+/// SIGPIPE ends does, not with an error about a broken pipe.
+#[test]
+fn a_reader_that_goes_ends_tw_quietly() {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_tw"))
+        .args(["uuid", "generate", "-n", "10000"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap_or_else(|e| panic!("tw: {e}"));
+    let mut first = [0; 36];
+    if let Some(out) = child.stdout.as_mut() {
+        let _ = std::io::Read::read_exact(out, &mut first);
+    }
+    drop(child.stdout.take());
+    let out = child
+        .wait_with_output()
+        .unwrap_or_else(|e| panic!("tw: {e}"));
+    assert!(
+        matches!(out.status.code(), Some(141) | Some(0)),
+        "{:?}",
+        out.status
+    );
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+}
