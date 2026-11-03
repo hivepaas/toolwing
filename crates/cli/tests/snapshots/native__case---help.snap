@@ -1,0 +1,25 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+One name in every case code uses: camelCase, snake_case, kebab-case…
+
+Usage: tw case [OPTIONS] [VALUE]
+
+Arguments:
+  [VALUE]  The input itself; stdin when left out, or -
+
+Options:
+      --camel         camelCase
+      --pascal        PascalCase
+      --snake         snake_case
+      --constant      CONSTANT_CASE
+      --kebab         kebab-case
+      --train         Train-Case
+      --dot           dot.case
+      --title         Title Case
+      --sentence      Sentence case
+  -i, --input <FILE>  Read the input from FILE
+      --json          Write the result as JSON
+      --no-newline    Do not end text output with a newline
+  -h, --help          Print help

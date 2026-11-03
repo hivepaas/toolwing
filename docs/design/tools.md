@@ -28,15 +28,15 @@ parser.
 | `b3sum` | BLAKE3 | b3sum 1.8 | drop-in | `blake3`; the app shows BLAKE3 already, the command waits for a reference image to record its cases from (`debian:13` has no b3sum) |
 | `hmac` | HMAC-SHA1/256/512 of input with a key | `openssl dgst -hmac` | output | RustCrypto `hmac` |
 | `jwt` | Decode, verify (HS/RS/ES/PS/EdDSA, JWKS file), encode | RFC 7519, 7515 | standard | `jsonwebtoken` |
-| `time` | Epoch ⇄ RFC 3339/ISO 8601/RFC 2822, time zones, relative ("in 3 days"), durations | `date -d @N`, IANA tz | output | `jiff` |
+| `time` | Epoch (unit guessed from its size) ⇄ RFC 3339/ISO 8601/RFC 9557/RFC 2822, time zones, relative ("in 3 days", "2 hours ago"), `--format` strftime | GNU date 9.7 (`-R`, `%s`, `%:z`; ISO in UTC ends in `Z` where `date -Iseconds` writes `+00:00`) | output | `jiff`, its zone database bundled so containers with no tzdata know every zone |
 | `uuid` | Generate v4/v7 (v1, v3, v5 too), inspect version and time | RFC 9562, `uuidgen` | standard | `uuid` |
 | `ulid` | Generate, inspect, convert to UUID | ULID spec | standard | `ulid` |
 | `cron` | Explain an expression, list the next runs | crontab(5), Quartz and Kubernetes forms | standard | `croner` |
 | `regex` | Test, list matches and groups, replace | Rust `regex`; PCRE-style with `--pcre` | standard | `regex`, `fancy-regex` |
 | `diff` | Compare two texts or files (unified), JSON-aware with `--json-values` | `diff -u` | drop-in | `similar` |
-| `case` | camel, snake, kebab, pascal, constant, title, sentence | — | standard | `heck` |
+| `case` | camel, pascal, snake, constant, kebab, train, dot, title, sentence; every one at once by default | — | standard | `heck`'s word boundaries |
 | `random` | Passwords, tokens, bytes as hex or base64 | `openssl rand -hex/-base64` | output | `rand` with the OS generator |
-| `base` | Number bases 2–36, with grouping | — | standard | std |
+| `base` | Number bases 2–36, `0x`/`0o`/`0b` prefixes, grouping, up to 128 bits, signed and unsigned at a width (`--bits`) | — | standard | std |
 
 ## 1.x: next, in this order
 

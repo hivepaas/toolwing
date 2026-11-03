@@ -39,6 +39,7 @@ static PARAMS: &[Param] = &[
                 ),
             ],
             flags: true,
+            unset: None,
         },
         default: Value::Text(String::new()),
         cli: Cli {

@@ -4,15 +4,16 @@
 use std::time::Duration;
 
 use gpui::{
-    AppContext as _, ClipboardItem, Context, Entity, FontWeight, IntoElement, ParentElement,
-    Render, SharedString, Styled, Subscription, Window, div, prelude::FluentBuilder as _,
+    AppContext as _, ClipboardItem, Context, Entity, FontWeight, InteractiveElement as _,
+    IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement as _, Styled,
+    Subscription, Window, div, prelude::FluentBuilder as _,
 };
 use gpui_component::button::{Button, ButtonVariants as _};
 use gpui_component::checkbox::Checkbox;
 use gpui_component::input::{Input, InputEvent, InputState, Textarea, TextareaState};
 use gpui_component::tab::{Tab, TabBar};
 use gpui_component::{ActiveTheme as _, h_flex, v_flex};
-use toolwing_core::{Ctx, Error, Group, InputKind, Output, ParamKind, Tool, Value, Values};
+use toolwing_core::{Ctx, Error, Field, Group, InputKind, Output, ParamKind, Tool, Value, Values};
 use toolwing_tools::{command, group};
 
 /// Typing pauses this long before a run (app.md).
@@ -31,6 +32,8 @@ pub struct ToolPage {
     /// Text fields of Int and Text params, by (action, key).
     fields: Vec<(usize, &'static str, Entity<InputState>)>,
     error: Option<Error>,
+    /// The last result's named values, shown as rows instead of the editor.
+    result_fields: Option<Vec<Field>>,
     /// The output shown is from an earlier input: dimmed while a run is due.
     stale: bool,
     generation: u64,
@@ -87,6 +90,7 @@ impl ToolPage {
             output,
             fields,
             error: None,
+            result_fields: None,
             stale: false,
             generation: 0,
             ctx: Ctx::new(),
@@ -174,11 +178,17 @@ impl ToolPage {
         self.error.as_ref()
     }
 
+    /// The last result's named values, when it had them.
+    pub fn fields(&self) -> Option<&[Field]> {
+        self.result_fields.as_deref()
+    }
+
     pub fn select_action(&mut self, action: usize, window: &mut Window, cx: &mut Context<Self>) {
         if action != self.action {
             self.action = action;
             // The other action's result would read as this one's.
             self.error = None;
+            self.result_fields = None;
             self.output
                 .update(cx, |o, cx| o.set_value(String::new(), window, cx));
             self.schedule(window, cx);
@@ -218,6 +228,10 @@ impl ToolPage {
                 match result {
                     Ok(output) => {
                         this.error = None;
+                        this.result_fields = match &output {
+                            Output::Fields(f) => Some(f.clone()),
+                            _ => None,
+                        };
                         let text = shown(&output);
                         this.output
                             .update(cx, |o, cx| o.set_value(text, window, cx));
@@ -249,9 +263,18 @@ impl ToolPage {
                         this.set_value(key, Value::Bool(*checked), window, cx)
                     }))
                     .into_any_element(),
-                ParamKind::Choice { options, .. } => {
+                ParamKind::Choice { options, unset, .. } => {
+                    // What leaving it out means comes first, as a choice of its own.
+                    let choices: Vec<&'static str> = unset
+                        .into_iter()
+                        .chain(options.iter().map(|(o, _)| *o))
+                        .collect();
                     let current = values.text(self.tool().params(), key);
-                    let selected = options.iter().position(|(o, _)| *o == current).unwrap_or(0);
+                    let offset = usize::from(unset.is_some());
+                    let selected = options
+                        .iter()
+                        .position(|(o, _)| *o == current)
+                        .map_or(0, |i| i + offset);
                     h_flex()
                         .gap_2()
                         .child(label(p.label, cx))
@@ -259,11 +282,15 @@ impl ToolPage {
                             TabBar::new(SharedString::from(format!("{action}-{key}")))
                                 .segmented()
                                 .selected_index(selected)
-                                .children(options.iter().map(|(o, _)| Tab::new().label(*o)))
+                                .children(choices.into_iter().map(|c| Tab::new().label(c)))
                                 .on_click(cx.listener(move |this, ix: &usize, window, cx| {
-                                    if let Some((o, _)) = options.get(*ix) {
-                                        this.set_value(key, Value::Text((*o).into()), window, cx)
-                                    }
+                                    let value = match ix.checked_sub(offset) {
+                                        None => String::new(),
+                                        Some(i) => options
+                                            .get(i)
+                                            .map_or_else(String::new, |(o, _)| (*o).to_owned()),
+                                    };
+                                    this.set_value(key, Value::Text(value), window, cx)
                                 })),
                         )
                         .into_any_element()
@@ -278,7 +305,13 @@ impl ToolPage {
                         .gap_2()
                         .child(label(p.label, cx))
                         .when_some(field, |row, state| {
-                            row.child(div().w_24().child(Input::new(&state)))
+                            let text = matches!(p.kind, ParamKind::Text);
+                            row.child(
+                                div()
+                                    .when(text, |d| d.w_56())
+                                    .when(!text, |d| d.w_20())
+                                    .child(Input::new(&state)),
+                            )
                         })
                         .into_any_element()
                 }
@@ -306,6 +339,11 @@ fn shown(output: &Output) -> String {
     let text = match output {
         Output::Text(s) => s.clone(),
         Output::Lines(lines) => lines.join("\n"),
+        Output::Fields(fields) => fields
+            .iter()
+            .map(|f| format!("{}: {}", f.label, f.value))
+            .collect::<Vec<_>>()
+            .join("\n"),
         Output::Bytes(b) => match std::str::from_utf8(b) {
             Ok(s) => s.to_owned(),
             Err(_) => format!("{} bytes of binary data", b.len()),
@@ -320,6 +358,48 @@ fn shown(output: &Output) -> String {
     } else {
         text
     }
+}
+
+/// Named values as rows, each with its own copy button (app.md).
+fn field_rows(fields: &[Field], cx: &Context<ToolPage>) -> impl IntoElement {
+    let border = cx.theme().border;
+    let muted = cx.theme().muted_foreground;
+    v_flex()
+        .rounded_lg()
+        .border_1()
+        .border_color(border)
+        .children(fields.iter().enumerate().map(|(i, f)| {
+            let copy = f.value.clone();
+            h_flex()
+                .gap_3()
+                .px_4()
+                .py_2()
+                .when(i > 0, |row| row.border_t_1().border_color(border))
+                .child(
+                    div()
+                        .w_40()
+                        .flex_none()
+                        .text_sm()
+                        .text_color(muted)
+                        .child(f.label.clone()),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .font_family(crate::MONO_FONT)
+                        .text_sm()
+                        .child(f.value.clone()),
+                )
+                .child(
+                    Button::new(("copy-field", i))
+                        .ghost()
+                        .label("Copy")
+                        .on_click(move |_, _, cx| {
+                            cx.write_to_clipboard(ClipboardItem::new_string(copy.clone()))
+                        }),
+                )
+        }))
 }
 
 /// "decode" → "Decode": the tab under the group's title says only the action.
@@ -415,7 +495,18 @@ impl Render for ToolPage {
                                     .flex_1()
                                     .min_h_0()
                                     .when(self.stale || self.error.is_some(), |d| d.opacity(0.5))
-                                    .child(Textarea::new(&self.output).h_full().readonly(true)),
+                                    .map(|d| match &self.result_fields {
+                                        Some(fields) => d.child(
+                                            div()
+                                                .id("fields")
+                                                .size_full()
+                                                .overflow_y_scroll()
+                                                .child(field_rows(fields, cx)),
+                                        ),
+                                        None => d.child(
+                                            Textarea::new(&self.output).h_full().readonly(true),
+                                        ),
+                                    }),
                             )
                             .when_some(error, |col, message| {
                                 col.child(
@@ -431,6 +522,7 @@ impl Render for ToolPage {
                     .child(
                         div()
                             .flex_1()
+                            .min_w_0()
                             .text_sm()
                             .font_family(crate::MONO_FONT)
                             .text_color(cx.theme().muted_foreground)

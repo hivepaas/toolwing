@@ -19,6 +19,11 @@ sha1 = "0.11"
 sha2 = "0.11"
 blake2b_simd = "1.0"
 blake3 = "1.8"
+# Case conversion: the word boundaries cargo and clap use.
+heck = "0.5"
+# Dates, times and time zones; the zone database is bundled, so `tw time`
+# knows every zone in a container with no tzdata.
+jiff = { version = "0.2", features = ["tzdb-bundle-always"] }
 
 [lints]
 workspace = true

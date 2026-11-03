@@ -1,0 +1,22 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+A number in binary, octal, decimal, hex or any base from 2 to 36
+
+Usage: tw base [OPTIONS] [VALUE]
+
+Arguments:
+  [VALUE]  The input itself; stdin when left out, or -
+
+Options:
+      --from <N>      The input's base, 2 to 36; 0 reads it from a 0x, 0o or 0b prefix, else decimal
+      --to <N>        Write the number in this base only, 2 to 36; 0 for the usual bases
+  -g, --group <N>     Put a space between groups of this many digits, from the right; 0 for none
+  -u, --upper         Write digits above 9 in uppercase
+      --bits <BITS>   Also read the number as a signed and unsigned integer of this many bits
+                      [possible values: 8, 16, 32, 64, 128]
+  -i, --input <FILE>  Read the input from FILE
+      --json          Write the result as JSON
+      --no-newline    Do not end text output with a newline
+  -h, --help          Print help

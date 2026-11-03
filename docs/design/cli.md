@@ -11,7 +11,7 @@ curl -s api.example.com/users | tw jq -r '.[].email'
 tw base64 -d < blob.b64 > blob.bin
 tw sha256sum -c SHA256SUMS
 tw jwt decode "$TOKEN"
-tw time 1762156800 --tz Asia/Ho_Chi_Minh
+tw time 1793692800 --tz Asia/Ho_Chi_Minh
 tw uuid --v7 -n 5
 kubectl get cm app -o yaml | tw convert yaml json | tw jq '.data'
 ```
@@ -31,6 +31,10 @@ Two kinds of command, and every tool says which it is (tools.md):
 
 - The positional argument is the value itself: `tw url encode 'a b&c'`.
 - With no positional argument, the input is stdin. `-` says so explicitly.
+  When stdin is a terminal, nothing is waited for: the input is empty, which
+  `tw time` reads as now.
+- A positional argument that looks like a negative number is the value, not a
+  flag: `tw base -1 --bits 8`, `tw time -86400`.
 - `-i FILE` / `--input FILE` reads a file. Input is bytes; tools that need text
   require UTF-8 and say where the first invalid byte is.
 - A trailing newline on stdin is dropped for single-value tools (`printf` vs
