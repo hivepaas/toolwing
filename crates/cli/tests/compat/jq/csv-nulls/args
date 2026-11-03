@@ -1,0 +1,2 @@
+-r
+.[] | [.id, .last_login] | @csv

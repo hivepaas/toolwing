@@ -1,0 +1,2 @@
+-r
+.[] | [.number, .state, .title, ([.labels[].name] | join(";"))] | @csv

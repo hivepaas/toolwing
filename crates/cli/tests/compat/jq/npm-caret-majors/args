@@ -1,0 +1,2 @@
+-c
+.dependencies | map_values(ltrimstr("^") | ltrimstr("~") | split(".")[0] | tonumber)

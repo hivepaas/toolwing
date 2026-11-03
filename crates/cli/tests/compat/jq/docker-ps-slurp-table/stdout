@@ -1,0 +1,3 @@
+f00dcafe1234	postgres:16	running
+beef00112233	ghcr.io/acme/shop:2.1	running
+dead44556677	redis:7	exited

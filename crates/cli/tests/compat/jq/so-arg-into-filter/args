@@ -1,0 +1,5 @@
+-c
+--arg
+sku
+x1
+[.items[] | select(.sku == $sku)] | length

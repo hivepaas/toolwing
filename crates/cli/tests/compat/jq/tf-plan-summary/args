@@ -1,0 +1,2 @@
+-c
+[.resource_changes[].change.actions | join("/")] | group_by(.) | map({(.[0]): length}) | add

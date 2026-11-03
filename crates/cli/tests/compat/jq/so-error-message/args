@@ -1,0 +1,2 @@
+-c
+[.[] | try (if . < 0 then error("negative: \(.)") else . end) catch .]

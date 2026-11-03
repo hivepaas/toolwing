@@ -1,0 +1,2 @@
+-r
+.Reservations[].Instances[] | select(.Tags == null or (.Tags | map(.Key) | index("Name") | not)) | .InstanceId

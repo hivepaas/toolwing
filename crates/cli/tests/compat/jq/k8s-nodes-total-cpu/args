@@ -1,0 +1,2 @@
+-c
+[.items[].status.allocatable.cpu | if endswith("m") then (rtrimstr("m") | tonumber / 1000) else tonumber end] | add

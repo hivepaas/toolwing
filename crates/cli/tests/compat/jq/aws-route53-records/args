@@ -1,0 +1,2 @@
+-r
+.ResourceRecordSets[] | "\(.Name | rtrimstr("."))\t\(.Type)\t\(.ResourceRecords // [] | map(.Value) | join(" "))\t\(.AliasTarget.DNSName // "")"

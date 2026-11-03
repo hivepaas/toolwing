@@ -1,0 +1,4 @@
+arn:aws:s3:::acme-artifacts/*
+*
+arn:aws:ecr:eu-west-1:123456789012:repository/api
+arn:aws:ecr:eu-west-1:123456789012:repository/web

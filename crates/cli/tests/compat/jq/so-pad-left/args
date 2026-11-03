@@ -1,0 +1,2 @@
+-r
+.[] | tostring | (" " * (5 - length)) + .

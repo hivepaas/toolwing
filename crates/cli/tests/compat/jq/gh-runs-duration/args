@@ -1,0 +1,2 @@
+-c
+.workflow_runs | map(select(.status == "completed") | {id, seconds: ((.updated_at | fromdate) - (.run_started_at | fromdate))})

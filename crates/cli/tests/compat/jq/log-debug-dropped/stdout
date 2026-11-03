@@ -1,0 +1,6 @@
+{"ts":"2026-11-03T01:00:00.120Z","level":"info","msg":"server started","port":8080}
+{"ts":"2026-11-03T01:00:05.002Z","level":"info","msg":"request","method":"GET","path":"/api/items","status":200,"ms":12,"user":"u1"}
+{"ts":"2026-11-03T01:00:05.900Z","level":"warn","msg":"slow request","method":"POST","path":"/api/orders","status":201,"ms":1450,"user":"u2"}
+{"ts":"2026-11-03T01:00:06.311Z","level":"error","msg":"db timeout","method":"GET","path":"/api/orders","status":500,"ms":5003,"err":{"code":"ETIMEDOUT"}}
+{"ts":"2026-11-03T01:00:07.000Z","level":"info","msg":"request","method":"GET","path":"/api/items","status":200,"ms":9,"user":"u1"}
+{"ts":"2026-11-03T01:00:08.500Z","level":"error","msg":"db timeout","method":"GET","path":"/api/items","status":503,"ms":5001}

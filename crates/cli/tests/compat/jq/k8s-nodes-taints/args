@@ -1,0 +1,2 @@
+-r
+.items[] | select(.spec.taints) | .metadata.name + ": " + (.spec.taints | map("\(.key)=\(.value):\(.effect)") | join(", "))

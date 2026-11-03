@@ -1,0 +1,2 @@
+-r
+.Credentials | "export AWS_ACCESS_KEY_ID=\(.AccessKeyId)\nexport AWS_SECRET_ACCESS_KEY=\(.SecretAccessKey | @sh)\nexport AWS_SESSION_TOKEN=\(.SessionToken | @sh)"

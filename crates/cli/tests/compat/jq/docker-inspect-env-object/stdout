@@ -1,0 +1,1 @@
+{"POSTGRES_USER":"app","POSTGRES_PASSWORD":"s3cret","PGDATA":"/var/lib/postgresql/data","TZ":"Europe/Paris=x"}

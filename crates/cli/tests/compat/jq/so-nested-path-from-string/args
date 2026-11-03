@@ -1,0 +1,5 @@
+-c
+--arg
+p
+meta.owner.name
+getpath($p | split("."))

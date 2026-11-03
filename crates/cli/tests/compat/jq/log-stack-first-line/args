@@ -1,0 +1,2 @@
+-r
+select(.err.stack) | .err.stack | split("\n")[0]

@@ -1,0 +1,2 @@
+-r
+.items[] | .metadata.name as $s | .spec.ports[] | "\($s):\(.port)/\(.protocol)"

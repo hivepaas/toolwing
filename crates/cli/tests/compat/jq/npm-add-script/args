@@ -1,0 +1,2 @@
+-c
+.scripts += {typecheck: "tsc --noEmit"} | .scripts | keys

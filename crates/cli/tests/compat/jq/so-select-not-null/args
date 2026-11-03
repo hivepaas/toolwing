@@ -1,0 +1,2 @@
+-c
+[.meta.owner | to_entries[] | select(.value != null) | .key]

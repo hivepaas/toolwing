@@ -1,0 +1,4 @@
+-R
+-s
+-c
+split("\n") | map(select(length > 0) | split(",")) | .[0] as $h | .[1:] | map([$h, .] | transpose | map({(.[0]): .[1]}) | add)

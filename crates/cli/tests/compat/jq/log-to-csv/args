@@ -1,0 +1,2 @@
+-r
+select(.status) | [.ts, .method, .path, .status, .ms] | @csv

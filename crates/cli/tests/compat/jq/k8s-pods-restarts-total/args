@@ -1,0 +1,2 @@
+-c
+[.items[] | {name: .metadata.name, restarts: (.status.containerStatuses | map(.restartCount) | add)}] | sort_by(-.restarts) | .[0:2]

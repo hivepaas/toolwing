@@ -1,0 +1,2 @@
+-c
+{Changes: [.ResourceRecordSets[] | select(.Type == "CNAME") | {Action: "DELETE", ResourceRecordSet: .}]}

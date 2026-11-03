@@ -1,0 +1,2 @@
+-r
+select(.ms? > 1000) | "\(.method) \(.path) \(.ms)ms"

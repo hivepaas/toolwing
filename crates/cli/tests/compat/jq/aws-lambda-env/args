@@ -1,0 +1,2 @@
+-r
+.Functions[] | select(.Environment) | .FunctionName as $f | .Environment.Variables | to_entries[] | "\($f): \(.key)=\(.value)"

@@ -1,0 +1,2 @@
+-r
+.services | to_entries[] | "\(.key)=\(.value.image)"

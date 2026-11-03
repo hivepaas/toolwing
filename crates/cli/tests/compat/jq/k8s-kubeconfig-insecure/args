@@ -1,0 +1,2 @@
+-r
+.clusters[] | select(.cluster["insecure-skip-tls-verify"]) | .name

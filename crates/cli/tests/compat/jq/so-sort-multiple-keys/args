@@ -1,0 +1,2 @@
+-c
+sort_by(.age, .name) | map(.name)

@@ -1,0 +1,4 @@
+"id","name","email","active","last_login"
+1,"Ana Lima","ana@acme.test",true,"2026-11-02T08:00:00Z"
+2,"Bao, Tran","bao@acme.test",false,
+3,"Chloé ""CJ"" Jones","cj@acme.test",true,"2026-10-30T19:45:00Z"

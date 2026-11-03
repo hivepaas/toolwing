@@ -1,0 +1,2 @@
+-r
+.items[] | select(.status.phase == "Succeeded") | "kubectl delete pod -n \(.metadata.namespace) \(.metadata.name)"

@@ -1,0 +1,2 @@
+-r
+.Messages[] | select(.Attributes.ApproximateReceiveCount | tonumber > 3) | .MessageId

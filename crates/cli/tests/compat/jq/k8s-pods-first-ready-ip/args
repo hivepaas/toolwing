@@ -1,0 +1,2 @@
+-r
+first(.items[] | select(.status.phase == "Running") | .status.podIP)

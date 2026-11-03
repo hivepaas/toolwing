@@ -1,0 +1,2 @@
+-r
+.packages | keys[] | select(test("node_modules/.*/node_modules/"))

@@ -1,0 +1,3 @@
+aws_instance.web
+aws_s3_bucket.assets
+module.vpc.aws_vpc.this

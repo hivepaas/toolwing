@@ -1,0 +1,2 @@
+-r
+.Stacks[] | select(.StackName == "network") | .Outputs[] | select(.OutputKey == "SubnetIds") | .OutputValue | split(",")[]

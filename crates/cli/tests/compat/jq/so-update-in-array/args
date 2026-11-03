@@ -1,0 +1,2 @@
+-c
+(.items[] | select(.sku == "y2") | .qty) |= . + 10 | .items | map(.qty)

@@ -1,0 +1,2 @@
+-c
+[leaf_paths as $p | [($p | map(tostring) | join("/")), getpath($p)]]

@@ -1,0 +1,2 @@
+-r
+.items | sort_by(.metadata.creationTimestamp) | reverse | .[:3][] | .metadata.name

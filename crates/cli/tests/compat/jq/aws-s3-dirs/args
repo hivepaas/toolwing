@@ -1,0 +1,2 @@
+-c
+[.Contents[].Key | split("/") | .[:-1] | join("/") | select(. != "")] | unique

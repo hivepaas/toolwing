@@ -1,0 +1,2 @@
+-c
+[.[] | {number, failing: [.statusCheckRollup[] | select(.conclusion != "SUCCESS") | .name]} | select(.failing | length > 0)]

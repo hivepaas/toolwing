@@ -1,0 +1,1 @@
+kubectl delete pod -n batch migrate-28431

@@ -1,0 +1,2 @@
+-c
+[.keys, .values] | transpose | map({(.[0]): .[1]}) | add

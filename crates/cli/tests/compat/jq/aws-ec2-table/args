@@ -1,0 +1,2 @@
+-r
+.Reservations[].Instances[] | [.InstanceId, .InstanceType, .State.Name, (.Tags // [] | from_entries | .Name // "")] | @tsv

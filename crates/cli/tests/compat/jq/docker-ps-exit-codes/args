@@ -1,0 +1,2 @@
+-r
+select(.State == "exited") | .Status | capture("Exited \\((?<code>[0-9]+)\\)").code

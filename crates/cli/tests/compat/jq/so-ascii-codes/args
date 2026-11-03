@@ -1,0 +1,2 @@
+-c
+explode | map(. + 1) | implode

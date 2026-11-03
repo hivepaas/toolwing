@@ -1,0 +1,2 @@
+-c
+.items | group_by(.sku) | map({sku: .[0].sku, qty: (map(.qty) | add)})

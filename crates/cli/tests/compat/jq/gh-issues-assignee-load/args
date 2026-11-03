@@ -1,0 +1,2 @@
+-c
+reduce (.[] | select(.state == "open") | .assignees[].login) as $a ({}; .[$a] += 1)

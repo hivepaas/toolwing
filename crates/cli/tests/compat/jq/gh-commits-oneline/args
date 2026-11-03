@@ -1,0 +1,2 @@
+-r
+.[] | "\(.sha[:7]) \(.commit.message | split("\n")[0])"

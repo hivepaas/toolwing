@@ -1,0 +1,2 @@
+-c
+.Datapoints | map(.Average) | add / length | . * 100 | round / 100

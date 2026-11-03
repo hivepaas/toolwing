@@ -1,0 +1,2 @@
+-c
+reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end)

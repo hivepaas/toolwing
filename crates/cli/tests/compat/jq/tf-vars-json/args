@@ -1,0 +1,9 @@
+-n
+-c
+--arg
+env
+prod
+--argjson
+count
+3
+{env: $env, instance_count: $count, tags: {managed_by: "terraform", env: $env}}

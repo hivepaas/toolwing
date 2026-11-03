@@ -1,0 +1,2 @@
+-c
+reduce .Reservations[].Instances[] as $i ({}; .[$i.Placement.AvailabilityZone] += [$i.InstanceId])

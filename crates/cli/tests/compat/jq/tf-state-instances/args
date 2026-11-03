@@ -1,0 +1,2 @@
+-c
+[.resources[] | select(.type == "aws_instance") | .instances[] | {key: .index_key, id: .attributes.id}]

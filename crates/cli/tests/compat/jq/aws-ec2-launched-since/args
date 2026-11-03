@@ -1,0 +1,2 @@
+-r
+.Reservations[].Instances[] | select(.LaunchTime | sub("\\+00:00$"; "Z") | fromdate > 1761955200) | .InstanceId

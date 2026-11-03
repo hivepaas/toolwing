@@ -1,0 +1,2 @@
+-c
+[.items[].spec.containers[] | select(.resources.limits.memory and .resources.requests.memory) | {name, ratio: ((.resources.limits.memory | rtrimstr("Mi") | tonumber) / (.resources.requests.memory | rtrimstr("Mi") | tonumber))}]

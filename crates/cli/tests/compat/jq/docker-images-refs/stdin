@@ -1,0 +1,4 @@
+{"Repository": "postgres", "Tag": "16", "ID": "sha256:aaa", "Size": "432MB", "CreatedSince": "3 weeks ago"}
+{"Repository": "ghcr.io/acme/shop", "Tag": "2.1", "ID": "sha256:bbb", "Size": "98.5MB", "CreatedSince": "2 days ago"}
+{"Repository": "<none>", "Tag": "<none>", "ID": "sha256:ccc", "Size": "1.2GB", "CreatedSince": "2 months ago"}
+{"Repository": "redis", "Tag": "7", "ID": "sha256:ddd", "Size": "117MB", "CreatedSince": "5 weeks ago"}

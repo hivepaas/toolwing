@@ -1,0 +1,2 @@
+-r
+.items[] | [.metadata.name, .status.capacity.cpu, (.status.capacity.memory | rtrimstr("Ki") | tonumber / 1048576 | floor | tostring + "Gi")] | @tsv

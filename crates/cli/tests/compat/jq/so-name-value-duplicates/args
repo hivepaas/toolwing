@@ -1,0 +1,2 @@
+-c
+reduce .[] as $e ({}; .[$e.name] += [$e.value])

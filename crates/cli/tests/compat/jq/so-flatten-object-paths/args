@@ -1,0 +1,2 @@
+-c
+[paths(scalars) as $p | {key: ($p | map(tostring) | join(".")), value: getpath($p)}] | from_entries

@@ -1,0 +1,1 @@
+["ecr:*","s3:GetObject","s3:PutObject"]

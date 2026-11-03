@@ -1,0 +1,1 @@
+[{"name":"api","image":"<redacted>","resources":{"limits":{"memory":"1Gi"}}},{"name":"envoy","image":"<redacted>"}]

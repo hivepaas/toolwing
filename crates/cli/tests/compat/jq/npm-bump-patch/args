@@ -1,0 +1,2 @@
+-r
+.version | split(".") | map(tonumber) | .[2] += 1 | map(tostring) | join(".")

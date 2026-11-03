@@ -1,0 +1,2 @@
+-c
+.payload | fromjson | .items[0]

@@ -1,0 +1,2 @@
+-r
+.[] | select(.parents | length > 1) | .sha[:7]

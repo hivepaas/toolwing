@@ -1,0 +1,1 @@
+{"ReplicaSet":["web-7d9f-abc","web-7d9f-def","api-55c1-x9"],"StatefulSet":["worker-0"],"Job":["migrate-28431"],"none":["debug-shell"]}

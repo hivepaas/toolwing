@@ -1,0 +1,2 @@
+-c
+{Entries: [.Messages[] | {Id: .MessageId, ReceiptHandle}]}

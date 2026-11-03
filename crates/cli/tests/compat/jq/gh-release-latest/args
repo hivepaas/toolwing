@@ -1,0 +1,2 @@
+-r
+map(select(.prerelease | not)) | sort_by(.published_at) | last | .tag_name

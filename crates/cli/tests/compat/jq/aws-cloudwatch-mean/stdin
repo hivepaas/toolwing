@@ -1,0 +1,1 @@
+{"Label": "CPUUtilization", "Datapoints": [{"Timestamp": "2026-11-03T00:10:00Z", "Average": 41.2, "Maximum": 88.0, "Unit": "Percent"}, {"Timestamp": "2026-11-03T00:00:00Z", "Average": 12.5, "Maximum": 30.1, "Unit": "Percent"}, {"Timestamp": "2026-11-03T00:05:00Z", "Average": 63.75, "Maximum": 97.3, "Unit": "Percent"}]}

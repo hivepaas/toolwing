@@ -1,0 +1,5 @@
+-n
+-c
+input as $a | input as $b | $a + $b
+a.json
+b.json

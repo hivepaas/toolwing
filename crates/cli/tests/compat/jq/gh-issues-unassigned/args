@@ -1,0 +1,2 @@
+-r
+.[] | select(.state == "open" and (.assignees | length) == 0) | .title

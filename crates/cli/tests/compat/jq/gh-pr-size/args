@@ -1,0 +1,2 @@
+-c
+map({number, size: (.additions + .deletions), label: (if .additions + .deletions > 1000 then "XL" elif .additions + .deletions > 100 then "M" else "S" end)})

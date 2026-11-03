@@ -1,0 +1,2 @@
+-c
+.a as $a | .b | map(select(. as $x | $a | index($x)))

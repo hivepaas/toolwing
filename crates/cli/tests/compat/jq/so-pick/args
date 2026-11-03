@@ -1,0 +1,2 @@
+-c
+pick(.meta.owner.name, .items[0].sku)

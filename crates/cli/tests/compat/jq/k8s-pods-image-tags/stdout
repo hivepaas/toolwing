@@ -1,0 +1,1 @@
+[{"repo":"busybox","tag":"1.36"},{"repo":"envoyproxy/envoy","tag":"v1.31.0"},{"repo":"ghcr.io/acme/api","tag":"2.4.1"},{"repo":"ghcr.io/acme/worker","tag":"1.9.0"},{"repo":"nginx","tag":"1.27"}]

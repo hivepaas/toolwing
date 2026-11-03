@@ -1,0 +1,4 @@
+50,"open","Crash on empty input","bug;p1"
+51,"open","Docs: explain --json","docs"
+52,"closed","Fix crash on empty input","bug"
+53,"open","Support Windows paths","enhancement;p2"

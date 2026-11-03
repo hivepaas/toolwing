@@ -1,0 +1,2 @@
+-r
+.resources[] | select(.mode == "managed") | .instances[] | select(.attributes | has("tags") and .tags == null) | .attributes.id

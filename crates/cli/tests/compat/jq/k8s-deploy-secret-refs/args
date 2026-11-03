@@ -1,0 +1,2 @@
+-c
+[.items[].spec.template.spec.containers[].env[]? | select(.valueFrom.secretKeyRef) | .valueFrom.secretKeyRef]

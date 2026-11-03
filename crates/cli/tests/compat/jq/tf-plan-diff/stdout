@@ -1,0 +1,1 @@
+{"address":"module.vpc.aws_vpc.this","before":{"tags":{}},"after":{"tags":{"env":"prod"}}}

@@ -1,0 +1,5 @@
+web:80/TCP
+web:443/TCP
+api:9000/TCP
+dns:53/UDP
+dns:53/TCP

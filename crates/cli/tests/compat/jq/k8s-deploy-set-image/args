@@ -1,0 +1,2 @@
+-c
+.items[1] | .spec.template.spec.containers |= map(if .name == "api" then .image = "ghcr.io/acme/api:2.4.2" else . end) | .spec.template.spec.containers

@@ -1,0 +1,2 @@
+-r
+.PolicyVersion.Document.Statement[] | .Resource | arrays[], strings

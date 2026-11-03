@@ -1,0 +1,2 @@
+-c
+{apiVersion: "v1", kind: "Secret", metadata: {name: "new"}, data: ({user: "admin", pass: "p@ss"} | map_values(@base64))}

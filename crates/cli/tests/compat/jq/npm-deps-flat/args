@@ -1,0 +1,2 @@
+-r
+(.dependencies + .devDependencies) | to_entries[] | "\(.key)@\(.value)"

@@ -1,0 +1,5 @@
+-n
+-c
+reduce inputs as $o ({}; . * $o)
+a.json
+b.json

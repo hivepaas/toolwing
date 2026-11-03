@@ -1,0 +1,2 @@
+-r
+.items[] | select(.status.conditions[] | .type == "Ready" and .status != "True") | .metadata.name

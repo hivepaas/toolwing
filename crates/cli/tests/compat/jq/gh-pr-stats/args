@@ -1,0 +1,2 @@
+-c
+{open: length, drafts: map(select(.isDraft)) | length, lines: (map(.additions + .deletions) | add)}

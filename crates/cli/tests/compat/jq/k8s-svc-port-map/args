@@ -1,0 +1,2 @@
+-c
+[.items[] | {(.metadata.name): (.spec.ports | map({(.name // (.port | tostring)): .port}) | add)}] | add

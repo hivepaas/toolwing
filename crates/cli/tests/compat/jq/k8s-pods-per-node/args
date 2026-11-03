@@ -1,0 +1,2 @@
+-c
+[.items[] | select(.spec.nodeName) | .spec.nodeName] | group_by(.) | map({node: .[0], pods: length})

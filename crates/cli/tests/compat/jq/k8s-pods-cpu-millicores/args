@@ -1,0 +1,2 @@
+-c
+[.items[].spec.containers[].resources.requests.cpu // empty | if endswith("m") then rtrimstr("m") | tonumber else tonumber * 1000 end] | {total: add, max: max}

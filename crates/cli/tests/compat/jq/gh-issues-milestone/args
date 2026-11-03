@@ -1,0 +1,2 @@
+-c
+group_by(.milestone.title // "none") | map({(.[0].milestone.title // "none"): map(.number)}) | add

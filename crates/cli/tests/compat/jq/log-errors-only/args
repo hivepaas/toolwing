@@ -1,0 +1,2 @@
+-c
+select(.level == "error") | {ts, msg, path}

@@ -1,0 +1,2 @@
+-r
+.items[] | .metadata.labels | to_entries | map("\(.key)=\(.value)") | join(",") | select(length > 0)

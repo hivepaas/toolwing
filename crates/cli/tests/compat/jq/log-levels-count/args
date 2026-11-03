@@ -1,0 +1,3 @@
+-n
+-c
+reduce inputs as $l ({}; .[$l.level] += 1)

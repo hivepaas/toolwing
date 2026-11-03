@@ -1,0 +1,2 @@
+-c
+.items | group_by(.reason) | map({reason: .[0].reason, total: (map(.count) | add)}) | sort_by(-.total)

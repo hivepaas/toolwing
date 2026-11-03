@@ -1,0 +1,2 @@
+-r
+"\(.meta.owner.name) has \(.items | length) items: \([.items[].sku] | join("+"))"

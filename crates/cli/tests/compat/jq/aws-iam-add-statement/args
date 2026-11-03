@@ -1,0 +1,2 @@
+-c
+.PolicyVersion.Document | .Statement += [{"Effect": "Allow", "Action": "logs:PutLogEvents", "Resource": "*"}] | .Statement | length

@@ -1,0 +1,2 @@
+-r
+.items[] | select(.spec.type == "LoadBalancer") | .status.loadBalancer.ingress[0] | .hostname // .ip

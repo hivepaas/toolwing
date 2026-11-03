@@ -1,0 +1,2 @@
+-c
+.Contents | group_by(.StorageClass) | map({(.[0].StorageClass): (map(.Size) | add)}) | add

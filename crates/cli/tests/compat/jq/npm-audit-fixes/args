@@ -1,0 +1,2 @@
+-c
+.vulnerabilities | map_values(.fixAvailable | if type == "object" then "\(.name)@\(.version)" else . end)

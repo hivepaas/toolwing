@@ -1,0 +1,2 @@
+-r
+.[] | (. * 100 | round / 100 | tostring) as $s | if ($s | contains(".")) then $s else $s + ".00" end

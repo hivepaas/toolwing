@@ -1,0 +1,2 @@
+-c
+[.[] | .labels[].name] | group_by(.) | map({label: .[0], count: length}) | sort_by(-.count, .label)

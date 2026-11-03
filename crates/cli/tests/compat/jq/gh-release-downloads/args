@@ -1,0 +1,2 @@
+-c
+map({tag: .tag_name, downloads: ([.assets[].download_count] | add // 0)})

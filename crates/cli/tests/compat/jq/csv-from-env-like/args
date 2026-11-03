@@ -1,0 +1,3 @@
+-R
+-c
+capture("^(?<key>[A-Z_]+)=(?<value>.*)$")

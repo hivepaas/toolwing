@@ -1,0 +1,1 @@
+{"network":{"VpcId":"vpc-1","SubnetIds":"subnet-a,subnet-b"},"api":{"Url":"https://api.acme.test"},"old-cache":null}

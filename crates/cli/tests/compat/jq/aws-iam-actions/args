@@ -1,0 +1,2 @@
+-c
+[.PolicyVersion.Document.Statement[] | select(.Effect == "Allow") | .Action | if type == "string" then [.] else . end | .[]] | unique

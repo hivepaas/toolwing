@@ -1,0 +1,1 @@
+{"web":["nginx:1.27"],"api":["ghcr.io/acme/api:2.4.1","envoyproxy/envoy:v1.31.0"],"admin":["ghcr.io/acme/admin:0.3.0"]}

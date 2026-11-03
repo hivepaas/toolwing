@@ -1,0 +1,2 @@
+-c
+[.[].assets[] | {name, mb: (.size / 1000000 * 10 | round / 10)}] | unique_by(.name)

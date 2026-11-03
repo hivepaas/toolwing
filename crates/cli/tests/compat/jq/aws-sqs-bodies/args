@@ -1,0 +1,2 @@
+-c
+[.Messages[] | .Body | fromjson] | map(.total) | add

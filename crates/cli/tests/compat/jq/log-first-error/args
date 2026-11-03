@@ -1,0 +1,3 @@
+-n
+-c
+first(inputs | select(.level == "error")) | .ts

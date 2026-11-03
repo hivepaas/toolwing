@@ -1,0 +1,2 @@
+-c
+[.items[].spec.containers[].resources.requests.memory // empty] | map(if endswith("Gi") then (rtrimstr("Gi") | tonumber * 1024) else (rtrimstr("Mi") | tonumber) end) | add

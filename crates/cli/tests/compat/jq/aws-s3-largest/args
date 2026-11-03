@@ -1,0 +1,2 @@
+-r
+.Contents | max_by(.Size) | "\(.Key) \(.Size)"

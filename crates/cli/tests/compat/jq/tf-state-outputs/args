@@ -1,0 +1,2 @@
+-c
+.outputs | with_entries(select(.value.sensitive | not)) | map_values(.value)

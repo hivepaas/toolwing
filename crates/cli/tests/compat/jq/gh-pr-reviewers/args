@@ -1,0 +1,2 @@
+-c
+[.[].reviewRequests[] | .login // .name] | unique

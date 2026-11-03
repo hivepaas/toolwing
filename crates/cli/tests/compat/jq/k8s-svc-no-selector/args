@@ -1,0 +1,2 @@
+-r
+.items[] | select(.spec.selector == null) | .metadata.namespace + "/" + .metadata.name

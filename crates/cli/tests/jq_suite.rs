@@ -18,7 +18,7 @@ use toolwing_jq::{Val, read};
 
 /// The cases that pass in each file, of how many.
 const PASSING: &[(&str, usize, usize)] = &[
-    ("jq.test", 470, 550),
+    ("jq.test", 471, 550),
     ("man.test", 231, 231),
     ("onig.test", 47, 47),
     ("manonig.test", 19, 19),

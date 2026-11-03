@@ -1,0 +1,6 @@
+-n
+-c
+--arg
+m
+line1\nline2
+$m | split("\\n")

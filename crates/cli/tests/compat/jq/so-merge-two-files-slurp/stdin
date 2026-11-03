@@ -1,0 +1,2 @@
+{"db": {"host": "localhost", "port": 5432}}
+{"db": {"host": "db.prod"}, "debug": false}

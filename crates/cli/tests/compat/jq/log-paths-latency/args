@@ -1,0 +1,3 @@
+-s
+-c
+map(select(.path)) | group_by(.path) | map({path: .[0].path, n: length, avg_ms: (map(.ms) | add / length)})

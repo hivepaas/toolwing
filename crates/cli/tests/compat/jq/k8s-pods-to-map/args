@@ -1,0 +1,2 @@
+-c
+.items | map({key: .metadata.name, value: .status.phase}) | from_entries

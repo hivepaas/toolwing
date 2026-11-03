@@ -1,0 +1,2 @@
+-c
+map(.author.login // .commit.author.name) | unique

@@ -1,0 +1,2 @@
+-c
+[.services[] | .depends_on // {} | to_entries[] | select(.value.condition == "service_healthy") | .key] | unique

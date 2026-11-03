@@ -1,0 +1,3 @@
+-R
+-n
+[inputs | split("\t")[1] | tonumber] | add

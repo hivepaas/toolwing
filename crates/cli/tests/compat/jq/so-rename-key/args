@@ -1,0 +1,2 @@
+-c
+with_entries(if .key == "a" then .key = "alpha" else . end)

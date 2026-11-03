@@ -1,0 +1,2 @@
+-r
+.items[] | select(.spec.unschedulable // false) | .metadata.name

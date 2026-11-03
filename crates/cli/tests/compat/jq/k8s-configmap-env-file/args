@@ -1,0 +1,2 @@
+-r
+.data | to_entries[] | select(.key | test("^[A-Z_]+$")) | "\(.key)=\(.value)"

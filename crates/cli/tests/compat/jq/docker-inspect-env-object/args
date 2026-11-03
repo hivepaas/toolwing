@@ -1,0 +1,2 @@
+-c
+.[0].Config.Env | map(capture("^(?<k>[^=]+)=(?<v>.*)$")) | map({(.k): .v}) | add

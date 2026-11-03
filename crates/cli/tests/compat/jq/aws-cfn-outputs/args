@@ -1,0 +1,2 @@
+-c
+.Stacks | map({(.StackName): ((.Outputs // []) | map({(.OutputKey): .OutputValue}) | add)}) | add

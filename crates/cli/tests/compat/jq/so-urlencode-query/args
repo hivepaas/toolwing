@@ -1,0 +1,2 @@
+-r
+to_entries | map("\(.key)=\(.value | @uri)") | join("&")

@@ -1,0 +1,3 @@
+-s
+-c
+map(.ms // empty) | sort | .[length / 2 | floor]

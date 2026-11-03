@@ -1,0 +1,2 @@
+-c
+[.[].commit.message | split("\n")[0] | capture("^(?<type>[a-z]+)(\\((?<scope>[^)]+)\\))?: ") | .type] | group_by(.) | map({(.[0]): length}) | add

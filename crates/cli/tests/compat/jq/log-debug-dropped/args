@@ -1,0 +1,2 @@
+-c
+select(.level != "debug") | del(.err.stack)

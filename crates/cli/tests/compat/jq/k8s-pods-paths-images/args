@@ -1,0 +1,2 @@
+-c
+[paths(type == "string" and test("^ghcr.io/"))] | length

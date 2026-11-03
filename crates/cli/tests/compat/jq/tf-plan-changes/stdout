@@ -1,0 +1,3 @@
+delete/create	aws_instance.web[1]
+create	aws_iam_role.ci
+update	module.vpc.aws_vpc.this

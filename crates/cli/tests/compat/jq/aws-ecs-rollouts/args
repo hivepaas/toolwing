@@ -1,0 +1,2 @@
+-r
+.services[] | select(any(.deployments[]; .rolloutState == "IN_PROGRESS")) | .serviceName

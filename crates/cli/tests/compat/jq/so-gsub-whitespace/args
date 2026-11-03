@@ -1,0 +1,2 @@
+-r
+gsub("\\s+"; " ") | ltrimstr(" ") | rtrimstr(" ")
