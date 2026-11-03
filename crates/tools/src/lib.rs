@@ -5,6 +5,7 @@ pub mod base32;
 pub mod base64;
 mod basen;
 pub mod case;
+pub mod cert;
 pub mod command;
 pub mod convert;
 pub mod cron;
@@ -65,6 +66,11 @@ pub static GROUPS: &[Group] = &[
         name: "jwt",
         title: en!("JWT"),
         summary: en!("Decode, verify and create JSON Web Tokens (RFC 7519)"),
+    },
+    Group {
+        name: "cert",
+        title: en!("Certificate"),
+        summary: en!("What an X.509 certificate or chain says: names, validity, key, fingerprints"),
     },
     Group {
         name: "md5sum",
@@ -168,6 +174,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &jwt::Decode,
     &jwt::Verify,
     &jwt::Encode,
+    &cert::Read,
     &hash::MD5SUM,
     &hash::SHA1SUM,
     &hash::SHA256SUM,

@@ -17,6 +17,8 @@ percent-encoding = "2.3"
 url = "2.5"
 uuid = { version = "1.29", features = ["v1", "v3", "v4", "v5", "v6", "v7"] }
 ulid = "1.2"
+# X.509 certificates, PEM and DER (`cert`), in pure Rust.
+x509-parser = "0.18"
 # The hashes: RustCrypto's; BLAKE2b and BLAKE3 from the BLAKE3 team, as
 # blake2 0.11 no longer takes a length at run time (b2sum -l).
 md-5 = "0.11"

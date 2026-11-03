@@ -204,7 +204,17 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
     };
     let values = commands::values(m, tool.params()).map_err(fail)?;
     let input = read_input(tool.meta().input, m).map_err(fail)?;
-    let output = tool.run(&Ctx::new(), &input, &values).map_err(fail)?;
+    let output = tool.run(&Ctx::new(), &input, &values).map_err(|mut e| {
+        // `tw cert server.pem`: the value is the input itself, so say how a
+        // file is read when the value names one.
+        let value = m.get_one::<String>("value").filter(|v| v.as_str() != "-");
+        if let Some(v) =
+            value.filter(|v| e.kind == ErrorKind::Input && std::path::Path::new(v).is_file())
+        {
+            e.message = format!("{} (to read the file {v}, give -i {v})", e.message);
+        }
+        fail(e)
+    })?;
     let mut out = stdout();
     let newline = !m.get_flag("no_newline");
     let written = if m.get_flag("json") {

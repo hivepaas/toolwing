@@ -15,6 +15,7 @@ Commands:
   hex          Bytes as hexadecimal and back, as xxd -p and xxd -r -p
   url          Percent-encode, decode and take URLs apart (RFC 3986, WHATWG)
   jwt          Decode, verify and create JSON Web Tokens (RFC 7519)
+  cert         What an X.509 certificate or chain says: names, validity, key, fingerprints
   md5sum       MD5 checksums of files, or check them
   sha1sum      SHA-1 checksums of files, or check them
   sha256sum    SHA-256 checksums of files, or check them

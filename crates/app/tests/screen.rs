@@ -613,4 +613,26 @@ fn every_page_draws_and_runs() {
         Some("01563e3a-b5d3-d676-4c61-efb99302bd5b")
     );
     ui.save("27-ulid");
+
+    // Certificate: the test chain, read at a fixed time.
+    let chain = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../tools/testdata/cert/chain.pem"),
+    )
+    .expect("the test chain");
+    let p = ui.tool("Certificate");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("at", Value::Text("2026-11-04T00:00:00Z".into()), window, cx);
+        p.set_input(&chain, window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "chain").as_deref(),
+        Some("in order, leaf first, ending at a self-signed root")
+    );
+    assert_eq!(
+        field(&mut ui, &p, "1.status").as_deref(),
+        Some("valid, expires in 3 months")
+    );
+    ui.save("28-cert");
 }
