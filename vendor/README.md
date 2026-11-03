@@ -31,6 +31,13 @@ Changed so that `tw jq` behaves as jq 1.8.2 (docs/design/jq.md):
   and jaq-std is a dev-dependency with its default features, as jaq's
   workspace gives it.
 
+- **Error messages** as jq writes them (`src/jq.rs`): `Cannot index object
+  with number (0)`, `Cannot iterate over number (123)`, `string ("a") and
+  number (1) cannot be subtracted`, `… cannot be negated`, values cut to 30
+  bytes as jq cuts them. With them, jq's rules: an object is indexed and set
+  by strings only, and `null` by a key, an index or a slice only.
+- `length` keeps a literal (`-1.50 | length` is `1.50`).
+
 Each change is marked with a `toolwing:` comment.
 
 ## jaq-core 3.1.2

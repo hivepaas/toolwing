@@ -5,6 +5,7 @@
 use jaq_all::data::DataKind;
 use jaq_all::jaq_core::RunPtr;
 use jaq_all::jaq_core::native::{self, Filter, Fun, bome, v};
+use jaq_all::json::jq::typed;
 use jaq_all::json::{Error, Val};
 
 /// jaq's natives, then ours.
@@ -92,51 +93,10 @@ fn urid(input: &Val) -> Result<Val, Error> {
     String::from_utf8(out).map(Val::from).map_err(|_| fail())
 }
 
-/// A value with its kind, as jq's `type_error` shows it: `string ("abc")`.
-pub(crate) fn typed(v: &Val) -> String {
-    let kind = match v {
-        Val::Null => "null",
-        Val::Bool(_) => "boolean",
-        Val::Num(_) => "number",
-        Val::TStr(_) | Val::BStr(_) => "string",
-        Val::Arr(_) => "array",
-        Val::Obj(_) => "object",
-    };
-    format!("{kind} ({})", dump(v))
-}
-
-/// A value as jq shows it in an error (`jv_dump_string_trunc`, 30 bytes):
-/// its JSON, cut to 25 or 26 bytes and `...` (and the closing `"`, `]` or
-/// `}`) when longer than 29.
-fn dump(v: &Val) -> String {
-    const BUF: usize = 30;
-    let v = match v {
-        Val::TStr(s) | Val::BStr(s) if s.len() > BUF => {
-            let s = String::from_utf8_lossy(s);
-            Val::from(s.chars().take(BUF).collect::<String>())
-        }
-        v => v.clone(),
-    };
-    let json = v.to_string();
-    if json.len() < BUF {
-        return json;
-    }
-    let delim = match json.as_bytes()[0] {
-        b'"' => "\"",
-        b'[' => "]",
-        b'{' => "}",
-        _ => "",
-    };
-    let mut end = BUF - if delim.is_empty() { 4 } else { 5 };
-    while !json.is_char_boundary(end) {
-        end -= 1;
-    }
-    format!("{}...{delim}", &json[..end])
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jaq_all::json::jq::dump;
 
     fn decode(s: &str) -> Result<String, String> {
         base64d(&Val::from(s.to_owned()))

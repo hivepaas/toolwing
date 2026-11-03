@@ -1,0 +1,2 @@
+-c
+$__loc__, { a: 1, $__loc__ }, [try error("\($__loc__)") catch .], "$__loc__"

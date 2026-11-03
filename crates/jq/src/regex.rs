@@ -7,7 +7,7 @@
 use jaq_all::json::{Error, Map, Val};
 use onig::{MatchParam, Regex, RegexOptions, Region, SearchOptions, Syntax};
 
-use crate::natives::typed;
+use jaq_all::json::jq::typed;
 
 /// `input | _match_impl(re; modifiers; test)`: with `test`, whether `re`
 /// matches; else an array of its matches (all of them with `g`).
