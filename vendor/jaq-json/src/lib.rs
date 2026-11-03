@@ -24,9 +24,11 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use jaq_core::box_iter::box_once;
-use jaq_core::{load, ops, path, val, Exn};
+use jaq_core::{load, path, val, Exn};
 
 pub use funs::{bytes_valrs, funs};
+// toolwing: jq's error messages
+pub mod jq;
 pub use num::Num;
 
 #[cfg(not(feature = "sync"))]
@@ -78,6 +80,8 @@ const _: () = {
 
 /// Types and sets of types.
 #[derive(Clone, Debug, PartialEq, Eq)]
+// toolwing: jq's messages (jq.rs) took the place of `Num` and `Iter`
+#[allow(dead_code)]
 enum Type {
     /// `[] | .["a"]` or `limit("a"; 0)` or `range(0; "a")`
     Int,
@@ -142,7 +146,7 @@ impl jaq_core::ValT for Val {
         match self {
             Self::Arr(a) => Box::new(rc_unwrap_or_clone(a).into_iter().enumerate().map(arr_idx)),
             Self::Obj(o) => Box::new(rc_unwrap_or_clone(o).into_iter().map(Ok)),
-            _ => box_once(Err(Error::typ(self, Type::Iter.as_str()))),
+            _ => box_once(Err(jq::iterate(&self))),
         }
     }
 
@@ -150,7 +154,7 @@ impl jaq_core::ValT for Val {
         match self {
             Self::Arr(a) => Box::new(rc_unwrap_or_clone(a).into_iter().map(Ok)),
             Self::Obj(o) => Box::new(rc_unwrap_or_clone(o).into_iter().map(|(_k, v)| Ok(v))),
-            _ => box_once(Err(Error::typ(self, Type::Iter.as_str()))),
+            _ => box_once(Err(jq::iterate(&self))),
         }
     }
 
@@ -191,7 +195,7 @@ impl jaq_core::ValT for Val {
                 let iter = iter.filter_map(|(k, v)| f(v).next().map(|v| Ok((k, v?))));
                 Ok(Self::obj(iter.collect::<Result<_, Exn<_>>>()?))
             }
-            v => opt.fail(v, |v| Exn::from(Error::typ(v, Type::Iter.as_str()))),
+            v => opt.fail(v, |v| Exn::from(jq::iterate(&v))),
         }
     }
 
@@ -206,6 +210,10 @@ impl jaq_core::ValT for Val {
             return self.map_range(range, opt, f);
         };
         match self {
+            // toolwing: an object's keys are strings, as jq has them
+            Val::Obj(_) if !matches!(index, Val::TStr(_) | Val::BStr(_)) => {
+                opt.fail(self, |v| Exn::from(jq::index(&v, index)))
+            }
             Val::Obj(ref mut o) => {
                 use indexmap::map::Entry::{Occupied, Vacant};
                 match Rc::make_mut(o).entry(index.clone()) {
@@ -227,9 +235,15 @@ impl jaq_core::ValT for Val {
                 Ok(self)
             }
             Val::Arr(ref mut a) => {
+                // toolwing: jq's messages for an index that is not a number
+                let nan = matches!(index, Val::Num(n) if n.as_f64().is_nan());
                 let i = match index.as_pos_usize() {
                     Ok(i) => i,
-                    Err(e) => return opt.fail(self, |_| Exn::from(e)),
+                    Err(_) if nan => {
+                        let e = Error::str("Cannot set array element at NaN index");
+                        return opt.fail(self, |_| Exn::from(e));
+                    }
+                    Err(_) => return opt.fail(self, |v| Exn::from(jq::index(&v, index))),
                 };
                 let a_mut = Rc::make_mut(a);
                 match abs_index(i, a_mut.len()) {
@@ -269,7 +283,7 @@ impl jaq_core::ValT for Val {
                     _ => Val::obj([(index.clone(), y)].into_iter().collect()),
                 })
             }
-            _ => opt.fail(self, |v| Exn::from(Error::typ(v, Type::Iter.as_str()))),
+            _ => opt.fail(self, |v| Exn::from(jq::index(&v, index))),
         }
     }
 
@@ -533,7 +547,8 @@ impl Val {
 
     fn index_opt(self, index: &Self) -> Result<Option<Val>, Error> {
         Ok(match (self, index) {
-            (Val::Null, _) => None,
+            // toolwing: as jq, `null` takes a key, an index or a slice only
+            (Val::Null, Val::TStr(_) | Val::BStr(_) | Val::Num(_) | Val::Obj(_)) => None,
             (Val::BStr(a), Val::Num(i)) => i
                 .as_pos_usize()
                 .and_then(|i| abs_index(i, a.len()))
@@ -549,14 +564,15 @@ impl Val {
                 let indices = iw.filter_map(|(i, w)| (w == **y).then_some(i));
                 Some(indices.map(Val::from).collect())
             }
-            (Val::Obj(o), i) => o.get(i).cloned(),
+            // toolwing: an object's keys are strings: jq refuses another
+            (Val::Obj(o), i @ (Val::TStr(_) | Val::BStr(_))) => o.get(i).cloned(),
             (v @ (Val::BStr(_) | Val::TStr(_) | Val::Arr(_)), Val::Obj(o)) => {
                 use jaq_core::ValT;
                 let start = o.get(&Val::utf8_str("start"));
                 let end = o.get(&Val::utf8_str("end"));
                 return v.range(start..end).map(Some);
             }
-            (s, _) => return Err(Error::index(s, index.clone())),
+            (s, _) => return Err(jq::index(&s, index)),
         })
     }
 }
@@ -629,7 +645,7 @@ impl core::ops::Add for Val {
                 Rc::make_mut(&mut l).extend(r.iter().map(|(k, v)| (k.clone(), v.clone())));
                 Ok(Obj(l))
             }
-            (l, r) => Err(Error::math(l, ops::Math::Add, r)),
+            (l, r) => Err(jq::binary(&l, &r, "cannot be added")),
         }
     }
 }
@@ -644,7 +660,7 @@ impl core::ops::Sub for Val {
                 Rc::make_mut(&mut l).retain(|x| !r.contains(x));
                 Ok(Self::Arr(l))
             }
-            (l, r) => Err(Error::math(l, ops::Math::Sub, r)),
+            (l, r) => Err(jq::binary(&l, &r, "cannot be subtracted")),
         }
     }
 }
@@ -686,7 +702,7 @@ impl core::ops::Mul for Val {
                 obj_merge(&mut l, r);
                 Ok(Obj(l))
             }
-            (l, r) => Err(Error::math(l, ops::Math::Mul, r)),
+            (l, r) => Err(jq::binary(&l, &r, "cannot be multiplied")),
         }
     }
 }
@@ -719,7 +735,7 @@ impl core::ops::Div for Val {
             (Self::Num(x), Self::Num(y)) => Ok(Self::Num(x / y)),
             (Self::TStr(x), Self::TStr(y)) => Ok(fs(*x, *y, Val::utf8_str)),
             (Self::BStr(x), Self::BStr(y)) => Ok(fs(*x, *y, Val::byte_str)),
-            (l, r) => Err(Error::math(l, ops::Math::Div, r)),
+            (l, r) => Err(jq::binary(&l, &r, "cannot be divided")),
         }
     }
 }
@@ -736,7 +752,7 @@ impl core::ops::Rem for Val {
                 "number ({x}) and number ({y}) cannot be divided (remainder) because the divisor is zero"
             ))),
             (Self::Num(x), Self::Num(y)) => Ok(Self::Num(x % y)),
-            (l, r) => Err(Error::math(l, ops::Math::Rem, r)),
+            (l, r) => Err(jq::binary(&l, &r, "cannot be divided (remainder)")),
         }
     }
 }
@@ -746,7 +762,7 @@ impl core::ops::Neg for Val {
     fn neg(self) -> Self::Output {
         match self {
             Self::Num(n) => Ok(Self::Num(-n)),
-            x => Err(Error::typ(x, Type::Num.as_str())),
+            x => Err(jq::unary(&x, "cannot be negated")),
         }
     }
 }
