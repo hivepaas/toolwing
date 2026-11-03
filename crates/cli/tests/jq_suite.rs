@@ -20,8 +20,8 @@ use toolwing_jq::{Val, read};
 const PASSING: &[(&str, usize, usize)] = &[
     ("jq.test", 428, 550),
     ("man.test", 221, 231),
-    ("onig.test", 38, 47),
-    ("manonig.test", 16, 19),
+    ("onig.test", 47, 47),
+    ("manonig.test", 19, 19),
     ("base64.test", 10, 10),
     ("uri.test", 20, 20),
     ("optional.test", 2, 2),

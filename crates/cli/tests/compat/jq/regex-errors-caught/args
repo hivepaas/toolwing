@@ -1,0 +1,2 @@
+-c
+[(try test("(") catch .), (try test("a"; "q") catch .), (try test(1) catch .), (1 | try test("a") catch .)]

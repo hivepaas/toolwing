@@ -12,6 +12,12 @@ pub fn funs() -> impl Iterator<Item = Fun<DataKind>> {
     let ours: Box<[Filter<RunPtr<DataKind>>]> = Box::new([
         ("_toolwing_base64d", v(0), |cv| bome(base64d(&cv.1))),
         ("_toolwing_urid", v(0), |cv| bome(urid(&cv.1))),
+        ("_match_impl", v(3), |mut cv| {
+            let test = cv.0.pop_var();
+            let modifiers = cv.0.pop_var();
+            let re = cv.0.pop_var();
+            bome(crate::regex::match_impl(&cv.1, &re, &modifiers, &test))
+        }),
     ]);
     jaq_all::data::funs().chain(ours.into_vec().into_iter().map(native::run::<DataKind>))
 }
@@ -87,7 +93,7 @@ fn urid(input: &Val) -> Result<Val, Error> {
 }
 
 /// A value with its kind, as jq's `type_error` shows it: `string ("abc")`.
-fn typed(v: &Val) -> String {
+pub(crate) fn typed(v: &Val) -> String {
     let kind = match v {
         Val::Null => "null",
         Val::Bool(_) => "boolean",

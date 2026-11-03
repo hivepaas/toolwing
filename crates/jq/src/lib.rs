@@ -7,6 +7,7 @@
 use std::path::PathBuf;
 
 mod natives;
+mod regex;
 
 pub use jaq_all::data::{Filter, Runner};
 pub use jaq_all::fmts::Format;

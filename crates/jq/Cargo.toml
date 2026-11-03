@@ -11,6 +11,8 @@ publish.workspace = true
 # jaq 3.1: its engine, standard library, value type and formats (YAML, TOML,
 # XML, CBOR, CSV), as jaq's own command line uses them.
 jaq-all = { version = "0.4", default-features = false, features = ["formats", "std-all"] }
+# Oniguruma, jq's regex engine, built from its bundled C source (jq.md).
+onig = { version = "6.5", default-features = false }
 # How jaq's `debug`, `stderr` and `halt_error` write to stderr.
 log = { version = "0.4", features = ["std"] }
 
