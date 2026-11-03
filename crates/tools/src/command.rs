@@ -36,6 +36,8 @@ pub fn args(tool: &dyn Tool, values: &Values) -> Vec<String> {
             }
             (ParamKind::Secret, _) => {}
             (ParamKind::Flag, Value::Bool(true)) => args.push(name),
+            // Off, where it is on by default (the CLI's `--no-x`).
+            (ParamKind::Flag, Value::Bool(false)) => args.push(format!("--no-{}", p.cli.long)),
             (ParamKind::Flag, _) => {}
             (ParamKind::Choice { flags: true, .. }, Value::Text(s)) if !s.is_empty() => {
                 args.push(format!("--{s}"))
@@ -136,6 +138,18 @@ mod tests {
         let mut v = Values::new();
         v.set("version", Value::Text("v7".into()));
         v.set("count", Value::Int(5));
-        assert_eq!(shell_line(tool("uuid"), &v, ""), "tw uuid --v7 -n 5");
+        assert_eq!(
+            shell_line(tool("uuid.generate"), &v, ""),
+            "tw uuid generate --v7 -n 5"
+        );
+
+        // A flag on by default is turned off with --no-…
+        let mut v = Values::new();
+        v.set("symbols", Value::Bool(false));
+        v.set("no_lookalike", Value::Bool(true));
+        assert_eq!(
+            shell_line(tool("random.password"), &v, ""),
+            "tw random password --no-symbols --no-lookalike"
+        );
     }
 }

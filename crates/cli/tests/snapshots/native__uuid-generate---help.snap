@@ -1,0 +1,22 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+Generate UUIDs: random (v4), time-ordered (v7), from a name (v3, v5), or v1, v6
+
+Usage: tw uuid generate [OPTIONS]
+
+Options:
+      --v4                Random (the default)
+      --v7                Time-ordered: starts with the time, so it sorts by creation
+      --v5                From --name in --namespace, with SHA-1
+      --v3                From --name in --namespace, with MD5
+      --v1                From the time and a random node
+      --v6                From the time and a random node, sortable
+      --namespace <TEXT>  For v3 and v5: dns, url, oid, x500, or a UUID; dns when left out
+      --name <TEXT>       For v3 and v5: the name the UUID is made from
+  -n, --count <N>         How many UUIDs to generate
+  -u, --upper             Write the hex digits in uppercase
+      --json              Write the result as JSON
+      --no-newline        Do not end text output with a newline
+  -h, --help              Print help

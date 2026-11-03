@@ -553,4 +553,64 @@ fn every_page_draws_and_runs() {
         "MZXW6YTBOI======\n"
     );
     ui.save("23-base32");
+
+    // UUID inspect: the sketch's v7 UUID.
+    let p = ui.tool("UUID");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(1, window, cx);
+        p.set_input("01a19fdf-ca6b-7b3a-9f21-3c5d2e1a0b44", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "version").as_deref(),
+        Some("7 · time-ordered")
+    );
+    assert_eq!(
+        field(&mut ui, &p, "created").as_deref(),
+        Some("2026-11-03T05:26:46.123Z")
+    );
+    ui.save("24-uuid-inspect");
+
+    // Random: five passwords of 20, look-alikes left out, as the sketch.
+    let p = ui.tool("Random");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("count", Value::Int(5), window, cx);
+        p.set_value("no_lookalike", Value::Bool(true), window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let passwords = ui.cx.update(|cx| p.read(cx).output(cx));
+    assert_eq!(passwords.lines().count(), 5);
+    let clear = |p: &str| p.chars().count() == 20 && !p.contains(['I', 'l', '1', 'O', '0']);
+    assert!(passwords.lines().all(clear), "{passwords}");
+    ui.save("25-random");
+
+    // HMAC: RFC 4231's case 2, the key masked.
+    let p = ui.tool("HMAC");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("key", Value::Text("Jefe".into()), window, cx);
+        p.set_input("what do ya want for nothing?", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+    );
+    ui.save("26-hmac");
+
+    // ULID inspect: the spec's example.
+    let p = ui.tool("ULID");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(1, window, cx);
+        p.set_input("01ARZ3NDEKTSV4RRFFQ69G5FAV", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "uuid").as_deref(),
+        Some("01563e3a-b5d3-d676-4c61-efb99302bd5b")
+    );
+    ui.save("27-ulid");
 }

@@ -15,7 +15,8 @@ data-encoding = "2.11"
 percent-encoding = "2.3"
 # URLs as WHATWG parses them, as browsers do (`url parse`).
 url = "2.5"
-uuid = { version = "1.29", features = ["v4", "v7"] }
+uuid = { version = "1.29", features = ["v1", "v3", "v4", "v5", "v6", "v7"] }
+ulid = "1.2"
 # The hashes: RustCrypto's; BLAKE2b and BLAKE3 from the BLAKE3 team, as
 # blake2 0.11 no longer takes a length at run time (b2sum -l).
 md-5 = "0.11"
@@ -23,6 +24,10 @@ sha1 = "0.11"
 sha2 = "0.11"
 blake2b_simd = "1.0"
 blake3 = "1.8"
+# HMAC over those hashes (`hmac`).
+hmac = "0.13"
+# The operating system's secure generator (`random`).
+getrandom = "0.3"
 # Case conversion: the word boundaries cargo and clap use.
 heck = "0.5"
 # Dates, times and time zones; the zone database is bundled, so `tw time`

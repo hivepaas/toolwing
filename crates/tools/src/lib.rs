@@ -11,11 +11,14 @@ pub mod cron;
 pub mod diff;
 pub mod hash;
 pub mod hex;
+pub mod hmac;
 pub mod jq;
 pub mod json;
 pub mod jwt;
+pub mod random;
 pub mod regex;
 pub mod time;
+pub mod ulid;
 pub mod url;
 pub mod uuid;
 
@@ -89,9 +92,24 @@ pub static GROUPS: &[Group] = &[
         summary: en!("BLAKE2b checksums of files, or check them"),
     },
     Group {
+        name: "hmac",
+        title: en!("HMAC"),
+        summary: en!("HMAC of the input with a secret key, as openssl dgst -hmac"),
+    },
+    Group {
+        name: "random",
+        title: en!("Random"),
+        summary: en!("Passwords, tokens and bytes from the system's secure generator"),
+    },
+    Group {
         name: "uuid",
         title: en!("UUID"),
-        summary: en!("Generate UUIDs: random (v4) or time-ordered (v7)"),
+        summary: en!("Generate UUIDs, or read what one holds (RFC 9562)"),
+    },
+    Group {
+        name: "ulid",
+        title: en!("ULID"),
+        summary: en!("Generate and read ULIDs: IDs that sort by time, as UUIDs too"),
     },
     Group {
         name: "time",
@@ -150,7 +168,14 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::SHA256SUM,
     &hash::SHA512SUM,
     &hash::B2SUM,
+    &hmac::Digest,
+    &random::Password,
+    &random::Token,
+    &random::Bytes,
     &uuid::Generate,
+    &uuid::Inspect,
+    &ulid::Generate,
+    &ulid::Inspect,
     &time::Convert,
     &cron::Explain,
     &regex::Match,
