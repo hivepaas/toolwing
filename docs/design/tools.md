@@ -18,8 +18,8 @@ parser.
 
 | Command | Does | Reference | Level | Crate |
 | --- | --- | --- | --- | --- |
-| `jq` | Query and transform JSON (and YAML, TOML, XML, CBOR, CSV with `--from`/`--to`) | jq 1.8.2 | drop-in | `jaq-core`, `jaq-std`, `jaq-json`, `jaq-fmts` (jaq 3.1) |
-| `json` | Format, minify, validate, sort keys | `jq .`, `jq -c .`, `jq -S .` | output | `jaq-json`, so it formats as `tw jq` does |
+| `jq` | Query and transform JSON (and YAML, TOML, XML, CBOR, CSV with `--from`/`--to`) | jq 1.8.2 | drop-in | `toolwing-jq` on `jaq-core`, `jaq-std`, `jaq-fmts` (jaq 3.1), `onig` ([jq.md](jq.md)) |
+| `json` | Format, minify, validate, sort keys | `jq .`, `jq -c .`, `jq -S .` | output | `toolwing-jq`'s writer, so it formats as `tw jq` does |
 | `convert` | JSON ⇄ YAML ⇄ TOML ⇄ CSV ⇄ XML | YAML 1.2, TOML 1.1, RFC 4180 | standard | `jaq-fmts` |
 | `base64`, `base32` | Encode, decode (`-d`, `-w`, `-i`), URL-safe alphabet | GNU coreutils 9.12 | drop-in | `data-encoding` |
 | `hex` | Encode, decode | `xxd -p`, `xxd -r -p` | output | `data-encoding` |
@@ -67,22 +67,6 @@ same bar as the others: a reference and tests before it ships.
 
 ## jq compatibility
 
-`tw jq` runs on jaq, which matches jq in most programs but not all. The
-differences are part of the design, not discovered later:
-
-- jq's own test suite (`tests/jq.test`, `tests/man.test` from jq 1.8.2) runs
-  against `tw jq` in CI (quality.md). Each failing case is listed in
-  `tests/jq/differences.md` with the reason.
-- A difference that changes the result of a common program is fixed: upstream
-  in jaq first, through a patch taken in (as shellwing does with
-  `gpui-pre-linux`) only while waiting.
-- Error messages are not compared word for word; exit codes and the position
-  of a compile error are.
-- The command line is jq's: `-r`, `-j`, `-a`, `-c`, `-n`, `-s`, `-e`, `-S`,
-  `-C`/`-M`, `--tab`, `--indent n`, `--arg`, `--argjson`, `--slurpfile`,
-  `--rawfile`, `--args`, `--jsonargs`, `-f`, `-L`, `--seq`, `--stream`,
-  `--raw-input`/`-R`, `--raw-output0`. jaq's extras (`--from`, `--to`) are
-  added under the same names.
-
-**Open:** how far below 100% of jq's suite the 1.0 release may be, and which
-of jaq's intended differences (it calls some of them corrections) we keep.
+`tw jq` runs on jaq's engine with a compatibility layer of our own. How close
+jaq is (measured), what differs, where each difference is fixed and the gates
+for calling it a drop-in replacement: [jq.md](jq.md).

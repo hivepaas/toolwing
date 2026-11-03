@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+"""jq programs as people run them day to day, compared byte for byte (stdout
+and exit code) between a reference jq and a candidate. Prints one JSON line
+per case."""
+import json, os, subprocess, sys
+
+PODS = json.dumps({"apiVersion": "v1", "kind": "List", "items": [
+    {"metadata": {"name": "web-7d9f", "namespace": "prod", "labels": {"app": "web", "tier": "fe"},
+                  "creationTimestamp": "2026-10-30T08:15:00Z"},
+     "spec": {"nodeName": "node-a", "containers": [{"name": "web", "image": "nginx:1.27",
+              "resources": {"limits": {"cpu": "500m", "memory": "256Mi"}}}]},
+     "status": {"phase": "Running", "podIP": "10.0.0.12",
+                "containerStatuses": [{"name": "web", "ready": True, "restartCount": 0}]}},
+    {"metadata": {"name": "api-55c1", "namespace": "prod", "labels": {"app": "api"},
+                  "creationTimestamp": "2026-10-29T22:01:30Z"},
+     "spec": {"nodeName": "node-b", "containers": [{"name": "api", "image": "ghcr.io/acme/api:2.4.1"},
+                                                    {"name": "sidecar", "image": "envoy:1.31"}]},
+     "status": {"phase": "CrashLoopBackOff", "podIP": None,
+                "containerStatuses": [{"name": "api", "ready": False, "restartCount": 17},
+                                      {"name": "sidecar", "ready": True, "restartCount": 0}]}},
+    {"metadata": {"name": "job-x", "namespace": "batch", "labels": {}},
+     "spec": {"containers": [{"name": "job", "image": "busybox"}]},
+     "status": {"phase": "Succeeded"}}]})
+
+EC2 = json.dumps({"Reservations": [{"Instances": [
+    {"InstanceId": "i-0abc", "InstanceType": "t3.micro", "State": {"Name": "running"},
+     "PrivateIpAddress": "172.31.1.5", "LaunchTime": "2026-10-01T10:00:00+00:00",
+     "Tags": [{"Key": "Name", "Value": "bastion"}, {"Key": "env", "Value": "prod"}]},
+    {"InstanceId": "i-0def", "InstanceType": "m6i.large", "State": {"Name": "stopped"},
+     "Tags": [{"Key": "Name", "Value": "worker"}]}]}]})
+
+GH = json.dumps([
+    {"number": 41, "title": "Fix \"quoted\" title, with comma", "user": {"login": "alice"},
+     "labels": [{"name": "bug"}, {"name": "p1"}], "state": "open", "draft": False,
+     "created_at": "2026-10-28T09:00:00Z", "body": "line1\nline2\ttab"},
+    {"number": 42, "title": "Add café ☕ support", "user": {"login": "bob"}, "labels": [],
+     "state": "closed", "draft": True, "created_at": "2026-11-01T17:45:10Z", "body": None}])
+
+PKG = json.dumps({"name": "demo", "version": "1.2.3", "private": True,
+                  "scripts": {"build": "tsc -p .", "test": "vitest run"},
+                  "dependencies": {"zod": "^3.23.8", "react": "^19.0.0"},
+                  "devDependencies": {"typescript": "~5.6.3"}})
+
+NUMS = "[1, 1.0, 1.5, 100, 1e3, 1.0e3, 0.1, 3.14159265358979, 1e-7, 12345678901234567890, " \
+       "-0, 0.30000000000000004, 1E+2, 2.5e-300, 9007199254740993]"
+
+DOCKER = json.dumps([{"Id": "f00d", "Name": "/db", "State": {"Status": "running", "Health": {"Status": "healthy"}},
+                      "NetworkSettings": {"Networks": {"bridge": {"IPAddress": "172.17.0.2"}}},
+                      "Config": {"Env": ["POSTGRES_USER=app", "PGDATA=/var/lib/pg", "EMPTY="]},
+                      "Mounts": [{"Source": "/srv/db", "Destination": "/var/lib/pg"}]}])
+
+LOG = "\n".join(json.dumps(x) for x in [
+    {"ts": "2026-11-03T01:00:00Z", "level": "info", "msg": "start", "ms": 3},
+    {"ts": "2026-11-03T01:00:01Z", "level": "error", "msg": "db timeout", "ms": 5003, "err": {"code": "ETIMEDOUT"}},
+    {"ts": "2026-11-03T01:00:02Z", "level": "warn", "msg": "slow", "ms": 1200},
+    {"ts": "2026-11-03T01:00:03Z", "level": "error", "msg": "db timeout", "ms": 5001}]) + "\n"
+
+# (name, args, input)
+CASES = [
+    # --- basics and formatting
+    ("pretty", ["."], PKG),
+    ("compact", ["-c", "."], PKG),
+    ("sort-keys", ["-S", "."], PKG),
+    ("tab", ["--tab", "."], PKG),
+    ("indent4", ["--indent", "4", "."], PKG),
+    ("indent0", ["--indent", "0", "."], PKG),
+    ("raw", ["-r", ".name"], PKG),
+    ("join-output", ["-j", ".name, .version"], PKG),
+    ("numbers-pretty", ["."], NUMS),
+    ("numbers-arith", ["-c", "map(. + 0)"], NUMS),
+    ("numbers-tostring", ["-c", "map(tostring)"], NUMS),
+    ("float-sum", ["-n", "0.1 + 0.2"], ""),
+    ("int-division", ["-n", "[10 / 4, 10 / 5, 7 % 3, -7 % 3]"], ""),
+    ("big-literal-preserved", ["-c", "."], "[100000000000000000000000000001, 1.000]"),
+    ("unicode-out", ["-c", "."], json.dumps({"s": "café ☕ \u0001 \u007f \u2028"}, ensure_ascii=False)),
+    ("unicode-escaped-in", ["-c", "."], '{"s":"\\u00e9\\ud83d\\ude00"}'),
+    ("empty-containers", ["."], '{"a":[],"b":{},"c":[{}],"d":""}'),
+    ("multiple-inputs", ["-c", "."], '1 "two" [3] {"four":4}'),
+    ("null-input", ["-n", "-c", "[1,2,3]"], ""),
+    ("slurp", ["-c", "-s", "."], '{"a":1}\n{"a":2}\n'),
+    ("slurp-add", ["-s", "map(.ms) | add"], LOG),
+    ("raw-input", ["-R", "-c", "."], "a b\nc\n"),
+    ("raw-input-slurp", ["-Rs", "-c", "split(\"\\n\")"], "a\nb\n"),
+    ("arg", ["-n", "-c", "--arg", "v", "x y", "{v: $v}"], ""),
+    ("argjson", ["-n", "-c", "--argjson", "v", '{"a":[1,2]}', "$v.a[1]"], ""),
+    ("args-positional", ["-n", "-c", "$ARGS.positional", "--args", "a", "b"], ""),
+    ("named-args", ["-n", "-c", "--arg", "x", "1", "$ARGS.named"], ""),
+    ("exit-status-false", ["-e", ".private | not"], PKG),
+    ("exit-status-null", ["-e", ".missing"], PKG),
+    ("exit-status-true", ["-e", ".private"], PKG),
+    ("compile-error", [".a |"], PKG),
+    ("runtime-error", [".name | .x"], PKG),
+    ("parse-error-input", ["."], '{"a":1,}'),
+    ("raw-output0", ["--raw-output0", ".scripts | keys[]"], PKG),
+    # --- kubectl
+    ("k8s-names", ["-r", ".items[].metadata.name"], PODS),
+    ("k8s-not-running", ["-r", '.items[] | select(.status.phase != "Running") | .metadata.name'], PODS),
+    ("k8s-images", ["-r", "[.items[].spec.containers[].image] | unique | .[]"], PODS),
+    ("k8s-restarts", ["-c", ".items[] | {name: .metadata.name, restarts: ([.status.containerStatuses[]?.restartCount] | add // 0)}"], PODS),
+    ("k8s-tsv", ["-r", '.items[] | [.metadata.name, .status.phase, (.status.podIP // "-")] | @tsv'], PODS),
+    ("k8s-labels", ["-c", '.items[] | .metadata.labels | to_entries | map("\\(.key)=\\(.value)") | join(",")'], PODS),
+    ("k8s-group-by-ns", ["-c", ".items | group_by(.metadata.namespace) | map({ns: .[0].metadata.namespace, count: length})"], PODS),
+    ("k8s-sort-by-time", ["-r", ".items | sort_by(.metadata.creationTimestamp // \"\") | .[].metadata.name"], PODS),
+    ("k8s-select-label", ["-r", '.items[] | select(.metadata.labels.app == "api") | .spec.nodeName'], PODS),
+    ("k8s-has", ["-c", "[.items[] | .status | has(\"podIP\")]"], PODS),
+    ("k8s-limits-optional", ["-c", "[.items[].spec.containers[].resources?.limits?.memory]"], PODS),
+    ("k8s-paths", ["-c", "[paths(type == \"boolean\")] | length"], PODS),
+    ("k8s-del", ["-c", ".items[0] | del(.status, .spec)"], PODS),
+    ("k8s-walk", ["-c", ".items[2] | walk(if type == \"object\" then del(.labels) else . end)"], PODS),
+    ("k8s-index", ["-c", ".items | INDEX(.metadata.name) | keys"], PODS),
+    ("k8s-any-all", ["-c", "[.items[] | .status.containerStatuses // [] | (any(.ready | not), all(.ready))]"], PODS),
+    ("k8s-age", ["-c", '[.items[] | .metadata.creationTimestamp // empty | fromdateiso8601]'], PODS),
+    ("k8s-recursive", ["-c", "[.. | .image? // empty]"], PODS),
+    ("k8s-length", [".items | length"], PODS),
+    ("k8s-first-last", ["-c", "[first(.items[]).metadata.name, (.items | last).metadata.name]"], PODS),
+    ("k8s-limit", ["-c", "[limit(2; .items[].metadata.name)]"], PODS),
+    ("k8s-map-values", ["-c", ".items[0].metadata.labels | map_values(ascii_upcase)"], PODS),
+    ("k8s-with-entries", ["-c", '.items[0].metadata.labels | with_entries(.key |= "label_" + .)'], PODS),
+    # --- AWS
+    ("aws-ids", ["-r", ".Reservations[].Instances[].InstanceId"], EC2),
+    ("aws-tags-from-entries", ["-c", ".Reservations[].Instances[] | .Tags | from_entries"], EC2),
+    ("aws-tag-name", ["-r", '.Reservations[].Instances[] | (.Tags[]? | select(.Key == "Name") | .Value)'], EC2),
+    ("aws-table", ["-r", '.Reservations[].Instances[] | [.InstanceId, .InstanceType, .State.Name, (.PrivateIpAddress // "")] | @csv'], EC2),
+    ("aws-running", ["-c", '[.Reservations[].Instances[] | select(.State.Name == "running")] | length'], EC2),
+    ("aws-tags-object", ["-c", '.Reservations[].Instances[] | {id: .InstanceId} + (.Tags | map({(.Key): .Value}) | add)'], EC2),
+    # --- GitHub API
+    ("gh-csv", ["-r", ".[] | [.number, .title, .user.login] | @csv"], GH),
+    ("gh-tsv-escapes", ["-r", ".[] | [.number, .body // \"\"] | @tsv"], GH),
+    ("gh-labels-join", ["-r", '.[] | "\\(.number): \\([.labels[].name] | join(", "))"'], GH),
+    ("gh-sh", ["-r", ".[] | @sh \"echo \\(.title)\""], GH),
+    ("gh-uri", ["-r", '.[] | "https://x.test/?q=\\(.title | @uri)"'], GH),
+    ("gh-html", ["-r", ".[0].title | @html"], GH),
+    ("gh-json-string", ["-r", ".[0] | {number, title} | @json"], GH),
+    ("gh-base64", ["-r", ".[1].title | @base64"], GH),
+    ("gh-base64d", ["-r", ".[1].title | @base64 | @base64d"], GH),
+    ("gh-select-open", ["-c", 'map(select(.state == "open" and (.draft | not))) | map(.number)'], GH),
+    ("gh-string-ops", ["-c", ".[] | .title | [ascii_downcase, length, utf8bytelength, (split(\" \") | length), startswith(\"Fix\"), ltrimstr(\"Add \")]"], GH),
+    ("gh-test-regex", ["-c", '[.[] | .title | test("fix"; "i")]'], GH),
+    ("gh-capture", ["-c", '.[] | .created_at | capture("(?<y>\\\\d{4})-(?<m>\\\\d{2})")'], GH),
+    ("gh-sub", ["-r", '.[] | .title | sub("\\\\s+"; "_"; "g")'], GH),
+    ("gh-gsub-named", ["-r", '.[0].title | gsub("(?<w>[A-Z])"; "<\\(.w)>")'], GH),
+    ("gh-scan", ["-c", '[.[0].body | scan("line\\\\d")]'], GH),
+    ("gh-splits", ["-c", '[.[0].body | splits("\\\\s")]'], GH),
+    ("gh-dates", ["-r", ".[] | .created_at | fromdate | todate"], GH),
+    ("gh-strftime", ["-r", '.[] | .created_at | fromdate | strftime("%Y-%m-%d %H:%M")'], GH),
+    ("gh-strptime", ["-c", '.[0].created_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime'], GH),
+    ("gh-to-entries", ["-c", ".[0].user | to_entries"], GH),
+    ("gh-min-max-by", ["-c", "[min_by(.number).number, max_by(.number).number]"], GH),
+    ("gh-unique-by", ["-c", "map(.state) | unique"], GH),
+    ("gh-reduce", ["-c", "reduce .[] as $i ({}; .[$i.state] += 1)"], GH),
+    ("gh-foreach", ["-c", "[foreach .[] as $i (0; . + $i.number)]"], GH),
+    ("gh-tostring-interp", ["-r", '.[] | "#\\(.number) draft=\\(.draft) body=\\(.body)"'], GH),
+    ("gh-keys", ["-c", ".[0] | keys"], GH),
+    ("gh-keys-unsorted", ["-c", ".[0] | keys_unsorted"], GH),
+    ("gh-contains", ["-c", '[.[] | .title | contains("café")]'], GH),
+    ("gh-index", ["-c", '.[0].title | [index("t"), rindex("t"), indices(", ")]'], GH),
+    ("gh-ascii", ["-c", '.[1].title | explode | map(select(. < 128)) | implode'], GH),
+    # --- package.json / config editing
+    ("pkg-update", ["-c", '.version = "1.2.4"'], PKG),
+    ("pkg-update-pipe", ["-c", '.scripts.lint = "eslint ." | .scripts | keys'], PKG),
+    ("pkg-merge", ["-c", '.dependencies * {"zod": "^4.0.0", "lodash": "^4.17.21"}'], PKG),
+    ("pkg-add-objects", ["-c", ".dependencies + .devDependencies | keys"], PKG),
+    ("pkg-deps-list", ["-r", '.dependencies | to_entries[] | "\\(.key)@\\(.value)"'], PKG),
+    ("pkg-delete", ["-c", "del(.scripts.test) | .scripts"], PKG),
+    ("pkg-update-assign", ["-c", ".dependencies |= with_entries(.value |= ltrimstr(\"^\"))"], PKG),
+    ("pkg-alternative", ["-r", '.license // "UNLICENSED"'], PKG),
+    ("pkg-getpath", ["-c", '[getpath(["scripts","build"]), getpath(["nope","x"])]'], PKG),
+    ("pkg-setpath-new", ["-c", 'setpath(["engines","node"]; ">=22") | .engines'], PKG),
+    ("pkg-deep-assign-null", ["-c", ".a.b.c = 1"], "null"),
+    ("pkg-update-plus", ["-c", ".count += 1"], "{}"),
+    ("pkg-array-extend", ["-c", ".[3] = 1"], "[0]"),
+    ("pkg-array-append", ["-c", ". += [4]"], "[1,2,3]"),
+    ("pkg-paths-leaf", ["-c", '[paths(scalars)] | map(join("."))'], PKG),
+    ("pkg-tostream", ["-c", '[tostream] | length'], PKG),
+    ("pkg-env", ["-r", "env.HOME | type"], PKG),
+    ("pkg-ENV", ["-r", "$ENV.HOME | type"], PKG),
+    ("pkg-input-filename", ["-c", "input_filename"], PKG),
+    ("pkg-type-filters", ["-c", '[.[] | type]'], PKG),
+    ("pkg-if-elif", ["-r", '.version | if test("^1\\\\.") then "v1" elif test("^2\\\\.") then "v2" else "other" end'], PKG),
+    ("pkg-try-catch", ["-c", '[.name | try tonumber catch "nan"]'], PKG),
+    ("pkg-optional", ["-c", '[.name[]?]'], PKG),
+    ("pkg-error-msg", ["-c", 'try error("custom") catch .'], PKG),
+    ("pkg-label-break", ["-c", "[label $out | 1, 2, break $out, 3]"], PKG),
+    ("pkg-def", ["-c", "def inc(f): f + 1; [inc(1), inc(.version | length)]"], PKG),
+    ("pkg-destructure", ["-c", '. as {name: $n, version: $v} | "\\($n)-\\($v)"'], PKG),
+    ("pkg-tojson-fromjson", ["-c", '.scripts | tojson | fromjson'], PKG),
+    ("pkg-join-nulls", ["-r", '[.name, null, .version] | join("-")'], PKG),
+    ("pkg-splits-semver", ["-c", '.version | split(".") | map(tonumber)'], PKG),
+    ("pkg-ascii-case", ["-r", ".name | ascii_upcase"], PKG),
+    ("pkg-add-strings", ["-r", '[.name, .version] | add'], PKG),
+    ("pkg-range", ["-c", "[range(0; 10; 3)]"], PKG),
+    ("pkg-math", ["-c", "[(10 | sqrt | floor), (2 | pow(.; 10)), (-1.5 | fabs), (3.7 | round), (17 | log2 | floor)]"], PKG),
+    ("pkg-sort-mixed", ["-c", 'sort'], '[3, "a", null, true, [1], {"a":1}, false, 1.5]'),
+    ("pkg-group-by-num", ["-c", 'group_by(. % 3)'], "[1,2,3,4,5,6,7]"),
+    ("pkg-flatten", ["-c", "flatten, flatten(1)"], "[1,[2,[3,[4]]]]"),
+    ("pkg-transpose", ["-c", "transpose"], "[[1,2],[3]]"),
+    ("pkg-tostring-objects", ["-r", "tostring"], '{"a":[1,"x"]}'),
+    ("pkg-ltrim-rtrim", ["-c", '[ltrimstr("x"), rtrimstr("z"), trim, ltrim, rtrim]'], '"  xyz  "'),
+    ("pkg-abs-toarray", ["-c", "[(-5 | abs), (1 | toarray), ([2] | toarray)]"], "null"),
+    ("pkg-pick", ["-c", "pick(.a.b, .c)"], '{"a":{"b":1,"x":2},"c":3,"d":4}'),
+    ("pkg-have-literal", ["-c", "have_literal_numbers"], "null"),
+    ("pkg-getpath-array-oob", ["-c", "getpath([5])"], "[1,2]"),
+    ("pkg-del-multi-idx", ["-c", "del(.[0, 2])"], "[1,2,3,4]"),
+    ("pkg-to-number-plus", ["-c", '[.[] | tonumber]'], '["1", "1.50", "-2", "1e2"]'),
+    ("pkg-splits-null-safe", ["-c", '[.[] | strings]'], '[1,"a",null,"b"]'),
+    ("pkg-ascii-implode", ["-c", '"abc" | explode | map(. + 1) | implode'], "null"),
+    ("pkg-isvalid-date", ["-c", '"2026-11-03T10:20:30Z" | fromdate'], "null"),
+    ("pkg-todate-ms", ["-r", '1762165230 | todate'], "null"),
+    ("pkg-dateadd-now-type", ["-r", 'now | type'], "null"),
+    ("pkg-base64d-unpadded", ["-r", '"eyJhIjoxfQ" | @base64d'], "null"),
+    ("jwt-payload", ["-c", 'split(".")[1] | @base64d | fromjson'],
+     '"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.sig"'),
+    ("pkg-capture-optional", ["-c", 'capture("(?<x>a)?b")'], '"b"'),
+    ("pkg-regex-lookahead", ["-c", 'test("foo(?=bar)")'], '"foobar"'),
+    ("pkg-regex-flags-x", ["-c", 'test("a b c"; "x")'], '"abc"'),
+    ("pkg-in", ["-c", '[.[] | select(IN("a", "c"))]'], '["a","b","c"]'),
+    ("pkg-ascii-getpath-paths", ["-c", '[paths] | length'], '{"a":[{"b":1}]}'),
+    ("pkg-limit-zero", ["-c", '[limit(0; 1, 2)]'], "null"),
+    ("pkg-until", ["-c", '[.[] | until(. > 100; . * 2)]'], "[1,3,7]"),
+    ("pkg-recurse", ["-c", '[recurse(if . < 3 then . + 1 else empty end)]'], "0"),
+    ("pkg-env-missing", ["-c", '$ENV.TOOLWING_NOT_SET'], "null"),
+    ("pkg-splits-csv", ["-r", '.[] | @csv'], '[[1,"a,b","c\\"d",null,true,1.5]]'),
+    ("pkg-sh-array", ["-r", '@sh'], '["a b", "it\'s", 3]'),
+    ("pkg-text", ["-r", '@text'], '{"a":1}'),
+    ("log-errors", ["-c", 'select(.level == "error") | {ts, msg}'], LOG),
+    ("log-count-by-msg", ["-s", "-c", 'map(select(.level == "error")) | group_by(.msg) | map({msg: .[0].msg, n: length})'], LOG),
+    ("log-inputs", ["-n", "-c", '[inputs | .ms] | add / length'], LOG),
+    ("log-input-first", ["-n", "-c", 'input.msg'], LOG),
+    ("log-err-optional", ["-r", '.err?.code // empty'], LOG),
+    ("obj-del-key", ["-c", "del(.a)"], '{"a":1,"b":2,"c":3,"d":4}'),
+    ("k8s-del-field", ["-c", ".items[0].metadata | del(.name)"], PODS),
+    ("docker-ip", ["-r", ".[0].NetworkSettings.Networks[].IPAddress"], DOCKER),
+    ("docker-env", ["-c", '.[0].Config.Env | map(split("=") | {(.[0]): (.[1:] | join("="))}) | add'], DOCKER),
+    ("docker-health", ["-r", '.[0].State.Health.Status'], DOCKER),
+    ("docker-mounts", ["-r", '.[0].Mounts[] | "\\(.Source):\\(.Destination)"'], DOCKER),
+]
+
+def run(binary, args, stdin):
+    p = subprocess.run([binary, *args], input=stdin.encode(), capture_output=True, timeout=10,
+                       env={"HOME": "/home/test", "PATH": "/usr/bin:/bin", "TZ": "UTC",
+                            **({"JAQ": os.environ["JAQ"]} if "JAQ" in os.environ else {})})
+    return p.returncode, p.stdout, p.stderr
+
+if __name__ == "__main__":
+    ref, cand = sys.argv[1:3]
+    for name, args, stdin in CASES:
+        rc1, out1, _ = run(ref, args, stdin)
+        rc2, out2, err2 = run(cand, args, stdin)
+        if rc1 == rc2 and out1 == out2:
+            status = "same"
+        elif rc1 == rc2 and rc1 == 0 and out1.split() == out2.split():
+            status = "whitespace"
+        else:
+            status = "differs"
+        print(json.dumps(dict(name=name, status=status, args=args, ref=[rc1, out1.decode(errors="replace")[:300]],
+                              cand=[rc2, out2.decode(errors="replace")[:300], err2.decode(errors="replace")[:200]])))

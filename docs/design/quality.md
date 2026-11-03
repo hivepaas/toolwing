@@ -24,8 +24,10 @@ tests/compat/base64/wrap-0.case
   any drift, so a new reference version is noticed.
 - Cases cover the commonly used flags, empty input, input without a trailing
   newline, invalid input, large input, and non-ASCII text.
-- `tw jq` also runs jq's own suite (tools.md, "jq compatibility"), with the known
-  differences listed and each one explained.
+- `tw jq` also runs jq's own suite and the real-world corpus, with the gates
+  in [jq.md](jq.md): 100% of the corpus byte for byte, 100% of `man.test`, 90%
+  of the whole suite for 1.0. The scripts that measured jaq
+  (`scripts/jq-compat/`) are the start of these tests.
 
 ## Other tests
 

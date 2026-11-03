@@ -42,8 +42,8 @@ palette so it sits with shellwing and tracewing.
 - An error replaces the output with its message, and its span is underlined in
   the input or the filter. The last good output stays visible, dimmed, so the
   layout does not jump while typing.
-- jq and the other tools that run user-written code or parse deeply nested
-  input run in the worker process; a crash or a timeout shows as an error.
+- jq runs in the worker process (architecture.md); a crash, a timeout or the
+  memory limit shows as an error and the worker is restarted.
 
 ## Editors
 
@@ -93,11 +93,27 @@ Everything works without a mouse: Ctrl+K, Ctrl+1–9 for the group's actions,
 Ctrl+Enter to run, Ctrl+Shift+C to copy the output, Ctrl+Shift+L to copy the
 command line, F6 to move between input, options and output.
 
+## Languages
+
+- **The app** is translated as shellwing is: English in the code, `tr!("…")`
+  where it is shown, Fluent catalogs under `locales/` found by a hash of the
+  English, and `scripts/i18n.py check` in CI. The crate is taken from
+  `shellwing-i18n` as `toolwing-i18n`, with the same 15 languages.
+- **Tool titles, summaries and option labels** are English `&'static str` in
+  `toolwing-tools`, which does not depend on the i18n crate. They are written
+  inside a marker macro, `en!("Base64 encode")`, that expands to the string, so
+  `scripts/i18n.py` finds them; the app translates them where it shows them
+  with `toolwing_i18n::tr`.
+- **gpui-component's own words** (its pickers, dialogs, inputs) come from its
+  `rust-i18n` catalogs. The app sets its locale from the same setting at start
+  and when it changes; where it has no translation, its English shows.
+- **The CLI is English only**: help, messages and output. Scripts match on
+  them, and jq, coreutils on a C locale and the other tools `tw` stands in for
+  are English. Output values (`--json` keys, enum names) are never translated
+  in the app either.
+
 **Open:**
 
-- Translations: gpui-component brings `rust-i18n`, shellwing has its own
-  `shellwing-i18n`. One of them for both the components and our text, or
-  English only in 1.0.
 - Accessibility: what GPUI exposes to screen readers as of `gpui-pre` 0.3.11,
   and what that leaves out.
 - Several tools open at once (tabs), or one tool at a time as now.

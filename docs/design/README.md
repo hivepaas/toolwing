@@ -6,9 +6,10 @@ implemented yet. Questions still to settle are marked **Open**.
 
 | Note | Covers |
 | --- | --- |
-| [architecture.md](architecture.md) | Crates, the tool model, the registry, threads and workers |
+| [architecture.md](architecture.md) | Crates, the tool model, the registry, threads, the jq worker |
 | [cli.md](cli.md) | `tw`: command shape, input and output, exit codes, the stable surface |
 | [tools.md](tools.md) | Which tools, in which order, matching which reference tool, on which crate |
+| [jq.md](jq.md) | `tw jq`: how close jaq is (measured), the compatibility layer, release gates |
 | [app.md](app.md) | The desktop app: layout, live results, the palette, clipboard suggestions |
 | [quality.md](quality.md) | Compatibility tests, fuzzing, benchmarks, security, releases |
 

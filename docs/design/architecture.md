@@ -5,12 +5,16 @@
 ```
 crates/
   core/    toolwing-core    the tool model: Meta, Param, Value, Output, Error, Ctx
+  jq/      toolwing-jq      jq on jaq-core: value type, writer, prelude, natives (jq.md)
   tools/   toolwing-tools   every tool, one module per group; the registry
   cli/     toolwing-cli     binary `tw`: commands built from the registry
   app/     toolwing         binary `toolwing`: GPUI + gpui-component
 ```
 
-Dependencies point one way: `core` ← `tools` ← `cli`, `app`.
+Dependencies point one way: `core` ← `jq` ← `tools` ← `cli`, `app`.
+`toolwing-jq` is its own crate because it is the largest piece, is tested
+against jq's suite on its own, and its JSON reader and writer also serve
+`json` and `convert`.
 
 - **`core` is small and has no heavy dependencies**, so its types change
   rarely and everything builds on them quickly.
@@ -117,16 +121,57 @@ unique, every param has help text, every group has compatibility cases
   `tw` command line the way "copy as command" does, parses it back with the CLI
   and checks the two are equal.
 
-## Threads and the worker
+## Threads
 
-- The app never runs a tool on the UI thread. Each run goes to the background
-  executor with a generation number; a result whose generation is not the
-  latest is dropped, and the previous run is cancelled through `Ctx`.
-- **Untrusted filters run in a worker process.** jaq does not guard against
-  resource exhaustion: `def f: 1+f; f` overflows the stack, which aborts the
-  whole process. So the app runs `jq`, regex and the data conversions in a
-  child process (the app's own binary started with `--worker`), with a time and
-  memory limit; a crash ends the worker, not the app, and shows as an error. A
-  new worker is started on demand. The CLI runs in-process, as jq does.
-- **Open:** whether every tool goes through the worker, for one code path, or
-  only those that run user-written code or parse arbitrarily nested input.
+The app never runs a tool on the UI thread. Each run goes to the background
+executor with a generation number; a result whose generation is not the latest
+is dropped, and the previous run is cancelled through `Ctx`.
+
+## jq runs in a worker process
+
+**Decision:** in the app, `jq` runs in a child process; every other tool runs
+in the app's process. The CLI runs everything in-process, as jq does.
+
+Why jq is different: it is the only tool that runs a program the user writes,
+and jq programs need not end, can recurse without limit and can allocate
+without limit. In the app they run on every keystroke, so half-typed programs
+run too: `repeat(.)`, `def f: f; f`, `last(range(1e15))`,
+`reduce range(1e6) as $_ ([]; [.])`. In a thread of the app's process:
+
+- **A thread cannot be stopped from outside.** jaq checks no flag, so a program
+  that loops without producing output keeps a core busy until the app quits,
+  and each keystroke can add another such thread.
+- **Stack overflow and allocation failure abort the whole process.** Measured:
+  jaq 3.1.2 overflows its stack on 10,000 nested arrays (jq.md). The app would
+  vanish with the user's input, which it does not keep (app.md).
+- **Memory cannot be limited per thread.**
+
+A worker process can be killed, given a memory limit, and lost without losing
+the app. The other tools do not need one: their work is bounded by their input
+(linear-time algorithms; the `regex` crate guarantees it), costly parameters
+have limits in the app (bcrypt cost, argon2 memory), output is capped, and
+input deeper than 10,000 levels is refused before parsing, as jq refuses it.
+
+| | Everything in-process | Worker for jq only | Worker for every tool |
+| --- | --- | --- | --- |
+| Runaway program | Thread spins until the app quits | Killed after a time limit | Killed |
+| Stack overflow, out of memory | App aborts, input lost | Worker restarts, error shown | Worker restarts |
+| Memory limit | None | Per run | Per run |
+| Latency per run | None | Input copied over a pipe (measured on Linux: 7 ms for 10 MB in and out), worker kept warm | The same for every tool, even base64 of 5 bytes |
+| Code | None | Spawn, framing, watchdog: a few hundred lines in `app` | Every tool's input and output through IPC, streaming tools too |
+
+How the worker works:
+
+- The app's own binary started as `toolwing --jq-worker`, so nothing extra is
+  shipped or signed. One is started with the app and kept warm.
+- Requests and results as length-prefixed messages over stdin and stdout. A
+  request carries the filter, the input (or the path of the file it came from,
+  which the worker reads itself) and the options; results stream back, so the
+  first values show before a long run ends.
+- A newer request kills the running one when the user has typed on. Limits per
+  run: 5 s of CPU (settings can raise it), 2 GB of memory, 64 MB of output.
+  Memory through `rlimit` on Linux and macOS (the latter also watched by the
+  app, as macOS does not enforce `RLIMIT_AS`) and a Job Object (`win32job`)
+  on Windows: safe APIs, so the `unsafe_code` lint stays as it is.
+- A killed or crashed worker shows as an error ("Stopped after 5 s",
+  "Ran out of memory", "Too deeply nested") and is restarted.

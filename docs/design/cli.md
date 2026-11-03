@@ -98,11 +98,9 @@ aarch64. Packages: `cargo install toolwing-cli`, Homebrew, `.deb` and `.rpm`
 (as shellwing builds them), winget, Scoop, and a container image with `tw`
 alone.
 
-**Open:**
+**The name `tw`.** The binary is `tw`. Before the first release, its name is
+checked against Debian, Fedora, Arch, Homebrew, Scoop and winget; where it is
+taken, packages install `toolwing-cli` and leave `tw` out.
 
-- **The name `tw`.** Short enough to type all day, but two letters collide
-  easily; check Debian, Fedora, Arch, Homebrew and winget before the first
-  release. The fallback: the binary is `toolwing-cli` and packages add the
-  `tw` link only where it is free.
-- Whether `tw jq` is also installed as `jq` by an opt-in package, for machines
-  that have none.
+**Open:** whether `tw jq` is also installed as `jq` by an opt-in package, for
+machines that have none.
