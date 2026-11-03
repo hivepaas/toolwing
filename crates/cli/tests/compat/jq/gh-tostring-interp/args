@@ -1,0 +1,2 @@
+-r
+.[] | "#\(.number) draft=\(.draft) body=\(.body)"

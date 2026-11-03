@@ -1,0 +1,2 @@
+-r
+.[] | "\(.number): \([.labels[].name] | join(", "))"

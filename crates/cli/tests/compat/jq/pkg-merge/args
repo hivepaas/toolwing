@@ -1,0 +1,2 @@
+-c
+.dependencies * {"zod": "^4.0.0", "lodash": "^4.17.21"}

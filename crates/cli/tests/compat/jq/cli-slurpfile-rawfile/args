@@ -1,0 +1,9 @@
+-n
+-c
+--slurpfile
+d
+b.json
+--rawfile
+r
+text.txt
+[$d, $r]

@@ -1,0 +1,2 @@
+-c
+[label $out | 1, 2, break $out, 3]

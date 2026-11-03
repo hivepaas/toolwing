@@ -1,0 +1,4 @@
+-n
+-L
+lib
+import "m" as m; m::f

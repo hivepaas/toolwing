@@ -1,0 +1,2 @@
+-c
+.items[] | {name: .metadata.name, restarts: ([.status.containerStatuses[]?.restartCount] | add // 0)}

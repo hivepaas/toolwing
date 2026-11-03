@@ -1,0 +1,2 @@
+-c
+.dependencies |= with_entries(.value |= ltrimstr("^"))

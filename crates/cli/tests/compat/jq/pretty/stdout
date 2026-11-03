@@ -1,0 +1,16 @@
+{
+  "name": "demo",
+  "version": "1.2.3",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.23.8",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.3"
+  }
+}

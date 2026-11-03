@@ -1,0 +1,2 @@
+-c
+.Reservations[].Instances[] | {id: .InstanceId} + (.Tags | map({(.Key): .Value}) | add)

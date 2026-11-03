@@ -1,0 +1,2 @@
+-r
+.[] | .created_at | fromdate | strftime("%Y-%m-%d %H:%M")

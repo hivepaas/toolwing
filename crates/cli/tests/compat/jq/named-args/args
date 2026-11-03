@@ -1,0 +1,6 @@
+-n
+-c
+--arg
+x
+1
+$ARGS.named

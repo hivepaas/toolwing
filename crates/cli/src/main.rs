@@ -2,6 +2,7 @@
 
 mod commands;
 mod diffs;
+mod jq;
 mod sums;
 
 use std::fs::File;
@@ -15,6 +16,10 @@ use toolwing_tools::{TOOLS, group};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
+    // jq's arguments are read as jq reads them (jq.rs), not by clap.
+    if args.get(1).is_some_and(|a| a == "jq") {
+        return ExitCode::from(jq::main(&args[2..]));
+    }
     let matches = match commands::root().try_get_matches_from(&args) {
         Ok(m) => m,
         Err(e) => {

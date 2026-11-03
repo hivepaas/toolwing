@@ -1,0 +1,2 @@
+-r
+.[] | [.number, .title, .user.login] | @csv

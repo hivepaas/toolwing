@@ -1,0 +1,2 @@
+-c
+[.items[] | .metadata.creationTimestamp // empty | fromdateiso8601]

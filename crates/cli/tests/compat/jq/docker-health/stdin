@@ -1,0 +1,1 @@
+[{"Id": "f00d", "Name": "/db", "State": {"Status": "running", "Health": {"Status": "healthy"}}, "NetworkSettings": {"Networks": {"bridge": {"IPAddress": "172.17.0.2"}}}, "Config": {"Env": ["POSTGRES_USER=app", "PGDATA=/var/lib/pg", "EMPTY="]}, "Mounts": [{"Source": "/srv/db", "Destination": "/var/lib/pg"}]}]

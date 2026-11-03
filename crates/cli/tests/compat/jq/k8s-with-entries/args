@@ -1,0 +1,2 @@
+-c
+.items[0].metadata.labels | with_entries(.key |= "label_" + .)

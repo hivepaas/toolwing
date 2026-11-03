@@ -1,0 +1,2 @@
+-c
+[getpath(["scripts","build"]), getpath(["nope","x"])]

@@ -1,0 +1,2 @@
+-c
+.items | group_by(.metadata.namespace) | map({ns: .[0].metadata.namespace, count: length})

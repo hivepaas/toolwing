@@ -1,0 +1,2 @@
+-c
+.[] | .title | [ascii_downcase, length, utf8bytelength, (split(" ") | length), startswith("Fix"), ltrimstr("Add ")]

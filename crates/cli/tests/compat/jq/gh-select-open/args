@@ -1,0 +1,2 @@
+-c
+map(select(.state == "open" and (.draft | not))) | map(.number)

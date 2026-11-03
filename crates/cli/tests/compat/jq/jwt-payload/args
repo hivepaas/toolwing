@@ -1,0 +1,2 @@
+-c
+split(".")[1] | @base64d | fromjson

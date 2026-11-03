@@ -1,0 +1,2 @@
+-c
+[.items[].spec.containers[].resources?.limits?.memory]

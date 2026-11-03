@@ -23,9 +23,21 @@ done
 IMAGE[diff]=debian:13
 COMMAND[diff]=diff
 VERSION[diff]="diff (GNU diffutils) 3.10"
+# jq: its release's static binary, checked against the release's sha256.
+JQ=target/compat-ref/jq-1.8.2-linux-amd64
+JQ_SHA256=b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f
+IMAGE[jq]=debian:13
+COMMAND[jq]=/w/$JQ # the container sees the repository at /w
+VERSION[jq]="jq-1.8.2"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
+  if [ "$group" = jq ] && ! echo "$JQ_SHA256  $JQ" | sha256sum -c --status > /dev/null 2>&1; then
+    mkdir -p "$(dirname "$JQ")"
+    curl -fsSL -o "$JQ" https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64
+    echo "$JQ_SHA256  $JQ" | sha256sum -c --quiet
+    chmod +x "$JQ"
+  fi
   image=${IMAGE[$group]:?no reference for $group}
   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/w" -w /w "$image" bash -c '
     set -euo pipefail
