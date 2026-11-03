@@ -20,6 +20,9 @@ def significand:
     if isinfinite or isnan then .
   elif . == 0.0 then 0.0
   else scalbln(.; ilogb | -1 * .) end;
+# Natives (natives.rs).
+def @base64d: tostring | _toolwing_base64d;
+def @urid: tostring | _toolwing_urid;
 def have_literal_numbers: true;
 def have_decnum: false;
 def _del1($p):

@@ -1,1 +1,0 @@
-@base64d wants padding (jq takes it without): a native @base64d (docs/design/jq.md).

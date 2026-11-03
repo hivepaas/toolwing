@@ -22,8 +22,8 @@ const PASSING: &[(&str, usize, usize)] = &[
     ("man.test", 221, 231),
     ("onig.test", 38, 47),
     ("manonig.test", 16, 19),
-    ("base64.test", 6, 10),
-    ("uri.test", 14, 20),
+    ("base64.test", 10, 10),
+    ("uri.test", 20, 20),
     ("optional.test", 2, 2),
 ];
 

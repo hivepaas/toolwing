@@ -6,6 +6,8 @@
 
 use std::path::PathBuf;
 
+mod natives;
+
 pub use jaq_all::data::{Filter, Runner};
 pub use jaq_all::fmts::Format;
 pub use jaq_all::fmts::{read, write};
@@ -69,7 +71,7 @@ pub fn compile(
     })
     .map_err(|e| report(load_errors(e)))?;
     let filter = Compiler::default()
-        .with_funs(jaq_all::data::funs())
+        .with_funs(natives::funs())
         .with_global_vars(vars.iter().map(|v| &**v))
         .compile(modules)
         .map_err(|e| report(compile_errors(e)))?;
