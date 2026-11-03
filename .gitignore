@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+.DS_Store
+.idea/
+.vscode/
+.env
+
+# make build puts the binaries here.
+/dist

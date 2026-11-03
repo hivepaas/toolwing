@@ -1,0 +1,6 @@
+# The Rust that local builds, CI and releases use, the same as the other -wing
+# apps. Raised by hand, in a pull request of its own.
+[toolchain]
+channel = "1.99.1"
+profile = "minimal"
+components = ["clippy", "rustfmt"]
