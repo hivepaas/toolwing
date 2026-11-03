@@ -208,7 +208,10 @@ fn parse_line(line: &str) -> Result<(String, String), &'static str> {
         return Err("Invalid hash length");
     }
     // Lowercase, as b3sum writes it and reads it.
-    if !hex.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+    if !hex
+        .bytes()
+        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
         return Err("Invalid check line format");
     }
     let name = if escaped {
