@@ -13,14 +13,14 @@ official jq 1.8.2 binary, with the scripts in `scripts/jq-compat/`.
 jq's runner judges them: outputs compared as values, in order). jq passes all
 879 with `PAGER=less` set, as its `mantest` sets it.
 
-| Suite | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq`: prelude | `tw jq`: + values, natives, Oniguruma |
-| --- | --- | --- | --- | --- |
-| `jq.test` (550) | 373 (67.8%) | 396 (72.0%) | 394 (71.6%) | 428 (77.8%) |
-| `man.test`, the manual's examples (231) | 209 (90.5%) | 216 (93.5%) | 216 (93.5%) | 221 (95.7%) |
-| `onig.test` + `manonig.test`, regex (66) | 54 (81.8%) | 54 | 54 | **66 (100%)** |
-| `base64.test` + `uri.test` (30) | 20 (66.7%) | 20 | 20 | **30 (100%)** |
-| `optional.test` (2) | 2 | 2 | 2 | 2 |
-| **All (879)** | **658 (74.9%)** | **688 (78.3%)** | **686 (78.0%)** | **747 (85.0%)** |
+| Suite | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq`: prelude | + values, natives, Oniguruma | + `?//`, `$__loc__`, decNumber, messages |
+| --- | --- | --- | --- | --- | --- |
+| `jq.test` (550) | 373 (67.8%) | 396 (72.0%) | 394 (71.6%) | 428 (77.8%) | 470 (85.5%) |
+| `man.test`, the manual's examples (231) | 209 (90.5%) | 216 (93.5%) | 216 (93.5%) | 221 (95.7%) | **231 (100%)** |
+| `onig.test` + `manonig.test`, regex (66) | 54 (81.8%) | 54 | 54 | **66 (100%)** | **66 (100%)** |
+| `base64.test` + `uri.test` (30) | 20 (66.7%) | 20 | 20 | **30 (100%)** | **30 (100%)** |
+| `optional.test` (2) | 2 | 2 | 2 | 2 | 2 |
+| **All (879)** | **658 (74.9%)** | **688 (78.3%)** | **686 (78.0%)** | **747 (85.0%)** | **799 (90.9%)** |
 
 The prototype pasted the prelude in front of each program, which made two
 `module` cases in `jq.test` fail to compile as they must, by accident; `tw jq`
@@ -50,20 +50,21 @@ reorders the remaining keys (`{"d":4,"b":2,"c":3}`), and it prints `10 / 5` as
 | Regex: jaq uses `regex-bites` (no look-around, ASCII `\b`, optional groups dropped from `capture`) | suite 12, idioms 2 | **Oniguruma**, the engine jq uses (6.9.10, through the `onig` crate), as native `_match_impl` ported from jq's `f_match`; `match`, `test`, `capture`, `scan`, `splits`, `sub`, `gsub` from jq's builtin.jq. **Done**: `crates/jq/src/regex.rs`. |
 | `@base64d` refuses unpadded input (every JWT payload: `split(".")[1] \| @base64d`), `@urid` accepts invalid input | suite 10, idioms 2 | **Native filters** with jq's rules and messages. **Done**: `crates/jq/src/natives.rs`. |
 | Division by zero gives `Infinity`, `%` on fractions, `NaN` literals in input, `strftime` on short arrays | suite ~6 | Value type and natives. **Done** for division and `%`; the others remain. |
-| Syntax jaq lacks: `?//` destructuring alternatives, `$__loc__`, `{$name: pattern}`, `reduce`/`foreach` with `/` in the source | suite ~28, of which 4 in the manual | **jaq-core**: pull requests upstream; a patch taken in only while one waits, as shellwing does with `gpui-pre-linux`. |
+| Syntax jaq lacks: `?//` destructuring alternatives, `$__loc__`, `{$name: pattern}`, `reduce`/`foreach` with `/` in the source | suite ~28, of which 4 in the manual | **jaq-core**, vendored (`vendor/jaq-core`): `?//` rewritten by its parser into `try`/`catch` over the patterns. `$__loc__` rewritten before parsing (`crates/jq/src/syntax.rs`). **Done** for these two; `{$name: pattern}` and `reduce`/`foreach` with `/` remain. |
 | Modules: `import "x" as $data`, `modulemeta`, `builtins` | suite ~12 | jaq-core and natives. |
 | Depth: jaq overflows its stack at 10,000 levels (`reduce range(10000) as $_ ([];[.]) \| tojson \| fromjson` aborts the process); jq stops with "too deep" | suite 14 | Depth limits of 10,000 in the parser, writer, comparison and paths, as jq has. |
-| Error message text (`try … catch .` returns jq's wording) | suite 34 | jq's messages for the common errors, in the value type and natives. |
+| Error message text (`try … catch .` returns jq's wording) | suite 34 | jq's messages for the common errors, in the value type and natives. **Done** for indexing, iterating, arithmetic and negation (`vendor/jaq-json/src/jq.rs`); those of jaq-std's filters (`toboolean`, `trim`, `strftime`, `ltrimstr`, …) remain. |
 
 ## Expected results
 
-Estimates from the measured categories, the first two rows measured:
+Estimates from the measured categories, the first three rows measured:
 
 | After | Suite | Real-world programs |
 | --- | --- | --- |
 | Prelude (measured) | 78.0% | 91.8% |
 | + value type, number writer, Oniguruma, natives (measured) | 85.0% | 100% |
-| + jaq-core syntax, modules, depth limits | ~94% | 100% |
+| + `?//`, `$__loc__`, decNumber literals, the common messages (measured) | 90.9% | 100% |
+| + modules, depth limits, the other syntax | ~94% | 100% |
 | + jq's error messages | ~97–99% | 100% |
 
 ## Release gates
@@ -74,9 +75,13 @@ Estimates from the measured categories, the first two rows measured:
    code. The corpus grows to at least 500 programs before 1.0, taken from the
    jq manual, the documentation of kubectl, the AWS CLI, `gh` and Docker, and
    the most-viewed jq questions on Stack Overflow.
+   **Met for the corpus so far** (170 programs, all identical); it is not
+   yet 500.
 2. **`man.test`: 100%.** What the manual documents works as documented.
+   **Met**: 231 of 231.
 3. **The whole suite: at least 90% for 1.0, 97% for 1.1.** Every case that
    still fails is listed with its reason and the issue tracking it.
+   **Met for 1.0**: 799 of 879 (90.9%).
 
 The prelude, the value type and the natives live in `toolwing-jq`
 (architecture.md); jaq-core and jaq-std are used as published, apart from

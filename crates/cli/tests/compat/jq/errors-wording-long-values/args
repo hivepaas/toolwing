@@ -1,0 +1,2 @@
+-c
+[(try (. - .) catch .), (try (. + {"a":{"b":{"c":33}}}) catch .), (try -. catch .)]
