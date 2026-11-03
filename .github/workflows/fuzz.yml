@@ -1,0 +1,52 @@
+name: Fuzz
+
+# Each parser fuzzed for 10 minutes a night (docs/design/quality.md): nothing a
+# tool is given may panic, overflow its stack or hang. An input that does is
+# kept as an artifact, to become a regression test.
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds for each target
+        default: "600"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fuzz:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [json, yaml, toml, xml, csv, jq_compile, jwt, cron, decode, tools]
+    steps:
+      - uses: actions/checkout@v4
+
+      # cargo-fuzz needs a nightly compiler (libFuzzer and sanitizer flags).
+      - name: Rust nightly
+        run: rustup toolchain install nightly --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fuzz
+          key: ${{ matrix.target }}
+
+      - name: cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+
+      - name: Fuzz ${{ matrix.target }}
+        working-directory: fuzz
+        run: >-
+          cargo +nightly fuzz run ${{ matrix.target }} --
+          -max_total_time=${{ inputs.seconds || 600 }} -timeout=10 -rss_limit_mb=2048
+
+      - name: The input that failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}/

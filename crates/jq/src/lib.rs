@@ -47,7 +47,8 @@ pub struct Program {
 
 /// Compiles `code` (shown in errors as `path`), with the `$name` variables
 /// given by `--arg` and the like, modules looked for in `paths`. A failure
-/// is the report jaq writes, without colour.
+/// is the report jaq writes, without colour. Compiling recurses: it wants a
+/// large stack ([`doc::STACK`]), as `tw jq` and the app's worker give it.
 pub fn compile(
     path: &str,
     code: &str,
@@ -59,7 +60,14 @@ pub fn compile(
     let vars: Vec<String> = vars.iter().map(|v| format!("${v}")).collect();
     let arena = Arena::default();
     let loader = Loader::new(defs()).with_std_read(paths);
-    // jq syntax jaq lacks, rewritten first (syntax.rs).
+    // Programs jaq cannot take, refused, and jq syntax jaq lacks, rewritten
+    // first (syntax.rs).
+    if let Some((line, column)) = syntax::too_deep(code) {
+        return Err(format!(
+            "Error: the filter nests more than {} levels deep (brackets and chained operators) at {path}, line {line}, column {column}\n",
+            syntax::MAX_DEPTH
+        ));
+    }
     let code = &*syntax::locations(code);
     let file = File {
         path: PathBuf::from(path),
@@ -243,6 +251,37 @@ mod tests {
             Ok(vec![r#"["a","c"]"#.into()])
         );
         assert_eq!(eval("del(.[0, 2])", "[1,2,3,4]"), Ok(vec!["[2,4]".into()]));
+    }
+
+    /// Deep input crashed jaq's parser even on a large stack: such filters
+    /// are refused before they are parsed.
+    #[test]
+    fn filters_too_deep_are_refused_not_crashed_on() {
+        // Compiling recurses: callers give it a large stack, as tw jq and the
+        // app's worker do.
+        let run = doc::on_large_stack(|| {
+            let deep = [
+                "[".repeat(100_000),
+                "1+".repeat(100_000) + "1",
+                "-".repeat(100_000) + "1",
+            ];
+            let errors: Vec<String> = deep
+                .iter()
+                .map(|code| {
+                    compile("<inline>", code, &[], &[])
+                        .err()
+                        .unwrap_or_default()
+                })
+                .collect();
+            let fine = compile("<inline>", &("1+".repeat(9_000) + "1"), &[], &[]).is_ok();
+            (errors, fine)
+        });
+        let (errors, fine) = run.unwrap_or_default();
+        assert!(
+            errors.len() == 3 && errors.iter().all(|e| e.contains("more than 10000 levels")),
+            "{errors:?}"
+        );
+        assert!(fine);
     }
 
     #[test]

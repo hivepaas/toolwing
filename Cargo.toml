@@ -2,7 +2,7 @@
 resolver = "3"
 members = ["crates/*"]
 # Vendored crates keep their own lints and tests (vendor/README.md).
-exclude = ["vendor/jaq-json", "vendor/jaq-core"]
+exclude = ["vendor/jaq-json", "vendor/jaq-core", "fuzz"]
 
 [workspace.package]
 version = "0.1.0"

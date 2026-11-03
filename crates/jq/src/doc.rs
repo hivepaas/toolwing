@@ -10,6 +10,25 @@ use jaq_all::json::write::Pp;
 /// before it is parsed, as the parser would overflow its stack.
 pub const MAX_DEPTH: usize = 10_000;
 
+/// The stack values are read and written on, as the app's jq worker and
+/// `tw jq` have: reading and writing are recursive, and 10,000 levels take
+/// more than a thread's 2 MB (the app's background threads have that).
+/// Reserved, not used, until a deep value needs it.
+pub const STACK: usize = 256 << 20;
+
+/// Runs `f` on a thread with [`STACK`], for work that reads or writes
+/// nested values; a panic in it goes on in the caller.
+pub fn on_large_stack<T: Send>(f: impl FnOnce() -> T + Send) -> std::io::Result<T> {
+    std::thread::scope(|scope| {
+        let thread = std::thread::Builder::new()
+            .stack_size(STACK)
+            .spawn_scoped(scope, f)?;
+        Ok(thread
+            .join()
+            .unwrap_or_else(|panic| std::panic::resume_unwind(panic)))
+    })
+}
+
 /// Why an input does not parse, and where when the format says.
 #[derive(Debug, PartialEq)]
 pub struct ParseError {
@@ -20,7 +39,11 @@ pub struct ParseError {
 /// Every value in `bytes`, read as `format`: several JSON values one after
 /// another, YAML's documents, one TOML table, CSV's rows (each an array).
 pub fn parse(format: Format, bytes: &[u8]) -> Result<Vec<Val>, ParseError> {
-    if let Some(offset) = too_deep(bytes) {
+    let deep = match format {
+        Format::Xml => too_deep_xml(bytes),
+        _ => too_deep(bytes),
+    };
+    if let Some(offset) = deep {
         let message = format!("nested more than {MAX_DEPTH} levels deep");
         return Err(ParseError {
             message,
@@ -130,6 +153,56 @@ fn too_deep(bytes: &[u8]) -> Option<usize> {
     None
 }
 
+/// Where `bytes` nests XML elements deeper than [`MAX_DEPTH`], if it does:
+/// a start tag goes in, an end tag out; self-closing tags, comments, CDATA,
+/// declarations and processing instructions neither.
+fn too_deep_xml(bytes: &[u8]) -> Option<usize> {
+    let find = |from: usize, what: &[u8]| {
+        bytes[from..]
+            .windows(what.len())
+            .position(|w| w == what)
+            .map(|p| from + p + what.len())
+    };
+    let (mut depth, mut i) = (0usize, 0);
+    while let Some(lt) = bytes[i..].iter().position(|&b| b == b'<').map(|p| i + p) {
+        let rest = &bytes[lt + 1..];
+        let end = if rest.starts_with(b"!--") {
+            find(lt, b"-->")
+        } else if rest.starts_with(b"![CDATA[") {
+            find(lt, b"]]>")
+        } else if rest.starts_with(b"?") || rest.starts_with(b"!") {
+            find(lt, b">")
+        } else {
+            // To the tag's `>`, past quoted attribute values.
+            let mut quote = None;
+            let close = bytes[lt..].iter().enumerate().find(|&(_, &b)| match quote {
+                Some(q) if b == q => {
+                    quote = None;
+                    false
+                }
+                Some(_) => false,
+                None if b == b'"' || b == b'\'' => {
+                    quote = Some(b);
+                    false
+                }
+                None => b == b'>',
+            });
+            let gt = close.map(|(p, _)| lt + p)?;
+            if rest.starts_with(b"/") {
+                depth = depth.saturating_sub(1);
+            } else if bytes[gt - 1] != b'/' {
+                depth += 1;
+                if depth > MAX_DEPTH {
+                    return Some(lt);
+                }
+            }
+            Some(gt + 1)
+        };
+        i = end?;
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,6 +237,17 @@ mod tests {
     fn errors_say_where() {
         let e = parse(Format::Json, b"{\"a\":1,}").err();
         assert_eq!(e.map(|e| e.offset), Some(Some(7)));
+        let xml = format!(
+            "<?xml version=\"1.0\"?><!-- <a> -->{}",
+            "<a x='>'>".repeat(MAX_DEPTH + 1)
+        );
+        assert!(parse(Format::Xml, xml.as_bytes()).is_err_and(|e| e.message.contains("deep")));
+        let fine = format!(
+            "{}<b/>{}",
+            "<a>".repeat(MAX_DEPTH),
+            "</a>".repeat(MAX_DEPTH)
+        );
+        assert!(too_deep_xml(fine.as_bytes()).is_none());
         let deep = "[".repeat(MAX_DEPTH + 1);
         assert_eq!(
             parse(Format::Json, deep.as_bytes())

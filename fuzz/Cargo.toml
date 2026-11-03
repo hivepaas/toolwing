@@ -1,0 +1,97 @@
+# Fuzz targets (docs/design/quality.md): one for each parser, and one that
+# gives every tool any input. Nothing a tool is given may panic.
+#
+#   cargo +nightly fuzz run json -- -max_total_time=600
+#
+# Its own workspace, so the main one builds on stable; the vendored crates
+# are patched in here too, or the targets would test jaq's own.
+[package]
+name = "toolwing-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+toolwing-core = { path = "../crates/core" }
+toolwing-tools = { path = "../crates/tools" }
+toolwing-jq = { path = "../crates/jq" }
+
+[patch.crates-io]
+jaq-json = { path = "../vendor/jaq-json" }
+jaq-core = { path = "../vendor/jaq-core" }
+
+[[bin]]
+name = "json"
+path = "fuzz_targets/json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "yaml"
+path = "fuzz_targets/yaml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "toml"
+path = "fuzz_targets/toml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "xml"
+path = "fuzz_targets/xml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "csv"
+path = "fuzz_targets/csv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jq_compile"
+path = "fuzz_targets/jq_compile.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jwt"
+path = "fuzz_targets/jwt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cron"
+path = "fuzz_targets/cron.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode"
+path = "fuzz_targets/decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tools"
+path = "fuzz_targets/tools.rs"
+test = false
+doc = false
+bench = false

@@ -69,6 +69,7 @@ Two kinds of command, and every tool says which it is (tools.md):
 | 2 | Usage error: unknown flag, missing argument |
 | 3 | Invalid input: not base64, not JSON, an expired JWT with `--require-valid` |
 | 4 | A file could not be read or written |
+| 141 | The reader of stdout went away (`tw … \| head`): ended quietly, as SIGPIPE ends other tools |
 
 Drop-in commands keep their reference's codes: `tw jq` exits 2 on a usage or
 system error, 3 on a filter that does not compile, 5 on a runtime error on

@@ -148,7 +148,7 @@ pub fn run(sum: &'static Sum, m: &ArgMatches) -> u8 {
         .get_many::<String>("files")
         .map(|f| f.cloned().collect())
         .unwrap_or_else(|| vec!["-".into()]);
-    let mut out = BufWriter::new(io::stdout().lock());
+    let mut out = BufWriter::new(crate::stdout());
     let ok = if on("check") {
         let options = CheckOptions {
             ignore_missing: on("ignore_missing"),

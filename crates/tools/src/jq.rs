@@ -46,15 +46,18 @@ impl Tool for Jq {
 
     /// The filter `.`: the input as `jq .` writes it.
     fn run(&self, _ctx: &Ctx, input: &[u8], _values: &Values) -> Result<Output, Error> {
-        let style = Style {
-            indent: Some("  ".into()),
-            ..Style::default()
-        };
-        let mut out = String::new();
-        for v in doc::parse(Format::Json, input).map_err(|e| Error::input(e.message))? {
-            out.push_str(&doc::write_one(Format::Json, &v, &style).map_err(Error::input)?);
-        }
-        out.pop();
-        Ok(Output::Text(out))
+        // Values nest up to 10,000 deep: read and written on a large stack.
+        crate::on_large_stack(|| {
+            let style = Style {
+                indent: Some("  ".into()),
+                ..Style::default()
+            };
+            let mut out = String::new();
+            for v in doc::parse(Format::Json, input).map_err(|e| Error::input(e.message))? {
+                out.push_str(&doc::write_one(Format::Json, &v, &style).map_err(Error::input)?);
+            }
+            out.pop();
+            Ok(Output::Text(out))
+        })
     }
 }

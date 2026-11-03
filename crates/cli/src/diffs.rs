@@ -148,8 +148,8 @@ pub fn run(m: &ArgMatches) -> u8 {
         ignore_all_space: m.get_flag("ignore_all_space"),
         ignore_space_change: m.get_flag("ignore_space_change"),
     };
-    let mut out = io::stdout().lock();
-    let identical = |out: &mut io::StdoutLock| {
+    let mut out = crate::stdout();
+    let identical = |out: &mut crate::Stdout| {
         if m.get_flag("report_identical") {
             let _ = writeln!(out, "Files {left} and {right} are identical");
         }

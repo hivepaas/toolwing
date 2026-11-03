@@ -42,10 +42,19 @@ crates/cli/tests/compat/base64/no-wrap/
   command" round trip (architecture.md).
 - **Snapshots** with `insta` for `--help`, `--json` output and error messages,
   so a change to the public surface shows in review.
-- **Fuzzing** with `cargo-fuzz`: one target for each parser (JSON, YAML, TOML,
-  XML, CSV, JWT, X.509, cron, base64/32/hex decoding, jq filter compilation).
-  A nightly job runs each for 10 minutes; crashes become regression tests.
-  Nothing a tool is given may panic.
+- **Fuzzing** with `cargo-fuzz` (`fuzz/`): one target for each parser (JSON,
+  YAML, TOML, XML, CSV, JWT, cron, Base64/32 and hex decoding, jq filter
+  compilation; X.509 with `cert`), and `tools`, which gives every tool that
+  takes input whatever it makes up. A nightly job (`.github/workflows/fuzz.yml`)
+  runs each for 10 minutes; crashes become regression tests. Nothing a tool is
+  given may panic, overflow its stack or hang. Run one with
+  `cd fuzz && cargo +nightly fuzz run json`.
+- **Depth**: values nest 10,000 levels deep at most, as in jq; deeper input
+  is refused before it is read, XML too, and a jq filter whose brackets and
+  chained operators come to more than 10,000 is refused before it is parsed.
+  Reading and writing nested values runs on a 256 MB stack (reserved, not
+  used), as an app thread's 2 MB is too little for 10,000 levels
+  (`crates/tools/tests/deep.rs`).
 - **UI tests** headless, with the same `headless` feature and screenshots as
   tracewing.
 
