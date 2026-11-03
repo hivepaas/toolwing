@@ -158,6 +158,47 @@ pub fn digest_reader(
     }
 }
 
+/// BLAKE3's modes (b3sum's `--keyed` and `--derive-key`).
+pub enum Blake3Mode {
+    Hash,
+    /// With a 32-byte key.
+    Keyed([u8; 32]),
+    /// Keys derived for a context string.
+    DeriveKey(String),
+}
+
+/// BLAKE3 of everything `input` gives, `len` bytes of its output from byte
+/// `seek` on (BLAKE3's output is as long as asked for), in constant memory.
+pub fn blake3_reader(
+    ctx: &Ctx,
+    mode: &Blake3Mode,
+    input: &mut dyn Read,
+    seek: u64,
+    len: usize,
+) -> Result<Vec<u8>, Error> {
+    let mut hasher = match mode {
+        Blake3Mode::Hash => blake3::Hasher::new(),
+        Blake3Mode::Keyed(key) => blake3::Hasher::new_keyed(key),
+        Blake3Mode::DeriveKey(context) => blake3::Hasher::new_derive_key(context),
+    };
+    let mut buf = vec![0; CHUNK];
+    loop {
+        ctx.check()?;
+        let n = match input.read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => n,
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(e.into()),
+        };
+        hasher.update(&buf[..n]);
+    }
+    let mut out = vec![0; len];
+    let mut reader = hasher.finalize_xof();
+    reader.set_position(seek);
+    reader.fill(&mut out);
+    Ok(out)
+}
+
 /// The digests of several algorithms in one pass over `input`, as the app's
 /// Hashes page needs them: a file is read once, not once per algorithm.
 pub fn digest_all(
@@ -509,6 +550,26 @@ pub static B2SUM: Sum = Sum {
     algorithm: Algorithm::Blake2b(512),
 };
 
+static B3_META: Meta = Meta {
+    reference: Some(Reference {
+        name: "b3sum",
+        version: "1.8.2",
+        compat: Compat::DropIn,
+    }),
+    ..sum_meta(
+        "b3sum",
+        en!("BLAKE3"),
+        en!("BLAKE3 checksums of files, or check them, as b3sum does"),
+    )
+};
+
+/// `b3sum`: BLAKE3, with b3sum's own command line (not coreutils'), so not
+/// among [`SUMS`]; the app's Hashes page has BLAKE3 already.
+pub static B3SUM: Sum = Sum {
+    meta: &B3_META,
+    algorithm: Algorithm::Blake3,
+};
+
 /// The hash commands, for the CLI and the app's Hashes page.
 pub static SUMS: [&Sum; 5] = [&MD5SUM, &SHA1SUM, &SHA256SUM, &SHA512SUM, &B2SUM];
 
@@ -540,6 +601,30 @@ mod tests {
     }
 
     /// The values GNU coreutils 9.7 gives for "hello world".
+    /// b3sum 1.8.2's values for "abc": plain, keyed with 32 zeros, derived for
+    /// "ctx", 8 bytes, and 4 from byte 2.
+    #[test]
+    fn blake3_modes_match_b3sum() {
+        let b3 = |mode: &Blake3Mode, seek, len| {
+            hex(&blake3_reader(&Ctx::new(), mode, &mut &b"abc"[..], seek, len).unwrap_or_default())
+        };
+        let plain = "6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85";
+        assert_eq!(b3(&Blake3Mode::Hash, 0, 32), plain);
+        assert_eq!(b3(&Blake3Mode::Hash, 0, 8), "6437b3ac38465133");
+        assert_eq!(b3(&Blake3Mode::Hash, 2, 4), "b3ac3846");
+        assert_eq!(b3(&Blake3Mode::Hash, 0, 0), "");
+        let keyed = Blake3Mode::Keyed(*b"00000000000000000000000000000000");
+        assert_eq!(
+            b3(&keyed, 0, 32),
+            "91584f1fb59612f3d47c42ae41005f005e09f1f388f7112d4931f39d8790ef83"
+        );
+        let derived = Blake3Mode::DeriveKey("ctx".into());
+        assert_eq!(
+            b3(&derived, 0, 32),
+            "51b03b2a289e3f32acf87f00c3620dd6cc2c29706de6f8184386550dab656d36"
+        );
+    }
+
     #[test]
     fn digests_match_coreutils() {
         let d = b"hello world";

@@ -1,5 +1,6 @@
 //! `tw`: toolwing's tools on the command line (docs/design/cli.md).
 
+mod b3sums;
 mod commands;
 mod diffs;
 mod jq;
@@ -77,6 +78,8 @@ fn main() -> ExitCode {
             // GNU diff's usage errors are trouble, 2; coreutils' are 1.
             let code = match args.get(1).map(String::as_str) {
                 Some("diff") => diffs::TROUBLE,
+                // b3sum is clap's too: 2, as clap exits.
+                Some("b3sum") => b3sums::USAGE,
                 _ if drop_in => 1,
                 _ => 2,
             };
@@ -95,6 +98,7 @@ fn main() -> ExitCode {
             Ok(())
         }
         "diff" => return ExitCode::from(diffs::run(sub)),
+        "b3sum" => return ExitCode::from(b3sums::run(sub)),
         _ => match sums::find(name) {
             Some(sum) => return ExitCode::from(sums::run(sum, sub)),
             None => run_group(name, sub),

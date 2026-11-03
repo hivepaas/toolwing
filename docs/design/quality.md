@@ -19,7 +19,7 @@ crates/cli/tests/compat/base64/no-wrap/
 
 - **Recorded from the real tool, not written by hand.**
   `scripts/compat_record.sh` runs each case against the reference at its pinned
-  version (jq 1.8.2, GNU coreutils 9.7 from `debian:13`, b3sum 1.8, OpenSSL 3) in a container,
+  version (jq 1.8.2, GNU coreutils 9.7 from `debian:13`, b3sum 1.8.2 from `alpine:3.22`, OpenSSL 3) in a container,
   and the expected output is committed.
 - CI runs every case against `tw` on Linux on each pull request, and on macOS
   and Windows nightly and before a release (their minutes cost more, as in
