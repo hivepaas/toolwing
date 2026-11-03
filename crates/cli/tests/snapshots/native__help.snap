@@ -15,6 +15,9 @@ Commands:
   sha512sum    SHA-512 checksums of files, or check them
   b2sum        BLAKE2b checksums of files, or check them
   uuid         Generate UUIDs: random (v4) or time-ordered (v7)
+  time         Unix timestamps, ISO 8601 and RFC dates, in any time zone
+  case         One name in every case code uses: camelCase, snake_case, kebab-case…
+  base         A number in binary, octal, decimal, hex or any base from 2 to 36
   list         List every tool
   completions  Print shell completions
   help         Print this message or the help of the given subcommand(s)

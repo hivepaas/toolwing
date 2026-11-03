@@ -151,6 +151,12 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
         let json = match &output {
             Output::Text(s) => serde_json::Value::from(s.as_str()),
             Output::Lines(lines) => serde_json::Value::from(lines.clone()),
+            Output::Fields(fields) => serde_json::Value::Object(
+                fields
+                    .iter()
+                    .map(|f| (f.key.clone(), serde_json::Value::from(f.value.as_str())))
+                    .collect(),
+            ),
             Output::Bytes(b) => serde_json::Value::from(String::from_utf8_lossy(b).as_ref()),
         };
         writeln!(out, "{json}")
@@ -158,6 +164,17 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
         match &output {
             Output::Text(s) if newline => writeln!(out, "{s}"),
             Output::Text(s) => write!(out, "{s}"),
+            Output::Fields(fields) => {
+                let width = fields
+                    .iter()
+                    .map(|f| f.label.chars().count())
+                    .max()
+                    .unwrap_or(0);
+                fields.iter().try_for_each(|f| {
+                    let pad = width - f.label.chars().count();
+                    writeln!(out, "{}{}  {}", f.label, " ".repeat(pad), f.value)
+                })
+            }
             Output::Lines(lines) => {
                 let text = lines.join("\n");
                 if newline {
@@ -189,6 +206,9 @@ fn read_input(kind: InputKind, m: &ArgMatches) -> Result<Vec<u8>, Error> {
         (_, Some(path)) => {
             std::fs::read(path).map_err(|e| Error::new(ErrorKind::Io, format!("{path}: {e}")))?
         }
+        // Nothing given and nothing piped in: empty input ("now" for `tw time`)
+        // rather than waiting on the terminal.
+        _ if io::stdin().is_terminal() => Vec::new(),
         _ => {
             let mut all = Vec::new();
             io::stdin().lock().read_to_end(&mut all)?;

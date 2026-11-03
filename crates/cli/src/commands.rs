@@ -101,6 +101,8 @@ fn group_command(name: &'static str) -> Command {
 
 /// A native tool's command: its params, its input, and the output flags.
 fn tool_args(mut cmd: Command, tool: &dyn Tool) -> Command {
+    // `tw base -1`, `tw time -86400`: a number is the value, not a flag.
+    cmd = cmd.allow_negative_numbers(true);
     for p in tool.params() {
         cmd = param_args(cmd, p);
     }
@@ -154,13 +156,16 @@ fn param_args(cmd: Command, p: &'static Param) -> Command {
         ParamKind::Choice {
             options,
             flags: false,
+            ..
         } => cmd.arg(
             named(Arg::new(p.key))
+                .value_name(p.key.to_uppercase())
                 .value_parser(options.iter().map(|(o, _)| *o).collect::<Vec<_>>()),
         ),
         ParamKind::Choice {
             options,
             flags: true,
+            ..
         } => {
             let ids: Vec<String> = options
                 .iter()
@@ -203,6 +208,7 @@ pub fn values(m: &ArgMatches, params: &[Param]) -> Values {
             ParamKind::Choice {
                 options,
                 flags: true,
+                ..
             } => {
                 if let Some((o, _)) = options
                     .iter()

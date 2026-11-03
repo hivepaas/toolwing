@@ -1,8 +1,11 @@
 //! toolwing's tools and their registry (docs/design/architecture.md).
 
+pub mod base;
 pub mod base64;
+pub mod case;
 pub mod command;
 pub mod hash;
+pub mod time;
 pub mod url;
 pub mod uuid;
 
@@ -50,6 +53,21 @@ pub static GROUPS: &[Group] = &[
         title: en!("UUID"),
         summary: en!("Generate UUIDs: random (v4) or time-ordered (v7)"),
     },
+    Group {
+        name: "time",
+        title: en!("Time"),
+        summary: en!("Unix timestamps, ISO 8601 and RFC dates, in any time zone"),
+    },
+    Group {
+        name: "case",
+        title: en!("Case"),
+        summary: en!("One name in every case code uses: camelCase, snake_case, kebab-case…"),
+    },
+    Group {
+        name: "base",
+        title: en!("Number base"),
+        summary: en!("A number in binary, octal, decimal, hex or any base from 2 to 36"),
+    },
 ];
 
 /// Every tool, in the order `tw --help` and the app's sidebar show them. A
@@ -65,6 +83,9 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::SHA512SUM,
     &hash::B2SUM,
     &uuid::Generate,
+    &time::Convert,
+    &case::Convert,
+    &base::Convert,
 ];
 
 /// The group names, in order.

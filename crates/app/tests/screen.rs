@@ -216,4 +216,75 @@ fn every_page_draws_and_runs() {
     assert_eq!(shown.len(), 6);
     ui.save("6-hashes-file");
     let _ = std::fs::remove_dir_all(&dir);
+
+    // Time: a Unix timestamp in every form, in two more zones.
+    let p = ui.tool("Time");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("tz", Value::Text("Asia/Ho_Chi_Minh".into()), window, cx);
+        p.set_value(
+            "zones",
+            Value::Text("UTC, America/New_York".into()),
+            window,
+            cx,
+        );
+        p.set_value(
+            "relative_to",
+            Value::Text("2026-11-03T06:26:00Z".into()),
+            window,
+            cx,
+        );
+        p.set_input("1793692800", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let field = |ui: &mut Ui, p: &Entity<ToolPage>, key: &str| {
+        ui.cx.update(|cx| {
+            p.read(cx)
+                .fields()
+                .and_then(|f| f.iter().find(|f| f.key == key).map(|f| f.value.clone()))
+        })
+    };
+    assert_eq!(
+        field(&mut ui, &p, "iso").as_deref(),
+        Some("2026-11-03T08:00:00Z")
+    );
+    assert_eq!(
+        field(&mut ui, &p, "relative").as_deref(),
+        Some("in 1 hour 34 minutes")
+    );
+    assert_eq!(
+        field(&mut ui, &p, "America/New_York").as_deref(),
+        Some("Tue 2026-11-03 03:00:00 -05:00")
+    );
+    ui.save("7-time");
+
+    // Case: every case of a name.
+    let p = ui.tool("Case");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("user account ID", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "camel").as_deref(),
+        Some("userAccountId")
+    );
+    assert_eq!(
+        field(&mut ui, &p, "constant").as_deref(),
+        Some("USER_ACCOUNT_ID")
+    );
+    ui.save("8-case");
+
+    // Number base: 255, grouped, as an 8-bit integer too.
+    let p = ui.tool("Number base");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("group", Value::Int(4), window, cx);
+        p.set_value("bits", Value::Text("8".into()), window, cx);
+        p.set_input("0xff", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "binary").as_deref(), Some("1111 1111"));
+    assert_eq!(field(&mut ui, &p, "signed").as_deref(), Some("-1"));
+    ui.save("9-number-base");
 }

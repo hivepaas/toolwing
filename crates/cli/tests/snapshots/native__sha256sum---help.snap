@@ -1,0 +1,23 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+SHA-256 checksums of files, or check them
+
+Usage: tw sha256sum [OPTIONS] [FILE]...
+
+Arguments:
+  [FILE]...  The files; - or none for stdin
+
+Options:
+  -b, --binary          Read in binary mode: * before the name
+  -c, --check           Read checksums from the FILEs and check them
+      --tag             Write BSD-style lines: TAG (NAME) = HEX
+  -t, --text            Read in text mode (the default)
+  -z, --zero            End each line with NUL, not newline, and do not escape names
+      --ignore-missing  Checking: skip files that do not exist
+      --quiet           Checking: do not print OK for each file
+      --status          Checking: print nothing; the exit code tells
+      --strict          Checking: fail on improperly formatted lines
+  -w, --warn            Checking: warn about improperly formatted lines
+  -h, --help            Print help

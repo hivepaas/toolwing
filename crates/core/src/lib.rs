@@ -143,9 +143,13 @@ pub enum ParamKind {
     Flag,
     /// One of these values, each with its help. With `flags`, the CLI offers
     /// each as its own flag (`--v4`, `--v7`) rather than `--key value`.
+    /// `unset` names what leaving it out means ("All", "Guess"), for the
+    /// app to offer as a choice of its own; `None` when the first option is
+    /// the default.
     Choice {
         options: &'static [(&'static str, &'static str)],
         flags: bool,
+        unset: Option<&'static str>,
     },
     Int {
         min: i64,
@@ -231,12 +235,34 @@ impl Values {
     }
 }
 
+/// One named value of a result: a JWT's claim, a time in one format.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Field {
+    /// The key in `--json` output: snake_case, stable (cli.md).
+    pub key: String,
+    /// What people read: the CLI's aligned lines, the app's rows.
+    pub label: String,
+    pub value: String,
+}
+
+impl Field {
+    pub fn new(key: impl Into<String>, label: impl Into<String>, value: impl Into<String>) -> Self {
+        Field {
+            key: key.into(),
+            label: label.into(),
+            value: value.into(),
+        }
+    }
+}
+
 /// What a run gives.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Output {
     Text(String),
     /// Several values, one per line; `--json` makes them an array.
     Lines(Vec<String>),
+    /// Named values: aligned lines for people, a JSON object with `--json`.
+    Fields(Vec<Field>),
     Bytes(Vec<u8>),
 }
 
@@ -372,6 +398,11 @@ pub trait Tool: Sync {
                 for line in lines {
                     out.write_all(line.as_bytes())?;
                     out.write_all(b"\n")?;
+                }
+            }
+            Output::Fields(fields) => {
+                for f in fields {
+                    writeln!(out, "{}: {}", f.label, f.value)?;
                 }
             }
             Output::Bytes(b) => out.write_all(&b)?,

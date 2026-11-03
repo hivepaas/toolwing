@@ -1,0 +1,26 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+Unix timestamps, ISO 8601 and RFC dates, in any time zone
+
+Usage: tw time [OPTIONS] [VALUE]
+
+Arguments:
+  [VALUE]  The input itself; stdin when left out, or -
+
+Options:
+      --tz <TEXT>           The zone for local times and for input with no offset, such as
+                            Asia/Ho_Chi_Minh; this computer's when left out
+      --zones <TEXT>        More zones to show the time in, separated by commas
+      --unit <UNIT>         The unit of a Unix timestamp; guessed from its size when left out
+                            [possible values: s, ms, us, ns]
+      --to <TO>             Write one form only [possible values: unix, ms, iso, local, rfc2822,
+                            relative]
+  -f, --format <TEXT>       Write the time in the zone with this strftime format, such as %Y-%m-%d
+                            %H:%M
+      --relative-to <TEXT>  The moment "now" and relative times count from; the clock when left out
+  -i, --input <FILE>        Read the input from FILE
+      --json                Write the result as JSON
+      --no-newline          Do not end text output with a newline
+  -h, --help                Print help
