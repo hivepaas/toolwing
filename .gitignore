@@ -1,4 +1,6 @@
-/target
+# Build output, the workspace's and the vendored crates' (their own tests
+# build into vendor/<crate>/target).
+target/
 **/*.rs.bk
 .DS_Store
 .idea/
