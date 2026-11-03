@@ -1,0 +1,7 @@
+-n
+-c
+$ARGS.positional | add
+--jsonargs
+1
+2
+3

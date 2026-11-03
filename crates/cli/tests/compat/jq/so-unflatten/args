@@ -1,0 +1,2 @@
+-c
+reduce to_entries[] as $e ({}; setpath($e.key | split("."); $e.value))

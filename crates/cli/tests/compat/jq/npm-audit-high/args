@@ -1,0 +1,2 @@
+-r
+.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | .key

@@ -1,0 +1,2 @@
+resize: BUCKET=img
+resize: QUALITY=80

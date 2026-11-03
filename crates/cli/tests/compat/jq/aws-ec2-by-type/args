@@ -1,0 +1,2 @@
+-c
+[.Reservations[].Instances[]] | group_by(.InstanceType) | map({type: .[0].InstanceType, count: length})

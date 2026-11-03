@@ -1,0 +1,2 @@
+-c
+.resource_changes[] | select(.change.actions == ["update"]) | {address, before: .change.before, after: .change.after}

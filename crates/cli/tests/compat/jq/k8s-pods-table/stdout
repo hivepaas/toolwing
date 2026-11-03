@@ -1,0 +1,6 @@
+prod	web-7d9f-abc	Running
+prod	web-7d9f-def	Running
+prod	api-55c1-x9	CrashLoopBackOff
+batch	worker-0	Running
+batch	migrate-28431	Succeeded
+default	debug-shell	Pending

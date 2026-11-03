@@ -1,0 +1,2 @@
+-c
+[paths(..) | select(.[-1] == "name")]

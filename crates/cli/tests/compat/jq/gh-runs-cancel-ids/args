@@ -1,0 +1,2 @@
+-r
+.workflow_runs[] | select(.status == "in_progress") | .id

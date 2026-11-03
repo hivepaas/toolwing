@@ -1,0 +1,2 @@
+-c
+.workflow_runs | group_by(.conclusion // "running") | map({key: (.[0].conclusion // "running"), value: length}) | from_entries

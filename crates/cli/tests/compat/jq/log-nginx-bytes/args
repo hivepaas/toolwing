@@ -1,0 +1,2 @@
+-n
+[inputs | .body_bytes_sent | tonumber] | add

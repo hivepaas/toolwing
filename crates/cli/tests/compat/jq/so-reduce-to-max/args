@@ -1,0 +1,2 @@
+-c
+reduce .[] as $x (null; if . == null or $x > . then $x else . end)

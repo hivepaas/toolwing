@@ -1,0 +1,2 @@
+-c
+.services | map({(.serviceName): (.deployments[] | select(.status == "PRIMARY") | .taskDefinition | split(":") | last | tonumber)}) | add

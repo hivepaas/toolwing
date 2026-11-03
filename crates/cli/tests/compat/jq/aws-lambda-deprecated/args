@@ -1,0 +1,2 @@
+-r
+.Functions[] | select(.Runtime | test("^(python3\\.[0-9]|nodejs1[0-8])\\.?")) | select(.Runtime != "python3.12") | .FunctionName

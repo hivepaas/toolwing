@@ -1,0 +1,3 @@
+-s
+-c
+map(.Labels | capture("com.docker.compose.project=(?<p>[^,]+)")?.p) | unique

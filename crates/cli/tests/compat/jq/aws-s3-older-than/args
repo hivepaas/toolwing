@@ -1,0 +1,2 @@
+-r
+.Contents[] | select(.LastModified | .[0:19] + "Z" | fromdate < 1761955200) | .Key

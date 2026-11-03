@@ -1,0 +1,4 @@
+200 /index.html
+403 /admin
+401 /api/login
+200 /api/login

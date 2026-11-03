@@ -1,0 +1,2 @@
+-c
+[.Contents[].Size] | add / 1048576 | floor

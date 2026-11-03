@@ -1,0 +1,2 @@
+-c
+map(. + {priority: ([.labels[].name | select(startswith("p")) | ltrimstr("p") | tonumber] | min // 9)}) | sort_by(.priority) | map(.number)

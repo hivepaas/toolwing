@@ -1,0 +1,2 @@
+-r
+select(.request | startswith("POST /api/login")) | select(.status | tonumber >= 400) | .remote_addr

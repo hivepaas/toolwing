@@ -1,0 +1,2 @@
+-e
+if (.version | type) != "string" then "version must be a string\n" | halt_error(2) else .version end

@@ -67,10 +67,13 @@ def gsub($re; s; flags): sub($re; s; flags + "g");
 def gsub($re; s): sub($re; s; "g");
 def have_literal_numbers: true;
 def have_decnum: true;
+# A path that is not there is left alone, as jq's `delpaths` leaves it:
+# deleting under a missing key or index adds nothing.
 def _del1($p):
   if ($p | length) == 1 then del(.[$p[0]])
   elif . == null then .
-  else .[$p[0]] |= _del1($p[1:]) end;
+  else getpath([$p[0]]) as $c
+  | if $c == null then . else .[$p[0]] |= _del1($p[1:]) end end;
 def delpaths($ps): reduce ($ps | unique | reverse | .[]) as $p (.; _del1($p));
 def del(f): delpaths([path(f)]);
 def from_entries: map({ (.key // .Key // .name // .Name):

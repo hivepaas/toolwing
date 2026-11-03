@@ -1,0 +1,2 @@
+-r
+.Reservations[].Instances[] | select(.State.Name == "running") | "Host \(.Tags // [] | from_entries | .Name // .InstanceId)\n  HostName \(.PrivateIpAddress)"

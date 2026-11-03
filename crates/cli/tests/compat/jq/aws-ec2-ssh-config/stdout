@@ -1,0 +1,4 @@
+Host bastion
+  HostName 172.31.1.5
+Host null
+  HostName 172.31.3.3

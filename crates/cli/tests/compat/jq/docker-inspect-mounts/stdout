@@ -1,0 +1,1 @@
+[{"src":"/srv/init","dst":"/docker-entrypoint-initdb.d","ro":true}]

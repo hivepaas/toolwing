@@ -1,0 +1,2 @@
+-e
+any(.items[]; .status.phase == "CrashLoopBackOff")

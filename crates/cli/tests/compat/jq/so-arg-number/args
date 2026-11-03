@@ -1,0 +1,6 @@
+-n
+-c
+--argjson
+n
+5
+[range($n)] | map(. * .)

@@ -1,0 +1,2 @@
+-c
+.Datapoints | sort_by(.Timestamp) | map([.Timestamp[11:16], .Average])

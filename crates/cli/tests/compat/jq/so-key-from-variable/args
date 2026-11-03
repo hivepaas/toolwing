@@ -1,0 +1,5 @@
+-r
+--arg
+k
+owner
+.meta[$k].name

@@ -1,0 +1,2 @@
+-r
+.resources[] | select(.mode == "managed") | [.module, .type, .name] | map(select(. != null)) | join(".")

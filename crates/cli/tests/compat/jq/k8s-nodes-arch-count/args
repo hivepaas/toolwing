@@ -1,0 +1,2 @@
+-c
+reduce .items[] as $n ({}; .[$n.metadata.labels["kubernetes.io/arch"]] += 1)

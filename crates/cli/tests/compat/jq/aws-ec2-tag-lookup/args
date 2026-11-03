@@ -1,0 +1,2 @@
+-r
+.Reservations[].Instances[] | (.Tags // [] | map({(.Key): .Value}) | add // {}) as $t | "\(.InstanceId) env=\($t.env // "none")"

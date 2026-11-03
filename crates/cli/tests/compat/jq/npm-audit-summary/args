@@ -1,0 +1,2 @@
+-r
+.metadata.vulnerabilities | to_entries | map(select(.value > 0) | "\(.value) \(.key)") | join(", ")

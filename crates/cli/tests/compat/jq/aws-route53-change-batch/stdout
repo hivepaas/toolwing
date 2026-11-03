@@ -1,0 +1,1 @@
+{"Changes":[{"Action":"DELETE","ResourceRecordSet":{"Name":"www.acme.test.","Type":"CNAME","TTL":60,"ResourceRecords":[{"Value":"acme.test."}]}}]}

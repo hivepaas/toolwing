@@ -1,0 +1,2 @@
+-r
+.dependencies | to_entries[] | select(.value | test("^[0-9]")) | .key

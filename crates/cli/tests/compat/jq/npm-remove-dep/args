@@ -1,0 +1,2 @@
+-c
+del(.dependencies.lodash) | .dependencies | keys

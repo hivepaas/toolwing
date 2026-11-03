@@ -1,0 +1,3 @@
+-s
+-c
+map(.Size | if endswith("GB") then (rtrimstr("GB") | tonumber * 1000) else (rtrimstr("MB") | tonumber) end) | add

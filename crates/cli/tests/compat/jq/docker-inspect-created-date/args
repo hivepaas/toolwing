@@ -1,0 +1,2 @@
+-r
+.[0].Created | sub("\\.[0-9]+Z$"; "Z") | fromdate | strftime("%Y-%m-%d %H:%M")

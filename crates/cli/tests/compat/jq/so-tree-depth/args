@@ -1,0 +1,2 @@
+-c
+def depth: if (.children // []) == [] then 1 else 1 + ([.children[] | depth] | max) end; depth

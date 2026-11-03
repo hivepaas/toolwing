@@ -15,12 +15,12 @@ jq's runner judges them: outputs compared as values, in order). jq passes all
 
 | Suite | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq`: prelude | + values, natives, Oniguruma | + `?//`, `$__loc__`, decNumber, messages |
 | --- | --- | --- | --- | --- | --- |
-| `jq.test` (550) | 373 (67.8%) | 396 (72.0%) | 394 (71.6%) | 428 (77.8%) | 470 (85.5%) |
+| `jq.test` (550) | 373 (67.8%) | 396 (72.0%) | 394 (71.6%) | 428 (77.8%) | 471 (85.6%) |
 | `man.test`, the manual's examples (231) | 209 (90.5%) | 216 (93.5%) | 216 (93.5%) | 221 (95.7%) | **231 (100%)** |
 | `onig.test` + `manonig.test`, regex (66) | 54 (81.8%) | 54 | 54 | **66 (100%)** | **66 (100%)** |
 | `base64.test` + `uri.test` (30) | 20 (66.7%) | 20 | 20 | **30 (100%)** | **30 (100%)** |
 | `optional.test` (2) | 2 | 2 | 2 | 2 | 2 |
-| **All (879)** | **658 (74.9%)** | **688 (78.3%)** | **686 (78.0%)** | **747 (85.0%)** | **799 (90.9%)** |
+| **All (879)** | **658 (74.9%)** | **688 (78.3%)** | **686 (78.0%)** | **747 (85.0%)** | **800 (91.0%)** |
 
 The prototype pasted the prelude in front of each program, which made two
 `module` cases in `jq.test` fail to compile as they must, by accident; `tw jq`
@@ -35,6 +35,9 @@ with exit codes):
 | | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq`: prelude | `tw jq`: + values, natives, Oniguruma |
 | --- | --- | --- | --- | --- |
 | Identical output and exit code | 148 / 170 (87.1%) | 156 / 170 (91.8%) | 156 / 170 (91.8%) | **170 / 170 (100%)** |
+
+The corpus has since grown to 535 with `scripts/jq-compat/corpus.py`; `tw jq`
+gives jq 1.8.2's output and exit code for every one of them.
 
 The suite compares values, so it misses what bytes show: jaq's `del(.a)`
 reorders the remaining keys (`{"d":4,"b":2,"c":3}`), and it prints `10 / 5` as
@@ -75,13 +78,14 @@ Estimates from the measured categories, the first three rows measured:
    code. The corpus grows to at least 500 programs before 1.0, taken from the
    jq manual, the documentation of kubectl, the AWS CLI, `gh` and Docker, and
    the most-viewed jq questions on Stack Overflow.
-   **Met for the corpus so far** (170 programs, all identical); it is not
-   yet 500.
+   **Met**: 535 programs, all identical: the 170 of `idioms.py` and 365 of
+   `corpus.py` (kubectl, the AWS CLI, `gh` and GitHub's API, Docker and
+   Compose, Terraform, npm, logs, CSV, and the questions people ask most).
 2. **`man.test`: 100%.** What the manual documents works as documented.
    **Met**: 231 of 231.
 3. **The whole suite: at least 90% for 1.0, 97% for 1.1.** Every case that
    still fails is listed with its reason and the issue tracking it.
-   **Met for 1.0**: 799 of 879 (90.9%).
+   **Met for 1.0**: 800 of 879 (91.0%).
 
 The prelude, the value type and the natives live in `toolwing-jq`
 (architecture.md); jaq-core and jaq-std are used as published, apart from
@@ -91,11 +95,12 @@ patches waiting upstream.
 
 Both measurements run in CI, through the `tw` binary:
 
-- **Compatibility cases**, `crates/cli/tests/compat/jq/`: the 170 real-world
-  programs, 46 cases of the command line itself (options after the
+- **Compatibility cases**, `crates/cli/tests/compat/jq/`: the 535 real-world
+  programs (`scripts/jq-compat/idioms.py` and `corpus.py`, which writes its
+  cases again when run), 46 cases of the command line itself (options after the
   filter, `-c` against `--tab`, a name given twice to `--arg`, `--`, `-1` as
   a filter, several files, `-f`, `-L`, unreadable files, `halt_error`, the
-  exit codes), and 32 of values and regex (setting into `null`, padding,
+  exit codes), and 43 of values, regex, syntax and messages (setting into `null`, padding,
   fractional indices, the arithmetic, number printing, match objects,
   look-around, modifiers, `@base64d`, `@urid`). `scripts/compat_record.sh
   jq` records each from jq 1.8.2's release binary (its sha256 checked) and

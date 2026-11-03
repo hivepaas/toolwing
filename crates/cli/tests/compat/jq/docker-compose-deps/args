@@ -1,0 +1,2 @@
+-c
+.services | map_values(.depends_on // {} | keys)

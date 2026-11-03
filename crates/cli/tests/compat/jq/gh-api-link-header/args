@@ -1,0 +1,2 @@
+-r
+split(", ") | map(capture("<(?<url>[^>]+)>; rel=\"(?<rel>[a-z]+)\"")) | map({(.rel): .url}) | add | .next

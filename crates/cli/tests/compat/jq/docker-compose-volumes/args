@@ -1,0 +1,2 @@
+-c
+[.services[].volumes[]? | select(.type == "volume") | .source] - (.volumes | keys)

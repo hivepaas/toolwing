@@ -1,0 +1,3 @@
+-s
+-c
+map(.status // empty | tostring | .[0:1] + "xx") | group_by(.) | map({(.[0]): length}) | add

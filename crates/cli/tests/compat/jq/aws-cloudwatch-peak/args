@@ -1,0 +1,2 @@
+-c
+.Datapoints | max_by(.Maximum) | {at: .Timestamp, max: .Maximum}

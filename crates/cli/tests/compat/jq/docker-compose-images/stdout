@@ -1,0 +1,3 @@
+web=ghcr.io/acme/shop:2.1
+db=postgres:16
+cache=redis:7

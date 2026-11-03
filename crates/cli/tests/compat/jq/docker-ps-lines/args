@@ -1,0 +1,2 @@
+-r
+select(.State == "running") | .Names

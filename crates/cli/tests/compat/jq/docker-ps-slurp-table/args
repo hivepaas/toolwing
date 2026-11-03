@@ -1,0 +1,3 @@
+-s
+-r
+.[] | [.ID[:12], .Image, .State] | @tsv

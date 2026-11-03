@@ -1,0 +1,2 @@
+-r
+.[0].Config.Env[] | sub("(?<k>PASSWORD)=.*"; "\(.k)=***")

@@ -1,0 +1,2 @@
+-c
+[.items[] | {name: .metadata.name, hours: ((1762142400 - (.metadata.creationTimestamp | fromdateiso8601)) / 3600 | floor)}]

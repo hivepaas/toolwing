@@ -1,0 +1,1 @@
+{"apiVersion": "v1", "kind": "ConfigMap", "metadata": {"name": "billing", "namespace": "prod", "labels": {"app": "billing"}}, "data": {"LOG_LEVEL": "info", "ENABLE_V2": "no", "VERSION": "1.10", "settings.json": "{\"retries\": 3, \"timeout_ms\": 2500}"}}

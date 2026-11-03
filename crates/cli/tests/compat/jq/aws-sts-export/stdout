@@ -1,0 +1,3 @@
+export AWS_ACCESS_KEY_ID=ASIAEXAMPLE
+export AWS_SECRET_ACCESS_KEY='secret/key+abc'
+export AWS_SESSION_TOKEN='token=='

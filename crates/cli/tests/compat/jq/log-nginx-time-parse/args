@@ -1,0 +1,2 @@
+-r
+.time | strptime("%d/%b/%Y:%H:%M:%S %z") | mktime | todate

@@ -1,0 +1,2 @@
+-r
+.Stacks[] | select(any(.Tags[]?; .Key == "team" and .Value == "core")) | .StackName

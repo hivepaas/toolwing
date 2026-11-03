@@ -1,0 +1,2 @@
+-r
+.[] | "- [\(if .isDraft then " " else "x" end)] #\(.number) \(.title)"

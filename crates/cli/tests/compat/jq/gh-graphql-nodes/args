@@ -1,0 +1,2 @@
+-c
+.data.repository.issues.nodes | map({n: .number, t: .title})

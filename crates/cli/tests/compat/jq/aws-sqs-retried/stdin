@@ -1,0 +1,1 @@
+{"Messages": [{"MessageId": "m1", "ReceiptHandle": "rh1", "Body": "{\"order\": 1001, \"total\": 25.5}", "Attributes": {"ApproximateReceiveCount": "1"}}, {"MessageId": "m2", "ReceiptHandle": "rh2", "Body": "{\"order\": 1002, \"total\": 99}", "Attributes": {"ApproximateReceiveCount": "4"}}]}

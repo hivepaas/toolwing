@@ -1,0 +1,6 @@
+-n
+-c
+--rawfile
+t
+notes.txt
+$t | split("\n") | map(select(length > 0))

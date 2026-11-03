@@ -1,0 +1,2 @@
+-c
+map(ltrimstr("refs/heads/") | ltrimstr("refs/tags/"))

@@ -1,0 +1,2 @@
+-r
+.resource_changes[] | select(.change.actions != ["no-op"]) | "\(.change.actions | join("/"))\t\(.address)"

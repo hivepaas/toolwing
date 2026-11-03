@@ -1,0 +1,9 @@
+-n
+-c
+--arg
+owner
+acme
+--arg
+repo
+tool
+{query: "query($o: String!, $r: String!) { repository(owner: $o, name: $r) { id } }", variables: {o: $owner, r: $repo}}

@@ -1,0 +1,1 @@
+{"log-opts":{"max-file":"3","max-size":"10m"},"features":{"buildkit":true},"log-driver":"json-file"}

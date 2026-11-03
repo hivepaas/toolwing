@@ -1,0 +1,2 @@
+-e
+all(.items[]; .spec.nodeName != null)

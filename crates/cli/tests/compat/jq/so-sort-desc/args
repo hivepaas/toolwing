@@ -1,0 +1,2 @@
+-c
+.items | sort_by(.price) | reverse | map(.sku)

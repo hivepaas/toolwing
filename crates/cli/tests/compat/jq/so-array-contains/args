@@ -1,0 +1,2 @@
+-e
+.meta.tags | index("b") != null

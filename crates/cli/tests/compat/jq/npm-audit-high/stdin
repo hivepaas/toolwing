@@ -1,0 +1,1 @@
+{"vulnerabilities": {"lodash": {"severity": "high", "via": [{"title": "Prototype Pollution", "url": "https://github.test/advisories/1"}], "fixAvailable": true}, "esbuild": {"severity": "moderate", "via": ["vite"], "fixAvailable": {"name": "vite", "version": "6.0.5"}}}, "metadata": {"vulnerabilities": {"info": 0, "low": 0, "moderate": 1, "high": 1, "critical": 0, "total": 2}}}

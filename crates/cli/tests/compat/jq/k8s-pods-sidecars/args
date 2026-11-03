@@ -1,0 +1,2 @@
+-c
+[.items[] | select(.spec.containers | length > 1) | {pod: .metadata.name, containers: [.spec.containers[].name]}]

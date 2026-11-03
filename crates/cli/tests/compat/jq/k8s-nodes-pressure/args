@@ -1,0 +1,2 @@
+-c
+[.items[] | {name: .metadata.name, pressure: [.status.conditions[] | select(.type != "Ready" and .status == "True") | .type]} | select(.pressure | length > 0)]

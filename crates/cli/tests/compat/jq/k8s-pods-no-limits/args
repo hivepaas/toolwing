@@ -1,0 +1,2 @@
+-r
+.items[] | .metadata.name as $p | .spec.containers[] | select(.resources.limits == null) | "\($p)/\(.name)"

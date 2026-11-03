@@ -1,0 +1,2 @@
+-c
+.Functions | group_by(.Runtime) | map({runtime: .[0].Runtime, functions: map(.FunctionName)})

@@ -1,0 +1,2 @@
+-r
+.[] | select(.isDraft | not) | select(.reviewDecision == "APPROVED") | .number

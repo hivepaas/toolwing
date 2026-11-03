@@ -1,0 +1,2 @@
+-r
+.items | map(select(.type == "Warning")) | sort_by(.lastTimestamp) | reverse[] | "\(.lastTimestamp) \(.involvedObject.name): \(.message)"

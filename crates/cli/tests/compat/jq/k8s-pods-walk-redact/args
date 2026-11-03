@@ -1,0 +1,2 @@
+-c
+.items[2] | walk(if type == "object" and has("image") then .image = "<redacted>" else . end) | .spec.containers

@@ -1,0 +1,3 @@
+-s
+-c
+group_by(.remote_addr) | map({ip: .[0].remote_addr, hits: length}) | sort_by(-.hits)

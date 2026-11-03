@@ -1,0 +1,2 @@
+-r
+.packages | to_entries[] | select(.key != "" and (.value.dev | not)) | .key | ltrimstr("node_modules/")

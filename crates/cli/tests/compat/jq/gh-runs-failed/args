@@ -1,0 +1,2 @@
+-r
+.workflow_runs[] | select(.conclusion == "failure") | "\(.name) on \(.head_branch): \(.head_sha[:7])"

@@ -1,0 +1,6 @@
+-n
+-c
+--slurpfile
+d
+data.json
+$d | map(.n) | add

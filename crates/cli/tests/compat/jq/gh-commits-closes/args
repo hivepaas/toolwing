@@ -1,0 +1,2 @@
+-c
+[.[].commit.message | scan("(?i)closes #([0-9]+)")[] | tonumber]

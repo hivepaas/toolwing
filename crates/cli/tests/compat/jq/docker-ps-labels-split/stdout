@@ -1,0 +1,2 @@
+{"com.docker.compose.project":"shop","com.docker.compose.service":"db"}
+{"com.docker.compose.project":"shop","com.docker.compose.service":"web"}

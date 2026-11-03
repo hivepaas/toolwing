@@ -1,0 +1,2 @@
+-c
+group_by(.team) | map({(.[0].team): map(.name)}) | add

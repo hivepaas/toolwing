@@ -1,0 +1,2 @@
+-r
+.Contents[] | select(.Key | startswith("logs/")) | .Key

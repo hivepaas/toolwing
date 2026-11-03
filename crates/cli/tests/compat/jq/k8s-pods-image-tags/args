@@ -1,0 +1,2 @@
+-c
+[.items[].spec.containers[].image | split(":") | {repo: .[0], tag: (.[1] // "latest")}] | unique_by(.repo)

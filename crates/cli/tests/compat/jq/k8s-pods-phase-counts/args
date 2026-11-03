@@ -1,0 +1,2 @@
+-c
+.items | group_by(.status.phase) | map({(.[0].status.phase): length}) | add

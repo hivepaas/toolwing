@@ -1,0 +1,2 @@
+-c
+[.Reservations[].Instances[].SecurityGroups[].GroupName] | unique

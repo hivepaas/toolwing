@@ -1,0 +1,2 @@
+-r
+select(.level == "error") | "\(.ts) \(.msg) (\(.err.code // "no code"))"

@@ -1,0 +1,2 @@
+-c
+.items | unique_by(.sku) | map(.sku)

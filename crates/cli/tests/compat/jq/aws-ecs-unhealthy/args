@@ -1,0 +1,2 @@
+-r
+.services[] | select(.runningCount < .desiredCount) | "\(.serviceName): \(.runningCount)/\(.desiredCount)"

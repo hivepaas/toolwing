@@ -1,0 +1,2 @@
+-c
+[.items[] | {name: .metadata.name, rev: (.metadata.annotations["deployment.kubernetes.io/revision"] // "0" | tonumber)}] | max_by(.rev)

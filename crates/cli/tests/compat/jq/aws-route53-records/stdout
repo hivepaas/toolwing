@@ -1,0 +1,4 @@
+acme.test	A		a1b2.elb.amazonaws.com.
+acme.test	MX	10 mx1.acme.test. 20 mx2.acme.test.	
+www.acme.test	CNAME	acme.test.	
+_dmarc.acme.test	TXT	"v=DMARC1; p=reject"	

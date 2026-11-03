@@ -1,0 +1,2 @@
+-c
+[.resources[] | {type, n: (.instances | length)}] | group_by(.type) | map({(.[0].type): (map(.n) | add)}) | add

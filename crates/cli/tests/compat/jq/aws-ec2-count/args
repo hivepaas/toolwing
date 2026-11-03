@@ -1,0 +1,2 @@
+-c
+{total: [.Reservations[].Instances[]] | length, running: [.Reservations[].Instances[] | select(.State.Code == 16)] | length}

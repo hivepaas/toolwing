@@ -1,0 +1,3 @@
+2026-11-03T01:21:00Z debug-shell: 0/3 nodes are available: 1 node(s) were unschedulable
+2026-11-03T01:00:00Z api-55c1-x9: Back-off restarting failed container api
+2026-11-02T23:30:00Z worker-0: Back-off pulling image

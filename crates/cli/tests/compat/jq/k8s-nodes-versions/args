@@ -1,0 +1,2 @@
+-c
+[.items[].status.nodeInfo.kubeletVersion] | unique | {versions: ., skew: (length > 1)}

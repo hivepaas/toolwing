@@ -1,0 +1,2 @@
+-c
+.items | group_by(.metadata.labels["topology.kubernetes.io/zone"]) | map({zone: .[0].metadata.labels["topology.kubernetes.io/zone"], nodes: map(.metadata.name)})

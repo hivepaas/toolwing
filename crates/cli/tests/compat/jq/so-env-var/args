@@ -1,0 +1,3 @@
+-n
+-r
+$ENV.HOME | type

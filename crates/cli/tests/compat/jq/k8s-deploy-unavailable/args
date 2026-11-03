@@ -1,0 +1,2 @@
+-r
+.items[] | select((.status.readyReplicas // 0) < .spec.replicas) | "\(.metadata.namespace)/\(.metadata.name) \(.status.readyReplicas // 0)/\(.spec.replicas)"

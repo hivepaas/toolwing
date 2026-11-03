@@ -1,0 +1,2 @@
+-c
+group_by(.commit.author.date[:10]) | map({day: .[0].commit.author.date[:10], n: length})

@@ -1,0 +1,2 @@
+-c
+INDEX(.name) | map_values(.age)

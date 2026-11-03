@@ -1,0 +1,2 @@
+-r
+.[] | select(.pull_request == null) | .number

@@ -1,0 +1,2 @@
+-c
+.[0].Mounts | map(select(.Type == "bind")) | map({src: .Source, dst: .Destination, ro: (.RW | not)})

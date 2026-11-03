@@ -1,0 +1,2 @@
+-r
+.meta.tags | to_entries[] | "\(.key + 1). \(.value)"

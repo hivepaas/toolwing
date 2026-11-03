@@ -1,0 +1,2 @@
+-r
+map(select(.state == "OPEN")) | sort_by(.createdAt) | first | "#\(.number) since \(.createdAt[:10])"

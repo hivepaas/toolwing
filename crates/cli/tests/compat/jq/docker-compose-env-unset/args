@@ -1,0 +1,2 @@
+-r
+.services[].environment // {} | to_entries[] | select(.value == null) | .key

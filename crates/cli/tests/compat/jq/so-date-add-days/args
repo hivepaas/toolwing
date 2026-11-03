@@ -1,0 +1,2 @@
+-r
+.date | strptime("%Y-%m-%d") | mktime + 86400 * 30 | strftime("%Y-%m-%d")

@@ -1,0 +1,2 @@
+-c
+.data.LOG_LEVEL = "debug" | .metadata |= del(.labels) | {metadata, data: .data | {LOG_LEVEL}}

@@ -1,0 +1,2 @@
+-c
+select(.Labels != "") | .Labels | split(",") | map(split("=") | {(.[0]): .[1]}) | add

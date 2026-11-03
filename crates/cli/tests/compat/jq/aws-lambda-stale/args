@@ -1,0 +1,2 @@
+-r
+.Functions[] | select(.LastModified[0:10] < "2026-01-01") | .FunctionName

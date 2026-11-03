@@ -1,0 +1,2 @@
+-c
+reduce .items[] as $p ({}; .[($p.metadata.ownerReferences[0].kind // "none")] += [$p.metadata.name])

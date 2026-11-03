@@ -1,0 +1,2 @@
+-c
+[.workflow_runs[] | select(.head_branch == "main")] | sort_by(.run_started_at) | last | {id, conclusion}

@@ -1,0 +1,2 @@
+-e
+any(.resource_changes[]; .change.actions | index("delete"))

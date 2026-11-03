@@ -1,0 +1,2 @@
+-c
+{Objects: [.Contents[] | select(.StorageClass == "GLACIER") | {Key}], Quiet: true}

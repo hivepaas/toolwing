@@ -1,0 +1,2 @@
+-r
+.PolicyVersion.Document.Statement[] | select([.Action] | flatten | any(endswith("*"))) | .Sid // "(no sid)"

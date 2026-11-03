@@ -1,0 +1,2 @@
+-c
+map(if .age >= 30 then "senior" elif .age >= 25 then "mid" else "junior" end)

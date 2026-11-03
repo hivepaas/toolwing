@@ -1,0 +1,2 @@
+-r
+."current-context" as $c | .contexts[] | select(.name == $c) | .context | "\(.cluster) \(.namespace // "default")"

@@ -1,0 +1,4 @@
+-R
+-n
+-c
+[inputs | select(length > 0)]

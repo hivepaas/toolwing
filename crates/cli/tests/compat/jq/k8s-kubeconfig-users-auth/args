@@ -1,0 +1,2 @@
+-c
+[.users[] | {name, auth: (.user | keys[0])}]
