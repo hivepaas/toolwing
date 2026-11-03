@@ -12,7 +12,7 @@ tw base64 -d < blob.b64 > blob.bin
 tw sha256sum -c SHA256SUMS
 tw jwt decode "$TOKEN"
 tw time 1793692800 --tz Asia/Ho_Chi_Minh
-tw uuid --v7 -n 5
+tw uuid generate --v7 -n 5
 kubectl get cm app -o yaml | tw convert --to json | tw jq '.data'
 ```
 
@@ -35,6 +35,9 @@ Two kinds of command, and every tool says which it is (tools.md):
   `tw time` reads as now.
 - A positional argument that looks like a negative number is the value, not a
   flag: `tw base -1 --bits 8`, `tw time -86400`.
+- An option that is on unless asked otherwise is turned off with `--no-…`:
+  `tw random password --no-symbols`. The app shows it as a box already
+  ticked, and "copy as command" writes `--no-…` when it is unticked.
 - `-i FILE` / `--input FILE` reads a file. Input is bytes; tools that need text
   require UTF-8 and say where the first invalid byte is.
 - A trailing newline on stdin is dropped for single-value tools (`printf` vs

@@ -57,7 +57,7 @@ fn json_and_no_newline() {
         tw(&["url", "encode", "--no-newline", "a b"], "").stdout,
         "a%20b"
     );
-    let ids = tw(&["uuid", "--json", "-n", "2"], "").stdout;
+    let ids = tw(&["uuid", "generate", "--json", "-n", "2"], "").stdout;
     assert!(
         ids.starts_with("[\"") && ids.matches(',').count() == 1,
         "{ids}"
@@ -73,7 +73,7 @@ fn exit_codes_say_what_went_wrong() {
         "tw: url decode: % not followed by two hex digits at line 1, column 3\n"
     );
     assert_eq!(tw(&["url", "nope"], "").exit, 2);
-    assert_eq!(tw(&["uuid", "-n", "0"], "").exit, 2);
+    assert_eq!(tw(&["uuid", "generate", "-n", "0"], "").exit, 2);
     let missing = tw(&["url", "encode", "-i", "/nonexistent/toolwing-test"], "");
     assert_eq!(missing.exit, 4);
 }
@@ -350,6 +350,8 @@ fn help_is_stable() {
         &["base64", "--help"],
         &["url", "--help"],
         &["uuid", "--help"],
+        &["uuid", "generate", "--help"],
+        &["random", "password", "--help"],
         &["sha256sum", "--help"],
         &["time", "--help"],
         &["case", "--help"],
@@ -373,7 +375,10 @@ fn list_names_every_tool() {
         "base64.decode",
         "url.encode",
         "url.decode",
-        "uuid",
+        "uuid.generate",
+        "uuid.inspect",
+        "random.password",
+        "hmac",
     ] {
         assert!(run.stdout.contains(&format!("\"id\":\"{id}\"")), "{id}");
     }

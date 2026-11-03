@@ -20,7 +20,10 @@ Commands:
   sha256sum    SHA-256 checksums of files, or check them
   sha512sum    SHA-512 checksums of files, or check them
   b2sum        BLAKE2b checksums of files, or check them
-  uuid         Generate UUIDs: random (v4) or time-ordered (v7)
+  hmac         HMAC of the input with a secret key, as openssl dgst -hmac
+  random       Passwords, tokens and bytes from the system's secure generator
+  uuid         Generate UUIDs, or read what one holds (RFC 9562)
+  ulid         Generate and read ULIDs: IDs that sort by time, as UUIDs too
   time         Unix timestamps, ISO 8601 and RFC dates, in any time zone
   cron         What a cron expression means, and when it runs next
   regex        Test a pattern, see its matches and groups, replace with it

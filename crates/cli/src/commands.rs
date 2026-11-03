@@ -148,6 +148,13 @@ fn param_args(cmd: Command, p: &'static Param) -> Command {
         }
     };
     match p.kind {
+        // A flag that is on unless asked otherwise: `--no-upper`.
+        ParamKind::Flag if p.default == Value::Bool(true) => cmd.arg(
+            Arg::new(p.key)
+                .long(format!("no-{}", p.cli.long))
+                .help(format!("Leave out: {}", p.help))
+                .action(ArgAction::SetTrue),
+        ),
         ParamKind::Flag => cmd.arg(named(Arg::new(p.key)).action(ArgAction::SetTrue)),
         ParamKind::Int { min, max } => cmd.arg(
             named(Arg::new(p.key))
@@ -221,7 +228,8 @@ pub fn values(m: &ArgMatches, params: &[Param]) -> Result<Values, Error> {
         match p.kind {
             ParamKind::Flag => {
                 if m.get_flag(p.key) {
-                    v.set(p.key, Value::Bool(true));
+                    // `--no-x` turns off what is on by default.
+                    v.set(p.key, Value::Bool(p.default != Value::Bool(true)));
                 }
             }
             ParamKind::Int { .. } => {
@@ -284,12 +292,13 @@ mod tests {
     #[test]
     fn values_come_from_flags() {
         let m = root()
-            .try_get_matches_from(["tw", "uuid", "--v7", "-n", "3", "-u"])
+            .try_get_matches_from(["tw", "uuid", "generate", "--v7", "-n", "3", "-u"])
             .unwrap_or_else(|e| panic!("{e}"));
         let (_, sub) = m.subcommand().unwrap_or_else(|| panic!("no subcommand"));
+        let (_, sub) = sub.subcommand().unwrap_or_else(|| panic!("no action"));
         let v = values(
             sub,
-            toolwing_tools::find("uuid").map_or(&[], |t| t.params()),
+            toolwing_tools::find("uuid.generate").map_or(&[], |t| t.params()),
         )
         .unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(v.get("version"), Some(&Value::Text("v7".into())));
@@ -330,7 +339,7 @@ mod tests {
         let mut samples = vec![Values::new()];
         for p in params {
             let choices: Vec<Value> = match p.kind {
-                ParamKind::Flag => vec![Value::Bool(true)],
+                ParamKind::Flag => vec![Value::Bool(p.default != Value::Bool(true))],
                 ParamKind::Int { min, max } => vec![Value::Int(min), Value::Int(max)],
                 ParamKind::Text => vec![Value::Text("a b".into())],
                 // Copied as --x-env TW_SECRET: read from the environment, not
@@ -358,7 +367,7 @@ mod tests {
     fn choice_flags_exclude_each_other() {
         assert!(
             root()
-                .try_get_matches_from(["tw", "uuid", "--v4", "--v7"])
+                .try_get_matches_from(["tw", "uuid", "generate", "--v4", "--v7"])
                 .is_err()
         );
     }
