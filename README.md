@@ -23,13 +23,15 @@ Rust 1.99 (rustup reads `rust-toolchain.toml`) and, on Linux, the packages GPUI
 links (Wayland, X11, Vulkan, fontconfig: the list is in `.github/workflows/ci.yml`).
 
 ```sh
-cargo run -p toolwing-cli -- base64 --help   # tw
-cargo run -p toolwing                        # the app
-cargo test --workspace
+make debug                       # the app
+make tw ARGS="base64 --help"     # tw
+make test                        # every test; make test-window also draws each page
+make                             # the rest
 ```
 
-`scripts/compat_record.sh` records what the reference tools give for the
-compatibility cases (Docker); `cargo test` checks `tw` against them.
+On Linux the app builds for Wayland by default; `make release FEATURES=wayland,x11`
+adds X11. `make compat` records what the reference tools give for the
+compatibility cases (Docker); `make test` checks `tw` against them.
 
 ## License
 
