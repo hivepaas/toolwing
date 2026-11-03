@@ -18,8 +18,8 @@ use toolwing_jq::{Val, read};
 
 /// The cases that pass in each file, of how many.
 const PASSING: &[(&str, usize, usize)] = &[
-    ("jq.test", 428, 550),
-    ("man.test", 221, 231),
+    ("jq.test", 456, 550),
+    ("man.test", 231, 231),
     ("onig.test", 47, 47),
     ("manonig.test", 19, 19),
     ("base64.test", 10, 10),
@@ -96,6 +96,8 @@ fn run(case: &Case, modules: &Path, program: &Path) -> Result<(), String> {
         .arg(modules)
         .arg("-f")
         .arg(program)
+        // As jq's `mantest` runs the manual's examples.
+        .env("PAGER", "less")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())

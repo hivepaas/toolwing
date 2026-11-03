@@ -142,6 +142,10 @@ pub enum Pattern<S> {
 pub enum BinaryOp<S> {
     /// Application, i.e. `l | r` if no string is given, else `l as $x | r`
     Pipe(Option<Pattern<S>>),
+    /// toolwing: `l as p1 ?// p2 ?// ... | r`, jq's destructuring
+    /// alternatives; the parser rewrites it into terms jaq has (see
+    /// `Parser::alternatives`), so it never reaches the compiler
+    PipeAlt(Vec<Pattern<S>>),
     /// Concatenation, i.e. `l, r`
     Comma,
     /// Alternation, i.e. `l // r`
@@ -196,7 +200,7 @@ impl<S> Term<S> {
     fn climb(self, tail: &mut impl Iterator<Item = (BinaryOp<S>, Self)>) -> Self {
         let tail = core::iter::from_fn(|| {
             tail.next().map(|(op, tm)| match op {
-                BinaryOp::Pipe(Some(_)) => (op, tm.climb(tail)),
+                BinaryOp::Pipe(Some(_)) | BinaryOp::PipeAlt(_) => (op, tm.climb(tail)),
                 _ => (op, tm),
             })
         });
@@ -359,8 +363,19 @@ impl<'s, 't> Parser<'s, 't> {
                 "|" => BinaryOp::Pipe(None),
                 "as" => {
                     let x = p.pattern()?;
+                    // toolwing: `?//` and another pattern, as many as given
+                    let mut alts = Vec::new();
+                    while let [Token("?", _), Token("//", _), ..] = p.i.as_slice() {
+                        p.i.nth(1);
+                        alts.push(p.pattern()?);
+                    }
                     p.just("|")?;
-                    BinaryOp::Pipe(Some(x))
+                    if alts.is_empty() {
+                        BinaryOp::Pipe(Some(x))
+                    } else {
+                        alts.insert(0, x);
+                        BinaryOp::PipeAlt(alts)
+                    }
                 }
                 "," if with_comma => BinaryOp::Comma,
                 "+" => BinaryOp::Math(Math::Add),
@@ -462,7 +477,55 @@ impl<'s, 't> Parser<'s, 't> {
         while let Some(op) = self.op(with_comma)? {
             tail.push((op, self.atom()?))
         }
-        Ok(head.climb(&mut tail.into_iter()))
+        Ok(Self::alternatives(head.climb(&mut tail.into_iter())))
+    }
+
+    /// toolwing: rewrites jq's `l as p1 ?// p2 ?// p3 | r` into
+    ///
+    /// ```text
+    /// l as $v | try (nulls | $v as p1 | r)
+    ///           catch (try (nulls | $v as p2 | r) catch (nulls | $v as p3 | r))
+    /// ```
+    ///
+    /// where `nulls` binds every variable of every pattern to null first, as
+    /// jq has them all bound: an error in a pattern or in `r` tries the next
+    /// pattern, and the last one's error is the result's. Only binary terms
+    /// can hold one at this level; a term in brackets was rewritten when it
+    /// was parsed.
+    fn alternatives(tm: Term<&'s str>) -> Term<&'s str> {
+        let Term::BinOp(l, op, r) = tm else {
+            return tm;
+        };
+        let (l, r) = (Self::alternatives(*l), Self::alternatives(*r));
+        let BinaryOp::PipeAlt(pats) = op else {
+            return Term::BinOp(Box::new(l), op, Box::new(r));
+        };
+        // Not a name a program can write: those start with `$` and a letter.
+        let v = "$ alternative";
+        let mut vars: Vec<&'s str> = Vec::new();
+        for x in pats.iter().flat_map(|p| p.vars()) {
+            if !vars.contains(x) {
+                vars.push(x);
+            }
+        }
+        // `[][0]`: null, whatever `null` may have been redefined as.
+        let null = || {
+            let index = (path::Part::Index(Term::Num("0")), path::Opt::Essential);
+            Term::Path(Box::new(Term::Arr(None)), Path(Vec::from([index])))
+        };
+        let pipe = |l: Term<&'s str>, p: Pattern<&'s str>, r: Term<&'s str>| {
+            Term::BinOp(Box::new(l), BinaryOp::Pipe(Some(p)), Box::new(r))
+        };
+        let alternative = |p: Pattern<&'s str>| {
+            let bound = pipe(Term::Var(v), p, r.clone());
+            vars.iter().rev().fold(bound, |body, x| pipe(null(), Pattern::Var(*x), body))
+        };
+        let mut pats = pats.into_iter().rev();
+        let last = pats.next().map(alternative).unwrap_or_default();
+        let body = pats.fold(last, |rest, p| {
+            Term::TryCatch(Box::new(alternative(p)), Some(Box::new(rest)))
+        });
+        pipe(l, Pattern::Var(v), body)
     }
 
     /// Parse an atomic term.
@@ -857,7 +920,7 @@ impl<S> prec_climb::Op for BinaryOp<S> {
         match self {
             Self::Pipe(None) => 0,
             Self::Comma => 1,
-            Self::Pipe(Some(_)) => 2,
+            Self::Pipe(Some(_)) | Self::PipeAlt(_) => 2,
             Self::Assign | Self::Update | Self::UpdateMath(_) | Self::UpdateAlt => 3,
             Self::Alt => 4,
             Self::Or => Self::Alt.precedence() + 1,
@@ -873,7 +936,7 @@ impl<S> prec_climb::Op for BinaryOp<S> {
     fn associativity(&self) -> prec_climb::Associativity {
         use prec_climb::Associativity;
         match self {
-            Self::Pipe(_) | Self::Assign | Self::Update | Self::UpdateMath(_) | Self::UpdateAlt => {
+            Self::Pipe(_) | Self::PipeAlt(_) | Self::Assign | Self::Update | Self::UpdateMath(_) | Self::UpdateAlt => {
                 Associativity::Right
             }
             _ => Associativity::Left,

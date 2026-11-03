@@ -66,7 +66,7 @@ def sub($re; s): sub($re; s; "");
 def gsub($re; s; flags): sub($re; s; flags + "g");
 def gsub($re; s): sub($re; s; "g");
 def have_literal_numbers: true;
-def have_decnum: false;
+def have_decnum: true;
 def _del1($p):
   if ($p | length) == 1 then del(.[$p[0]])
   elif . == null then .

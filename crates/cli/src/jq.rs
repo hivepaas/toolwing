@@ -32,6 +32,9 @@ pub fn command() -> clap::Command {
         )
 }
 
+/// The stack `tw jq` runs on (main.rs), as the app's jq worker has.
+pub const STACK: usize = 256 << 20;
+
 /// The reference `tw jq` stands in for.
 pub const JQ_VERSION: &str = "1.8.2";
 
