@@ -47,9 +47,11 @@ install-tw: ## Install tw, release version, into ~/.cargo/bin
 
 test: ## Run every test, without the ones that draw the window
 	$(CARGO) test $(ALL)
+	$(CARGO) test --manifest-path vendor/jaq-json/Cargo.toml --all-features
 
 test-window: ## Run every test, drawing every page to target/shots with no display (Linux)
 	$(CARGO) test $(ALL),headless
+	$(CARGO) test --manifest-path vendor/jaq-json/Cargo.toml --all-features
 
 lint: ## Check the format and run clippy
 	$(CARGO) fmt --all -- --check
