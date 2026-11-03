@@ -256,6 +256,94 @@ fn jwt_encode_then_verify() {
 }
 
 #[test]
+fn regex_matches_exit_as_grep_does() {
+    let run = tw(
+        &["regex", "match", "-e", r"(?<n>\d+)%", "--json"],
+        "disk at 91%\n",
+    );
+    assert_eq!(run.exit, 0);
+    assert_eq!(
+        run.stdout,
+        "[{\"match\":\"91%\",\"start\":8,\"end\":11,\"line\":1,\"column\":9,\"groups\":{\"n\":\"91\"}}]\n"
+    );
+    assert_eq!(tw(&["regex", "match", "-e", "nope"], "text").exit, 1);
+    assert_eq!(tw(&["regex", "match", "-e", "(unclosed"], "text").exit, 2);
+    assert_eq!(tw(&["regex", "match"], "text").exit, 2);
+    let replaced = tw(
+        &[
+            "regex",
+            "replace",
+            "-e",
+            r"(\w+)@(\w+)",
+            "--with",
+            "$2 at $1",
+        ],
+        "me@host\n",
+    );
+    assert_eq!(replaced.stdout, "host at me\n\n");
+}
+
+#[test]
+fn diff_headers_carry_the_files_times() {
+    let dir = std::env::temp_dir().join(format!("tw-diff-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("{e}"));
+    let (a, b) = (dir.join("a"), dir.join("b"));
+    std::fs::write(&a, "x\n").unwrap_or_else(|e| panic!("{e}"));
+    std::fs::write(&b, "y\n").unwrap_or_else(|e| panic!("{e}"));
+    let (a, b) = (a.display().to_string(), b.display().to_string());
+    let run = tw(&["diff", "-u", &a, &b], "");
+    assert_eq!(run.exit, 1);
+    let first = run.stdout.lines().next().unwrap_or_default().to_owned();
+    // "--- NAME\t2026-11-03 15:52:43.986476647 +0700", as GNU writes it.
+    let stamp = first
+        .strip_prefix(&format!("--- {a}\t"))
+        .unwrap_or_else(|| panic!("{first}"));
+    let shape: String = stamp
+        .chars()
+        .map(|c| if c.is_ascii_digit() { '9' } else { c })
+        .collect();
+    assert!(
+        shape == "9999-99-99 99:99:99.999999999 +9999"
+            || shape == "9999-99-99 99:99:99.999999999 -9999",
+        "{stamp}"
+    );
+}
+
+#[test]
+fn cron_from_a_moment() {
+    let run = tw(
+        &[
+            "cron",
+            "--tz",
+            "UTC",
+            "--relative-to",
+            "2026-11-28T00:00:00Z",
+            "-n",
+            "2",
+            "--json",
+            "0 0 1 * MON",
+        ],
+        "",
+    );
+    assert_eq!(run.exit, 0);
+    assert!(
+        run.stdout
+            .contains("\"next_1\":\"Mon 2026-11-30 00:00:00 +00:00 · in 2 days\""),
+        "{}",
+        run.stdout
+    );
+    assert!(
+        run.stdout
+            .contains("\"next_2\":\"Tue 2026-12-01 00:00:00 +00:00 · in 3 days\""),
+        "{}",
+        run.stdout
+    );
+    let bad = tw(&["cron", "*/15 25 * * *"], "");
+    assert_eq!(bad.exit, 3);
+    assert!(bad.stderr.contains("at line 1, column 6"), "{}", bad.stderr);
+}
+
+#[test]
 fn help_is_stable() {
     for args in [
         &["--help"][..],
@@ -267,6 +355,9 @@ fn help_is_stable() {
         &["case", "--help"],
         &["base", "--help"],
         &["jwt", "verify", "--help"],
+        &["regex", "match", "--help"],
+        &["diff", "--help"],
+        &["cron", "--help"],
     ] {
         let run = tw(args, "");
         assert_eq!(run.exit, 0);

@@ -1,0 +1,13 @@
+--- prod.json
++++ staging.json
+@@ -1,7 +1,8 @@
+ {
+   "service": "billing",
+-  "replicas": 6,
++  "replicas": 2,
+   "image": "billing:2.4.1",
+-  "log": "warn",
++  "log": "debug",
++  "debug_sql": true,
+   "region": "ap-southeast-1"
+ }

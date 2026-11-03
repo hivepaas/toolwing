@@ -15,6 +15,7 @@ use gpui::{
     AnyWindowHandle, App, AppContext as _, Entity, HeadlessAppContext, WindowHandle, px, size,
 };
 use gpui_component::Root;
+use toolwing::diff_page::DiffPage;
 use toolwing::hashes::HashesPage;
 use toolwing::page::ToolPage;
 use toolwing::workspace::{Page, Workspace};
@@ -89,14 +90,21 @@ impl Ui {
     fn tool(&mut self, title: &str) -> Entity<ToolPage> {
         match self.go(title) {
             Page::Tool(p) => p,
-            Page::Hashes(_) => panic!("{title} is not a tool page"),
+            _ => panic!("{title} is not a tool page"),
         }
     }
 
     fn hashes(&mut self) -> Entity<HashesPage> {
         match self.go("Hashes") {
             Page::Hashes(p) => p,
-            Page::Tool(_) => panic!("Hashes is not the hashes page"),
+            _ => panic!("Hashes is not the hashes page"),
+        }
+    }
+
+    fn diff(&mut self) -> Entity<DiffPage> {
+        match self.go("Diff") {
+            Page::Diff(p) => p,
+            _ => panic!("Diff is not the diff page"),
         }
     }
 
@@ -342,4 +350,70 @@ fn every_page_draws_and_runs() {
         "{error:?}"
     );
     ui.save("12-jwt-expired");
+
+    // Regex: dates and their named groups in a log.
+    let p = ui.tool("Regex");
+    ui.on(&p, |p, window, cx| {
+        p.set_value(
+            "pattern",
+            Value::Text(r"(?<year>\d{4})-(?<month>\d{2})-(\d{2})".into()),
+            window,
+            cx,
+        );
+        p.set_input(
+            "INFO  2026-11-03 deploy started\nWARN  disk at 91%\nERROR 2026-11-04 rollback\n",
+            window,
+            cx,
+        );
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "2.year").as_deref(), Some("2026"));
+    assert_eq!(field(&mut ui, &p, "2.3").as_deref(), Some("04"));
+    ui.save("13-regex");
+
+    // Diff: a config before and after.
+    let d = ui.diff();
+    ui.on(&d, |d, window, cx| {
+        d.set_texts(
+            "{\n  \"service\": \"billing\",\n  \"replicas\": 6,\n  \"log\": \"warn\",\n  \"region\": \"ap-southeast-1\"\n}\n",
+            "{\n  \"service\": \"billing\",\n  \"replicas\": 2,\n  \"log\": \"debug\",\n  \"debug_sql\": true,\n  \"region\": \"ap-southeast-1\"\n}\n",
+            window,
+            cx,
+        )
+    });
+    let q = d.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(ui.cx.update(|cx| d.read(cx).counts()), (3, 2));
+    assert_eq!(
+        ui.cx
+            .update(|cx| d.read(cx).lines().first().cloned())
+            .as_deref(),
+        Some("@@ -1,6 +1,7 @@")
+    );
+    ui.save("14-diff");
+
+    // Cron: working hours, from Tuesday 13:26 in Ho Chi Minh City.
+    let p = ui.tool("Cron");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("tz", Value::Text("Asia/Ho_Chi_Minh".into()), window, cx);
+        p.set_value(
+            "relative_to",
+            Value::Text("2026-11-03T06:26:00Z".into()),
+            window,
+            cx,
+        );
+        p.set_input("*/15 9-17 * * 1-5", window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "description").as_deref(),
+        Some("Every 15 minutes, from 09:00 through 17:45, Monday through Friday")
+    );
+    assert_eq!(
+        field(&mut ui, &p, "next_1").as_deref(),
+        Some("Tue 2026-11-03 13:30:00 +07:00 · in 4 minutes")
+    );
+    ui.save("15-cron");
 }

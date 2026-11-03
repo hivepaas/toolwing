@@ -12,6 +12,7 @@ use gpui_component::{ActiveTheme as _, TitleBar, h_flex, v_flex};
 use toolwing_core::{Category, Group, Tool as _};
 use toolwing_tools::{GROUPS, group, hash};
 
+use crate::diff_page::DiffPage;
 use crate::hashes::HashesPage;
 use crate::page::ToolPage;
 
@@ -20,6 +21,7 @@ use crate::page::ToolPage;
 pub enum Entry {
     Group(&'static Group),
     Hashes,
+    Diff,
 }
 
 impl Entry {
@@ -27,6 +29,7 @@ impl Entry {
         match self {
             Entry::Group(g) => g.title,
             Entry::Hashes => "Hashes",
+            Entry::Diff => "Diff",
         }
     }
 
@@ -34,6 +37,7 @@ impl Entry {
         match self {
             Entry::Group(g) => group(g.name).first().map(|t| t.meta().category),
             Entry::Hashes => Some(Category::Crypto),
+            Entry::Diff => Some(Category::Text),
         }
     }
 }
@@ -44,7 +48,9 @@ pub fn entries() -> Vec<Entry> {
     let mut entries = Vec::new();
     for g in GROUPS {
         let is_sum = hash::SUMS.iter().any(|s| s.meta().group == g.name);
-        if !is_sum {
+        if g.name == "diff" {
+            entries.push(Entry::Diff);
+        } else if !is_sum {
             entries.push(Entry::Group(g));
         } else if !entries.iter().any(|e| matches!(e, Entry::Hashes)) {
             entries.push(Entry::Hashes);
@@ -58,6 +64,7 @@ pub fn entries() -> Vec<Entry> {
 pub enum Page {
     Tool(Entity<ToolPage>),
     Hashes(Entity<HashesPage>),
+    Diff(Entity<DiffPage>),
 }
 
 impl Page {
@@ -65,6 +72,7 @@ impl Page {
         match self {
             Page::Tool(p) => p.clone().into(),
             Page::Hashes(p) => p.clone().into(),
+            Page::Diff(p) => p.clone().into(),
         }
     }
 }
@@ -137,6 +145,7 @@ fn open(entry: Entry, window: &mut Window, cx: &mut Context<Workspace>) -> Page 
     match entry {
         Entry::Group(g) => Page::Tool(cx.new(|cx| ToolPage::new(g, window, cx))),
         Entry::Hashes => Page::Hashes(cx.new(|cx| HashesPage::new(window, cx))),
+        Entry::Diff => Page::Diff(cx.new(|cx| DiffPage::new(window, cx))),
     }
 }
 

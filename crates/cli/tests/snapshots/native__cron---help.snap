@@ -1,0 +1,19 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+What a cron expression means, and when it runs next
+
+Usage: tw cron [OPTIONS] [VALUE]
+
+Arguments:
+  [VALUE]  The input itself; stdin when left out, or -
+
+Options:
+  -n, --next <N>            How many of the next runs to list
+      --tz <TEXT>           The zone the schedule runs in; this computer's when left out
+      --relative-to <TEXT>  List the runs after this moment; now when left out
+  -i, --input <FILE>        Read the input from FILE
+      --json                Write the result as JSON
+      --no-newline          Do not end text output with a newline
+  -h, --help                Print help

@@ -1,0 +1,23 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+A pattern's matches in a text, with their groups and where they are
+
+Usage: tw regex match [OPTIONS] [VALUE]
+
+Arguments:
+  [VALUE]  The input itself; stdin when left out, or -
+
+Options:
+  -e, --regexp <TEXT>  The regular expression
+      --ignore-case    Match upper and lower case alike (i)
+      --multi-line     ^ and $ match at the start and end of each line (m)
+      --dot-all        . matches a newline too (s)
+      --extended       White space in the pattern is ignored and # starts a comment (x)
+      --pcre           Allow look-around and backreferences, by backtracking (fancy-regex)
+      --first          Stop at the first match
+  -i, --input <FILE>   Read the input from FILE
+      --json           Write the result as JSON
+      --no-newline     Do not end text output with a newline
+  -h, --help           Print help
