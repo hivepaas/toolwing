@@ -7,16 +7,17 @@ What "production-ready" means here, checked by CI rather than promised.
 Every tool with a reference (tools.md) has compatibility cases:
 
 ```
-tests/compat/base64/wrap-0.case
-  args:   base64 -w 0
-  stdin:  @files/random-1k.bin
-  stdout: @expected/wrap-0.out
-  exit:   0
+crates/cli/tests/compat/base64/no-wrap/
+  args     -w        one argument a line; @stdin is the path of the stdin file
+           0
+  stdin    abc
+  stdout   YWJj      recorded from the reference
+  exit     0         recorded from the reference
 ```
 
 - **Recorded from the real tool, not written by hand.**
   `scripts/compat_record.sh` runs each case against the reference at its pinned
-  version (jq 1.8.2, GNU coreutils 9.12, b3sum 1.8, OpenSSL 3) in a container,
+  version (jq 1.8.2, GNU coreutils 9.7 from `debian:13`, b3sum 1.8, OpenSSL 3) in a container,
   and the expected output is committed.
 - CI runs every case against `tw` on Linux on each pull request, and on macOS
   and Windows nightly and before a release (their minutes cost more, as in

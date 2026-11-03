@@ -1,0 +1,38 @@
+[package]
+name = "toolwing"
+description = "Fast, native developer tools"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "toolwing"
+path = "src/main.rs"
+
+[features]
+default = ["wayland", "x11"]
+# Linux window system backends. Build with `--no-default-features --features wayland`
+# when the X11 development libraries are not installed.
+wayland = ["gpui_platform/wayland"]
+x11 = ["gpui_platform/x11"]
+# Drawing with no display, for the UI tests and their pictures (Linux only),
+# as tracewing does: `cargo test -p toolwing --features headless --test screen`.
+headless = ["gpui_platform/test-support", "dep:gpui_wgpu", "dep:image"]
+
+[dependencies]
+toolwing-core.workspace = true
+toolwing-tools.workspace = true
+gpui.workspace = true
+gpui_platform.workspace = true
+gpui-component.workspace = true
+gpui-kit-assets.workspace = true
+anyhow.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gpui_wgpu = { package = "gpui-pre-wgpu", version = "=0.3.11", optional = true }
+image = { version = "0.25", default-features = false, features = ["png"], optional = true }
+
+[lints]
+workspace = true

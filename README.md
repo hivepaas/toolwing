@@ -14,8 +14,22 @@ The everyday conversions, encoders, decoders and inspectors in one GPU-rendered 
 
 ---
 
-> **Status:** design. Nothing is built yet; the decisions to build against are
-> in [docs/design](docs/design/README.md).
+> **Status:** early. The workspace, the CLI and the app run with the first
+> tools (`base64`, `url`, `uuid`); the plan is in [docs/design](docs/design/README.md).
+
+## Building
+
+Rust 1.99 (rustup reads `rust-toolchain.toml`) and, on Linux, the packages GPUI
+links (Wayland, X11, Vulkan, fontconfig: the list is in `.github/workflows/ci.yml`).
+
+```sh
+cargo run -p toolwing-cli -- base64 --help   # tw
+cargo run -p toolwing                        # the app
+cargo test --workspace
+```
+
+`scripts/compat_record.sh` records what the reference tools give for the
+compatibility cases (Docker); `cargo test` checks `tw` against them.
 
 ## License
 

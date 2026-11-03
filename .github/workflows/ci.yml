@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # macOS and Windows minutes cost more, so they run only when started by hand
+  # (Actions > CI > Run workflow); pushes and pull requests build Linux only.
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Platforms to build and test
+        type: choice
+        options: [all, macos, windows, linux]
+        default: all
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        name: >-
+          ${{ fromJSON(
+          inputs.platforms == 'all' && '["linux-x86_64","macos-arm64","windows-x86_64"]' ||
+          inputs.platforms == 'macos' && '["macos-arm64"]' ||
+          inputs.platforms == 'windows' && '["windows-x86_64"]' ||
+          '["linux-x86_64"]') }}
+    runs-on: >-
+      ${{ startsWith(matrix.name, 'macos') && 'macos-latest' ||
+      startsWith(matrix.name, 'windows') && 'windows-latest' || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Vulkan in software (lavapipe) for the UI test, which draws with no display.
+      - name: "Linux packages (GPUI: Wayland, X11, Vulkan, fonts)"
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libfontconfig-dev libfreetype-dev \
+            libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libx11-xcb-dev libxcb1-dev libxcb-xkb-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libvulkan-dev libdbus-1-dev libzstd-dev mesa-vulkan-drivers
+
+      # The version and its components: rust-toolchain.toml.
+      - name: Rust
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.name }}
+
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # Includes the compatibility cases: tw against what GNU coreutils recorded
+      # (scripts/compat_record.sh).
+      - name: Test
+        run: cargo test --workspace
+
+      - name: UI test (headless)
+        if: runner.os == 'Linux'
+        run: cargo test -p toolwing --features headless --test screen
+
+      - name: Pictures of the UI test
+        if: runner.os == 'Linux' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shots
+          path: target/shots/
+          if-no-files-found: ignore

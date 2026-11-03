@@ -1,0 +1,16 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+Generate UUIDs: random (v4) or time-ordered (v7)
+
+Usage: tw uuid [OPTIONS]
+
+Options:
+      --v4          Random (the default)
+      --v7          Time-ordered: starts with the time, so it sorts by creation
+  -n, --count <N>   How many UUIDs to generate
+  -u, --upper       Write the hex digits in uppercase
+      --json        Write the result as JSON
+      --no-newline  Do not end text output with a newline
+  -h, --help        Print help

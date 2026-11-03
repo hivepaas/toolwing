@@ -55,7 +55,7 @@ pub struct Meta {
     pub keywords: &'static [&'static str],
     pub input: InputKind,             // None, Text, Bytes
     pub streams: bool,                // can run in constant memory (run_stream)
-    pub reference: Option<Reference>, // the tool we match, e.g. GNU coreutils base64 9.12
+    pub reference: Option<Reference>, // the tool we match, e.g. GNU coreutils base64 9.7
 }
 
 pub struct Param {
