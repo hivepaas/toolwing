@@ -52,7 +52,8 @@ impl Entry {
 pub fn entries() -> Vec<Entry> {
     let mut entries = Vec::new();
     for g in GROUPS {
-        let is_sum = hash::SUMS.iter().any(|s| s.meta().group == g.name);
+        // b3sum is a hash command too: the Hashes page has BLAKE3.
+        let is_sum = hash::SUMS.iter().any(|s| s.meta().group == g.name) || g.name == "b3sum";
         if g.name == "jq" {
             entries.push(Entry::Jq);
         } else if g.name == "diff" {

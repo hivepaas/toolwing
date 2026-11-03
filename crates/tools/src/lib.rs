@@ -92,6 +92,11 @@ pub static GROUPS: &[Group] = &[
         summary: en!("BLAKE2b checksums of files, or check them"),
     },
     Group {
+        name: "b3sum",
+        title: en!("BLAKE3"),
+        summary: en!("BLAKE3 checksums of files, or check them, as b3sum does"),
+    },
+    Group {
         name: "hmac",
         title: en!("HMAC"),
         summary: en!("HMAC of the input with a secret key, as openssl dgst -hmac"),
@@ -168,6 +173,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::SHA256SUM,
     &hash::SHA512SUM,
     &hash::B2SUM,
+    &hash::B3SUM,
     &hmac::Digest,
     &random::Password,
     &random::Token,

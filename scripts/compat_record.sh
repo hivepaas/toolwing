@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # The reference of each group, and the image that has it at its pinned version.
-declare -A IMAGE COMMAND VERSION
+declare -A IMAGE COMMAND VERSION BUILD
 for tool in base64 base32 md5sum sha1sum sha256sum sha512sum b2sum; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
@@ -29,6 +29,12 @@ JQ_SHA256=b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f
 IMAGE[jq]=debian:13
 COMMAND[jq]=/w/$JQ # the container sees the repository at /w
 VERSION[jq]="jq-1.8.2"
+# b3sum: no Debian package, so an image of Alpine 3.22's (bash for the loop
+# below), built here once.
+IMAGE[b3sum]=toolwing-ref/b3sum:1.8.2
+BUILD[b3sum]=$'FROM alpine:3.22\nRUN apk add --no-cache bash b3sum'
+COMMAND[b3sum]=b3sum
+VERSION[b3sum]="b3sum 1.8.2"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
@@ -39,6 +45,9 @@ for group in "${groups[@]}"; do
     chmod +x "$JQ"
   fi
   image=${IMAGE[$group]:?no reference for $group}
+  if [ -n "${BUILD[$group]:-}" ] && ! docker image inspect "$image" > /dev/null 2>&1; then
+    printf '%s\n' "${BUILD[$group]}" | docker build -q -t "$image" - > /dev/null
+  fi
   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/w" -w /w "$image" bash -c '
     set -euo pipefail
     command=$1 version=$2 dir=$3

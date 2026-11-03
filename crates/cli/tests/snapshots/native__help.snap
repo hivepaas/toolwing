@@ -20,6 +20,7 @@ Commands:
   sha256sum    SHA-256 checksums of files, or check them
   sha512sum    SHA-512 checksums of files, or check them
   b2sum        BLAKE2b checksums of files, or check them
+  b3sum        BLAKE3 checksums of files, or check them, as b3sum does
   hmac         HMAC of the input with a secret key, as openssl dgst -hmac
   random       Passwords, tokens and bytes from the system's secure generator
   uuid         Generate UUIDs, or read what one holds (RFC 9562)
