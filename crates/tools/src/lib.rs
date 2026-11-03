@@ -4,6 +4,7 @@ pub mod base;
 pub mod base64;
 pub mod case;
 pub mod command;
+pub mod convert;
 pub mod cron;
 pub mod diff;
 pub mod hash;
@@ -22,6 +23,11 @@ pub static GROUPS: &[Group] = &[
         name: "json",
         title: en!("JSON"),
         summary: en!("Format, minify and validate JSON, written as jq . writes it"),
+    },
+    Group {
+        name: "convert",
+        title: en!("Convert"),
+        summary: en!("Between JSON, YAML 1.2, TOML, CSV and XML"),
     },
     Group {
         name: "base64",
@@ -106,6 +112,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &json::Pretty,
     &json::Minify,
     &json::Validate,
+    &convert::Convert,
     &base64::Encode,
     &base64::Decode,
     &url::Encode,
