@@ -30,6 +30,11 @@ pub fn args(tool: &dyn Tool, values: &Values) -> Vec<String> {
             None => format!("--{}", p.cli.long),
         };
         match (p.kind, value) {
+            // Never the secret itself (cli.md): it is read from the environment.
+            (ParamKind::Secret, Value::Text(s)) if !s.is_empty() => {
+                args.extend([format!("--{}-env", p.cli.long), "TW_SECRET".to_owned()])
+            }
+            (ParamKind::Secret, _) => {}
             (ParamKind::Flag, Value::Bool(true)) => args.push(name),
             (ParamKind::Flag, _) => {}
             (ParamKind::Choice { flags: true, .. }, Value::Text(s)) if !s.is_empty() => {
@@ -45,7 +50,7 @@ pub fn args(tool: &dyn Tool, values: &Values) -> Vec<String> {
 }
 
 /// The whole command line for a shell, with the input: the value itself when
-/// it is short text on one line, otherwise read from a file.
+/// it is one line, otherwise read from a file.
 pub fn shell_line(tool: &dyn Tool, values: &Values, input: &str) -> String {
     let mut line = String::from("tw");
     for a in args(tool, values) {
@@ -57,7 +62,9 @@ pub fn shell_line(tool: &dyn Tool, values: &Values, input: &str) -> String {
         InputKind::None => {}
         _ if m.drop_in() => line.push_str(" < input"),
         _ if input.is_empty() => {}
-        _ if input.len() <= 60 && !input.contains('\n') => {
+        // One line goes in the command, a token as much as a word; more,
+        // or a whole document, is read from a file.
+        _ if input.len() <= 2048 && !input.contains('\n') => {
             line.push(' ');
             line.push_str(&quote(input));
         }
@@ -85,6 +92,16 @@ mod tests {
 
     fn tool(id: &str) -> &'static dyn Tool {
         find(id).unwrap_or_else(|| panic!("no tool {id}"))
+    }
+
+    /// A secret is never written out: the command reads it from TW_SECRET.
+    #[test]
+    fn secret_params_are_copied_by_name() {
+        let mut v = Values::new();
+        v.set("key", Value::Text("hunter2".into()));
+        let line = shell_line(tool("jwt.verify"), &v, "eyJ.x.y");
+        assert_eq!(line, "tw jwt verify --key-env TW_SECRET eyJ.x.y");
+        assert!(!line.contains("hunter2"));
     }
 
     #[test]

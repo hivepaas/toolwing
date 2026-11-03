@@ -156,6 +156,11 @@ pub enum ParamKind {
         max: i64,
     },
     Text,
+    /// A secret: a password, a signing key. The CLI also takes it from a file
+    /// or an environment variable (`--key-file`, `--key-env`), "copy as
+    /// command" writes it as `--key-env TW_SECRET`, never in clear, and the
+    /// app masks it and keeps it nowhere (cli.md, app.md).
+    Secret,
 }
 
 /// The names a param has on the command line, spelled as the reference spells them.
@@ -243,6 +248,8 @@ pub struct Field {
     /// What people read: the CLI's aligned lines, the app's rows.
     pub label: String,
     pub value: String,
+    /// The heading the field shows under (a JWT's Header, Payload), if any.
+    pub section: Option<String>,
 }
 
 impl Field {
@@ -251,7 +258,13 @@ impl Field {
             key: key.into(),
             label: label.into(),
             value: value.into(),
+            section: None,
         }
+    }
+
+    pub fn in_section(mut self, section: impl Into<String>) -> Self {
+        self.section = Some(section.into());
+        self
     }
 }
 
@@ -263,6 +276,12 @@ pub enum Output {
     Lines(Vec<String>),
     /// Named values: aligned lines for people, a JSON object with `--json`.
     Fields(Vec<Field>),
+    /// Named values for people, and the JSON `--json` writes as it is: for
+    /// results whose values are not all strings (a JWT's claims).
+    Record {
+        fields: Vec<Field>,
+        json: String,
+    },
     Bytes(Vec<u8>),
 }
 
@@ -400,7 +419,7 @@ pub trait Tool: Sync {
                     out.write_all(b"\n")?;
                 }
             }
-            Output::Fields(fields) => {
+            Output::Fields(fields) | Output::Record { fields, .. } => {
                 for f in fields {
                     writeln!(out, "{}: {}", f.label, f.value)?;
                 }

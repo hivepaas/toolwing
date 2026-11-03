@@ -1,0 +1,30 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+Check a JWT's signature with its secret or public key, and its expiry
+
+Usage: tw jwt verify [OPTIONS] [VALUE]
+
+Arguments:
+  [VALUE]  The input itself; stdin when left out, or -
+
+Options:
+  -k, --key <SECRET>        The HMAC secret, or the public key: PEM, a JWK or a JWKS
+      --key-file <FILE>     Read the key from FILE
+      --key-env <NAME>      Read the key from the environment variable NAME
+      --base64-secret       Decode the HMAC secret from Base64 (standard or URL-safe) first
+      --alg <ALG>           Accept only this algorithm; the token's own when left out [possible
+                            values: HS256, HS384, HS512, RS256, RS384, RS512, PS256, PS384, PS512,
+                            ES256, ES384, EdDSA]
+      --iss <TEXT>          Require this issuer (iss)
+      --aud <TEXT>          Require this audience (aud)
+      --leeway <N>          Allow this much clock difference when checking expiry and not-before
+      --ignore-time         Check the signature only, not expiry (exp) or not-before (nbf)
+      --tz <TEXT>           The zone to show times in; this computer's when left out
+      --relative-to <TEXT>  The moment expiry is checked against and "in 3 hours" counts from; the
+                            clock when left out
+  -i, --input <FILE>        Read the input from FILE
+      --json                Write the result as JSON
+      --no-newline          Do not end text output with a newline
+  -h, --help                Print help

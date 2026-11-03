@@ -25,5 +25,10 @@ heck = "0.5"
 # knows every zone in a container with no tzdata.
 jiff = { version = "0.2", features = ["tzdb-bundle-always"] }
 
+# JWTs: signing and verifying, with its pure-Rust crypto (no C to build).
+jsonwebtoken = { version = "11.1", default-features = false, features = ["rust_crypto", "use_pem"] }
+# JWT headers and claims, and JWKS files.
+serde_json = { version = "1", features = ["preserve_order"] }
+
 [lints]
 workspace = true

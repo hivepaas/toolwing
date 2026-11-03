@@ -39,9 +39,9 @@ Two kinds of command, and every tool says which it is (tools.md):
   require UTF-8 and say where the first invalid byte is.
 - A trailing newline on stdin is dropped for single-value tools (`printf` vs
   `echo` should not change a JWT); `--keep-newline` keeps it.
-- Secrets (`--secret`, `--key`) also come from `--secret-file FILE` or an
-  environment variable named with `--secret-env NAME`, so they need not appear
-  in shell history or `ps`.
+- A secret param (`--key`) also comes from a file, `--key-file FILE`, or an
+  environment variable, `--key-env NAME`, so it need not appear in shell
+  history or `ps`. "Copy as command" always writes `--key-env TW_SECRET`.
 
 ## Output
 

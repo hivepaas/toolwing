@@ -5,6 +5,7 @@ pub mod base64;
 pub mod case;
 pub mod command;
 pub mod hash;
+pub mod jwt;
 pub mod time;
 pub mod url;
 pub mod uuid;
@@ -22,6 +23,11 @@ pub static GROUPS: &[Group] = &[
         name: "url",
         title: en!("URL encoding"),
         summary: en!("Percent-encode and decode text for URLs"),
+    },
+    Group {
+        name: "jwt",
+        title: en!("JWT"),
+        summary: en!("Decode, verify and create JSON Web Tokens (RFC 7519)"),
     },
     Group {
         name: "md5sum",
@@ -77,6 +83,9 @@ pub static TOOLS: &[&dyn Tool] = &[
     &base64::Decode,
     &url::Encode,
     &url::Decode,
+    &jwt::Decode,
+    &jwt::Verify,
+    &jwt::Encode,
     &hash::MD5SUM,
     &hash::SHA1SUM,
     &hash::SHA256SUM,
@@ -181,7 +190,7 @@ mod tests {
                     (ParamKind::Choice { options, .. }, Value::Text(s)) => {
                         s.is_empty() || options.iter().any(|(o, _)| o == s)
                     }
-                    (ParamKind::Text, Value::Text(_)) => true,
+                    (ParamKind::Text | ParamKind::Secret, Value::Text(_)) => true,
                     _ => false,
                 };
                 assert!(fits, "{id}.{}: default", p.key);

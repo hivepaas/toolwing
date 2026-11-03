@@ -287,4 +287,59 @@ fn every_page_draws_and_runs() {
     assert_eq!(field(&mut ui, &p, "binary").as_deref(), Some("1111 1111"));
     assert_eq!(field(&mut ui, &p, "signed").as_deref(), Some("-1"));
     ui.save("9-number-base");
+
+    // JWT: decode the RFC 7515 example, then verify it with its key.
+    let token = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    let p = ui.tool("JWT");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("tz", Value::Text("Asia/Ho_Chi_Minh".into()), window, cx);
+        p.set_value(
+            "relative_to",
+            Value::Text("2011-03-22T17:43:00Z".into()),
+            window,
+            cx,
+        );
+        p.set_input(token, window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "payload.iss").as_deref(), Some("joe"));
+    ui.save("10-jwt-decode");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(1, window, cx);
+        p.set_value(
+            "key",
+            Value::Text("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow".into()),
+            window,
+            cx,
+        );
+        p.set_value("base64_secret", Value::Bool(true), window, cx);
+        p.set_value("tz", Value::Text("Asia/Ho_Chi_Minh".into()), window, cx);
+        p.set_value("relative_to", Value::Text("2011-03-22T17:43:00Z".into()), window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "result").as_deref(), Some("Valid"));
+    ui.save("11-jwt-verify");
+    // A day later: expired.
+    ui.on(&p, |p, window, cx| {
+        p.set_value(
+            "relative_to",
+            Value::Text("2011-03-23T18:43:00Z".into()),
+            window,
+            cx,
+        );
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    let error = ui
+        .cx
+        .update(|cx| p.read(cx).error().map(|e| e.message.clone()));
+    assert!(
+        error
+            .as_deref()
+            .is_some_and(|e| e.starts_with("expired 1 day ago")),
+        "{error:?}"
+    );
+    ui.save("12-jwt-expired");
 }
