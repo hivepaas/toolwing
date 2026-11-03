@@ -1,0 +1,7 @@
+{
+  "service": "billing",
+  "replicas": 6,
+  "image": "billing:2.4.1",
+  "log": "warn",
+  "region": "ap-southeast-1"
+}

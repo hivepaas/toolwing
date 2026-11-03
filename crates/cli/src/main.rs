@@ -1,6 +1,7 @@
 //! `tw`: toolwing's tools on the command line (docs/design/cli.md).
 
 mod commands;
+mod diffs;
 mod sums;
 
 use std::fs::File;
@@ -25,7 +26,13 @@ fn main() -> ExitCode {
             let drop_in = args
                 .get(1)
                 .is_some_and(|g| group(g).first().is_some_and(|t| t.meta().drop_in()));
-            return ExitCode::from(if drop_in { 1 } else { 2 });
+            // GNU diff's usage errors are trouble, 2; coreutils' are 1.
+            let code = match args.get(1).map(String::as_str) {
+                Some("diff") => diffs::TROUBLE,
+                _ if drop_in => 1,
+                _ => 2,
+            };
+            return ExitCode::from(code);
         }
     };
     let Some((name, sub)) = matches.subcommand() else {
@@ -39,6 +46,7 @@ fn main() -> ExitCode {
             }
             Ok(())
         }
+        "diff" => return ExitCode::from(diffs::run(sub)),
         _ => match sums::find(name) {
             Some(sum) => return ExitCode::from(sums::run(sum, sub)),
             None => run_group(name, sub),

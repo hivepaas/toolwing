@@ -20,6 +20,9 @@ for tool in base64 md5sum sha1sum sha256sum sha512sum b2sum; do
   COMMAND[$tool]=$tool
   VERSION[$tool]="$tool (GNU coreutils) 9.7"
 done
+IMAGE[diff]=debian:13
+COMMAND[diff]=diff
+VERSION[diff]="diff (GNU diffutils) 3.10"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do

@@ -34,6 +34,7 @@ pub fn root() -> Command {
     for g in groups() {
         cmd = cmd.subcommand(match crate::sums::find(g) {
             Some(sum) => crate::sums::command(sum),
+            None if g == "diff" => crate::diffs::command(),
             None => group_command(g),
         });
     }

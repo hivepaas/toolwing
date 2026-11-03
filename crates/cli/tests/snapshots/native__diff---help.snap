@@ -1,0 +1,21 @@
+---
+source: crates/cli/tests/native.rs
+expression: run.stdout
+---
+Compare two files line by line, as GNU diff does
+
+Usage: tw diff [OPTIONS] [FILE]...
+
+Arguments:
+  [FILE]...  The two files; - for stdin
+
+Options:
+  -u                            Unified format, 3 lines of context
+  -U, --unified [<NUM>]         Unified format with NUM lines of context (3 when not given)
+      --label <LABEL>           Name a file LABEL in the unified header; twice for both
+  -q, --brief                   Say only whether the files differ
+  -s, --report-identical-files  Say so when the files are the same
+  -i, --ignore-case             Lines that differ in case only are the same
+  -w, --ignore-all-space        White space is not compared at all
+  -b, --ignore-space-change     Runs of white space are one space, and trailing white space is none
+  -h, --help                    Print help

@@ -17,6 +17,9 @@ Commands:
   b2sum        BLAKE2b checksums of files, or check them
   uuid         Generate UUIDs: random (v4) or time-ordered (v7)
   time         Unix timestamps, ISO 8601 and RFC dates, in any time zone
+  cron         What a cron expression means, and when it runs next
+  regex        Test a pattern, see its matches and groups, replace with it
+  diff         Compare two files line by line, as GNU diff does
   case         One name in every case code uses: camelCase, snake_case, kebab-case…
   base         A number in binary, octal, decimal, hex or any base from 2 to 36
   list         List every tool

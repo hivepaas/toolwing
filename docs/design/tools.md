@@ -31,9 +31,9 @@ parser.
 | `time` | Epoch (unit guessed from its size) ⇄ RFC 3339/ISO 8601/RFC 9557/RFC 2822, time zones, relative ("in 3 days", "2 hours ago"), `--format` strftime | GNU date 9.7 (`-R`, `%s`, `%:z`; ISO in UTC ends in `Z` where `date -Iseconds` writes `+00:00`) | output | `jiff`, its zone database bundled so containers with no tzdata know every zone |
 | `uuid` | Generate v4/v7 (v1, v3, v5 too), inspect version and time | RFC 9562, `uuidgen` | standard | `uuid` |
 | `ulid` | Generate, inspect, convert to UUID | ULID spec | standard | `ulid` |
-| `cron` | Explain an expression, list the next runs | crontab(5), Quartz and Kubernetes forms | standard | `croner` |
-| `regex` | Test, list matches and groups, replace | Rust `regex`; PCRE-style with `--pcre` | standard | `regex`, `fancy-regex` |
-| `diff` | Compare two texts or files (unified), JSON-aware with `--json-values` | `diff -u` | drop-in | `similar` |
+| `cron` | Explain an expression, its fields, the next runs in a zone (a time daylight saving skips does not run, a repeated one runs once) | crontab(5) of Vixie cron, as Kubernetes takes it: 5 fields or 6 with seconds, names, `@daily`…, the day-of-month-or-weekday rule; Quartz's `L`, `W`, `#` not yet | standard | our own parser and scheduler on `jiff`, so zones are as in `tw time` |
+| `regex` | List matches with their place and groups (exit 1 on none, as `grep`), replace with `$1`/`${name}` | Rust `regex` (linear time); PCRE-style with `--pcre` (look-around, backreferences; stopped after a million backtracking steps) | standard | `regex`, `fancy-regex` |
+| `diff` | Compare two files: GNU's normal format, `-u`/`-U N`, `--label`, `-q`, `-s`, `-i`, `-w`, `-b`, binary files; `--json-values` not yet | GNU diffutils 3.10 | drop-in (33 cases recorded) | `similar` (Myers) |
 | `case` | camel, pascal, snake, constant, kebab, train, dot, title, sentence; every one at once by default | — | standard | `heck`'s word boundaries |
 | `random` | Passwords, tokens, bytes as hex or base64 | `openssl rand -hex/-base64` | output | `rand` with the OS generator |
 | `base` | Number bases 2–36, `0x`/`0o`/`0b` prefixes, grouping, up to 128 bits, signed and unsigned at a width (`--bits`) | — | standard | std |

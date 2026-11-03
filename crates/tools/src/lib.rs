@@ -4,8 +4,11 @@ pub mod base;
 pub mod base64;
 pub mod case;
 pub mod command;
+pub mod cron;
+pub mod diff;
 pub mod hash;
 pub mod jwt;
+pub mod regex;
 pub mod time;
 pub mod url;
 pub mod uuid;
@@ -65,6 +68,21 @@ pub static GROUPS: &[Group] = &[
         summary: en!("Unix timestamps, ISO 8601 and RFC dates, in any time zone"),
     },
     Group {
+        name: "cron",
+        title: en!("Cron"),
+        summary: en!("What a cron expression means, and when it runs next"),
+    },
+    Group {
+        name: "regex",
+        title: en!("Regex"),
+        summary: en!("Test a pattern, see its matches and groups, replace with it"),
+    },
+    Group {
+        name: "diff",
+        title: en!("Diff"),
+        summary: en!("Compare two texts or files line by line, as diff does"),
+    },
+    Group {
         name: "case",
         title: en!("Case"),
         summary: en!("One name in every case code uses: camelCase, snake_case, kebab-case…"),
@@ -93,6 +111,10 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::B2SUM,
     &uuid::Generate,
     &time::Convert,
+    &cron::Explain,
+    &regex::Match,
+    &regex::Replace,
+    &diff::Compare,
     &case::Convert,
     &base::Convert,
 ];

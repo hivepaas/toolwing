@@ -576,9 +576,13 @@ impl Render for ToolPage {
                     .min_h_0()
                     .gap_3()
                     .when(takes_input, |row| {
+                        // Named values need the room more than the input does.
+                        let narrow = self.result_fields.is_some();
                         row.child(
                             v_flex()
-                                .flex_1()
+                                .when(narrow, |d| d.w_1_3().flex_none())
+                                .when(!narrow, |d| d.flex_1())
+                                .min_w_0()
                                 .h_full()
                                 .gap_1()
                                 .child(label("Input", cx))
@@ -588,6 +592,7 @@ impl Render for ToolPage {
                     .child(
                         v_flex()
                             .flex_1()
+                            .min_w_0()
                             .h_full()
                             .gap_1()
                             .child(h_flex().justify_between().child(label("Output", cx)).when(
