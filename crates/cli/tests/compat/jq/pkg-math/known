@@ -1,1 +1,0 @@
-Numbers print as jaq prints them (2.0, 1e3), not as jq does (2, 1E+3): the jaq-json patch (docs/design/jq.md).

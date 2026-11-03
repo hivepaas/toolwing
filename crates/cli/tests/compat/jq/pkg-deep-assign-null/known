@@ -1,1 +1,0 @@
-Setting a path through null fails (jq makes the objects): the jaq-json patch (docs/design/jq.md).

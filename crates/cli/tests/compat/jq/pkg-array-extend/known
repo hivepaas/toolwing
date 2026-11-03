@@ -1,1 +1,0 @@
-Setting past an array's end fails (jq pads it with nulls): the jaq-json patch (docs/design/jq.md).

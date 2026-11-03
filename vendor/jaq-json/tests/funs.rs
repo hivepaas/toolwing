@@ -10,10 +10,16 @@ yields!(bsearch_absent2, "[1, 3] | bsearch(2)", -2);
 yields!(bsearch_absent3, "[1, 3] | bsearch(4)", -3);
 yields!(bsearch_present, "[1, 3] | [bsearch(1, 3)]", [0, 1]);
 
+// toolwing: jaq still reads these (jq does not); they are written as jq
+// writes the infinities.
 yields!(
     fromjson_inf,
     r#""Infinity +Infinity -Infinity" | [fromjson | tostring]"#,
-    ["Infinity", "Infinity", "-Infinity"]
+    [
+        "1.7976931348623157e+308",
+        "1.7976931348623157e+308",
+        "-1.7976931348623157e+308"
+    ]
 );
 yields!(fromjson_uint, r#"" 1" | fromjson"#, 1);
 yields!(fromjson_pint, r#""+1" | fromjson"#, 1);
@@ -72,9 +78,10 @@ yields!(length_float_neg, "-2.5 | length", 2.5);
 
 yields!(tojson_fl0, "1.0 | tojson", "1.0");
 yields!(tojson_fl1, "1.1 | tojson", "1.1");
-yields!(tojson_nan, "0.0 / 0.0 | tojson", "NaN");
-yields!(tojson_inf, "1.0 / 0.0 | tojson", "Infinity");
-yields!(tojson_ninf, "-1.0 / 0.0 | tojson", "-Infinity");
+// toolwing: as jq writes them; and jq refuses to divide by zero.
+yields!(tojson_nan, "(1e1000 + 0) - (1e1000 + 0) | tojson", "null");
+yields!(tojson_inf, "1e1000 + 0 | tojson", "1.7976931348623157e+308");
+yields!(tojson_ninf, "-1e1000 + 0 | tojson", "-1.7976931348623157e+308");
 
 #[test]
 fn tonumber() {
@@ -104,69 +111,44 @@ fn toboolean() {
 
 #[test]
 fn math_rem() {
-    // generated with this command with modification for errors and float rounding
-    // cargo run -- -rn 'def f: -2, -1, 0, 2.1, 3, 2000000001; f as $a | f as $b | "give!(json!(null), \"\($a) / \($b)\", \(try ($a % $b) catch tojson));"'
-    // TODO: use fail!()?
-    give(json!(null), "-2 % -2", json!(0));
-    give(json!(null), "-2 % -1", json!(0));
-    give(
-        json!(null),
-        "try (-2 % 0) catch .",
-        json!("cannot calculate -2 % 0"),
-    );
-    give(json!(null), "-2 % 2.1", json!(-2.0));
-    give(json!(null), "-2 % 3", json!(-2));
-    give(json!(null), "-2 % 2000000001", json!(-2));
-    give(json!(null), "-1 % -2", json!(-1));
-    give(json!(null), "-1 % -1", json!(0));
-    give(
-        json!(null),
-        "try (-1 % 0) catch .",
-        json!("cannot calculate -1 % 0"),
-    );
-    give(json!(null), "-1 % 2.1", json!(-1.0));
-    give(json!(null), "-1 % 3", json!(-1));
-    give(json!(null), "-1 % 2000000001", json!(-1));
-    give(json!(null), "0 % -2", json!(0));
-    give(json!(null), "0 % -1", json!(0));
-    give(
-        json!(null),
-        "try (0 % 0) catch .",
-        json!("cannot calculate 0 % 0"),
-    );
-    give(json!(null), "0 % 2.1", json!(0.0));
-    give(json!(null), "0 % 3", json!(0));
-    give(json!(null), "0 % 2000000001", json!(0));
-    give(json!(null), "2.1 % -2 | . * 1000 | round", json!(100));
-    give(json!(null), "2.1 % -1 | . * 1000 | round", json!(100));
-    give(json!(null), "2.1 % 0 | isnan", json!(true));
-    give(json!(null), "2.1 % 2.1", json!(0.0));
-    give(json!(null), "2.1 % 3", json!(2.1));
-    give(json!(null), "2.1 % 2000000001", json!(2.1));
-    give(json!(null), "3 % -2", json!(1));
-    give(json!(null), "3 % -1", json!(0));
-    give(
-        json!(null),
-        "try (3 % 0) catch .",
-        json!("cannot calculate 3 % 0"),
-    );
-    give(json!(null), "3 % 2.1 | . * 1000 | round", json!(900));
-    give(json!(null), "3 % 3", json!(0));
-    give(json!(null), "3 % 2000000001", json!(3));
-    give(json!(null), "2000000001 % -2", json!(1));
-    give(json!(null), "2000000001 % -1", json!(0));
-    give(
-        json!(null),
-        "try (2000000001 % 0) catch .",
-        json!("cannot calculate 2000000001 % 0"),
-    );
-    give(
-        json!(null),
-        "2000000001 % 2.1 | . * 1000 | round",
-        json!(1800), // 1000 in jq
-    );
-    give(json!(null), "2000000001 % 3", json!(0));
-    give(json!(null), "2000000001 % 2000000001", json!(0));
+    // toolwing: jq 1.8.2's results, from
+    // jq -rn 'def f: -2, -1, 0, 2.1, 3, 2000000001; f as $a | f as $b | "give(json!(null), \"try (\($a) % \($b)) catch .\", json!(\(try ($a % $b) catch tojson)));"'
+    give(json!(null), "try (-2 % -2) catch .", json!(0));
+    give(json!(null), "try (-2 % -1) catch .", json!(0));
+    give(json!(null), "try (-2 % 0) catch .", json!("number (-2) and number (0) cannot be divided (remainder) because the divisor is zero"));
+    give(json!(null), "try (-2 % 2.1) catch .", json!(0));
+    give(json!(null), "try (-2 % 3) catch .", json!(-2));
+    give(json!(null), "try (-2 % 2000000001) catch .", json!(-2));
+    give(json!(null), "try (-1 % -2) catch .", json!(-1));
+    give(json!(null), "try (-1 % -1) catch .", json!(0));
+    give(json!(null), "try (-1 % 0) catch .", json!("number (-1) and number (0) cannot be divided (remainder) because the divisor is zero"));
+    give(json!(null), "try (-1 % 2.1) catch .", json!(-1));
+    give(json!(null), "try (-1 % 3) catch .", json!(-1));
+    give(json!(null), "try (-1 % 2000000001) catch .", json!(-1));
+    give(json!(null), "try (0 % -2) catch .", json!(0));
+    give(json!(null), "try (0 % -1) catch .", json!(0));
+    give(json!(null), "try (0 % 0) catch .", json!("number (0) and number (0) cannot be divided (remainder) because the divisor is zero"));
+    give(json!(null), "try (0 % 2.1) catch .", json!(0));
+    give(json!(null), "try (0 % 3) catch .", json!(0));
+    give(json!(null), "try (0 % 2000000001) catch .", json!(0));
+    give(json!(null), "try (2.1 % -2) catch .", json!(0));
+    give(json!(null), "try (2.1 % -1) catch .", json!(0));
+    give(json!(null), "try (2.1 % 0) catch .", json!("number (2.1) and number (0) cannot be divided (remainder) because the divisor is zero"));
+    give(json!(null), "try (2.1 % 2.1) catch .", json!(0));
+    give(json!(null), "try (2.1 % 3) catch .", json!(2));
+    give(json!(null), "try (2.1 % 2000000001) catch .", json!(2));
+    give(json!(null), "try (3 % -2) catch .", json!(1));
+    give(json!(null), "try (3 % -1) catch .", json!(0));
+    give(json!(null), "try (3 % 0) catch .", json!("number (3) and number (0) cannot be divided (remainder) because the divisor is zero"));
+    give(json!(null), "try (3 % 2.1) catch .", json!(1));
+    give(json!(null), "try (3 % 3) catch .", json!(0));
+    give(json!(null), "try (3 % 2000000001) catch .", json!(3));
+    give(json!(null), "try (2000000001 % -2) catch .", json!(1));
+    give(json!(null), "try (2000000001 % -1) catch .", json!(0));
+    give(json!(null), "try (2000000001 % 0) catch .", json!("number (2000000001) and number (0) cannot be divided (remainder) because the divisor is zero"));
+    give(json!(null), "try (2000000001 % 2.1) catch .", json!(1));
+    give(json!(null), "try (2000000001 % 3) catch .", json!(0));
+    give(json!(null), "try (2000000001 % 2000000001) catch .", json!(0));
 }
 
 yields!(

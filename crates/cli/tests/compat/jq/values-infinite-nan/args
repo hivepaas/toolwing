@@ -1,0 +1,2 @@
+-c
+[infinite, -infinite, nan, (infinite | isinfinite), (nan | isnan), (infinite | tostring), ([nan] | tojson), (1e300 * 1e300)]

@@ -25,8 +25,6 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use jaq_core::box_iter::box_once;
 use jaq_core::{load, ops, path, val, Exn};
-use num_bigint::BigInt;
-use num_traits::{cast::ToPrimitive, Signed};
 
 pub use funs::{bytes_valrs, funs};
 pub use num::Num;
@@ -172,6 +170,8 @@ impl jaq_core::ValT for Val {
             Val::Arr(a) => Self::range_int(range)
                 .map(|range| skip_take(range, a.len()))
                 .map(|(skip, take)| a.iter().skip(skip).take(take).cloned().collect()),
+            // toolwing: a slice of `null` is `null`, as jq has it
+            Val::Null => Ok(Val::Null),
             _ => Err(Error::typ(self, Type::Range.as_str())),
         }
     }
@@ -201,7 +201,7 @@ impl jaq_core::ValT for Val {
         opt: path::Opt,
         f: impl Fn(Self) -> I,
     ) -> ValX<'a> {
-        if let (Val::BStr(_) | Val::TStr(_) | Val::Arr(_), Val::Obj(o)) = (&self, index) {
+        if let (Val::Null | Val::BStr(_) | Val::TStr(_) | Val::Arr(_), Val::Obj(o)) = (&self, index) {
             let range = o.get(&Val::utf8_str("start"))..o.get(&Val::utf8_str("end"));
             return self.map_range(range, opt, f);
         };
@@ -213,9 +213,9 @@ impl jaq_core::ValT for Val {
                         let v = core::mem::take(e.get_mut());
                         match f(v).next().transpose()? {
                             Some(y) => e.insert(y),
-                            // this runs in constant time, at the price of
-                            // changing the order of the elements
-                            None => e.swap_remove(),
+                            // toolwing: the other keys keep their order, as
+                            // jq keeps it (jaq: `swap_remove`, constant time)
+                            None => e.shift_remove(),
                         };
                     }
                     Vacant(e) => {
@@ -227,21 +227,47 @@ impl jaq_core::ValT for Val {
                 Ok(self)
             }
             Val::Arr(ref mut a) => {
-                let oob = || Error::str(format_args!("index {index} out of bounds"));
-                let abs_or = |i| abs_index(i, a.len()).ok_or_else(oob);
-                let i = match index.as_pos_usize().and_then(abs_or) {
+                let i = match index.as_pos_usize() {
                     Ok(i) => i,
                     Err(e) => return opt.fail(self, |_| Exn::from(e)),
                 };
-
-                let a = Rc::make_mut(a);
-                let x = core::mem::take(&mut a[i]);
-                if let Some(y) = f(x).next().transpose()? {
-                    a[i] = y;
-                } else {
-                    a.remove(i);
+                let a_mut = Rc::make_mut(a);
+                match abs_index(i, a_mut.len()) {
+                    Some(i) => {
+                        let x = core::mem::take(&mut a_mut[i]);
+                        if let Some(y) = f(x).next().transpose()? {
+                            a_mut[i] = y;
+                        } else {
+                            a_mut.remove(i);
+                        }
+                    }
+                    // toolwing: past the end, as jq: setting pads with nulls,
+                    // deleting leaves the array as it is
+                    None => {
+                        if let Some(y) = f(Val::Null).next().transpose()? {
+                            let i = array_slot(i, a_mut.len())?;
+                            a_mut.resize(i, Val::Null);
+                            a_mut.push(y);
+                        }
+                    }
                 }
                 Ok(self)
+            }
+            // toolwing: `null` is an empty object or array to set in, as jq
+            // has it; deleting from it gives `null`
+            Val::Null if matches!(index, Val::TStr(_) | Val::BStr(_) | Val::Num(_)) => {
+                let Some(y) = f(Val::Null).next().transpose()? else {
+                    return Ok(Val::Null);
+                };
+                Ok(match index {
+                    Val::Num(_) => {
+                        let i = index.as_pos_usize()?;
+                        let mut a = alloc::vec![Val::Null; array_slot(i, 0)?];
+                        a.push(y);
+                        Val::Arr(a.into())
+                    }
+                    _ => Val::obj([(index.clone(), y)].into_iter().collect()),
+                })
             }
             _ => opt.fail(self, |v| Exn::from(Error::typ(v, Type::Iter.as_str()))),
         }
@@ -281,6 +307,15 @@ impl jaq_core::ValT for Val {
             }
             Val::BStr(b) => fs(*b, range, stb, Val::into_byte_str, Val::byte_str),
             Val::TStr(b) => fs(*b, range, stc, Val::into_utf8_str, Val::utf8_str),
+            // toolwing: a slice of `null` is an empty array to set in, as jq
+            // has it; deleting from it gives `null`
+            Val::Null => {
+                let mut y = f(Val::Arr(Rc::default()));
+                match y.next().transpose()? {
+                    None => Ok(Val::Null),
+                    Some(y) => Ok(Val::Arr(y.into_arr()?)),
+                }
+            }
             _ => opt.fail(self, |v| Exn::from(Error::typ(v, Type::Arr.as_str()))),
         }
     }
@@ -400,6 +435,19 @@ fn abs_bound(i: Option<num::PosUsize>, len: usize, default: usize) -> usize {
     i.map_or(default, |i| core::cmp::min(i.wrap(len).unwrap_or(0), len))
 }
 
+/// toolwing: where setting index `i` of an array of `len` puts the value, as
+/// jq's `jv_array_set` has it: a negative index before the start fails, and
+/// an index past 2^29 - 1 too.
+fn array_slot(i: num::PosUsize, len: usize) -> Result<usize, Error> {
+    let i = i
+        .wrap(len)
+        .ok_or_else(|| Error::str("Out of bounds negative array index"))?;
+    if i > (i32::MAX >> 2) as usize {
+        return Err(Error::str("Array index too large"));
+    }
+    Ok(i)
+}
+
 /// Absolutise an index and return result if it is inside [0, len).
 fn abs_index(i: num::PosUsize, len: usize) -> Option<usize> {
     i.wrap(len).filter(|i| *i < len)
@@ -463,14 +511,18 @@ impl Val {
         }
     }
 
+    /// A slice's bounds; as jq, a fraction floors the start and ceils the end.
     fn range_int(range: val::Range<&Self>) -> Result<val::Range<num::PosUsize>, Error> {
-        let f = |i: Option<&Self>| {
+        let f = |i: Option<&Self>, round: fn(f64) -> f64| {
             i.as_ref()
                 .filter(|i| !matches!(i, Val::Null))
-                .map(|i| i.as_pos_usize())
+                .map(|i| {
+                    let fail = || Error::typ((*i).clone(), Type::Int.as_str());
+                    i.as_num().and_then(|n| n.as_pos_usize_by(round)).ok_or_else(fail)
+                })
                 .transpose()
         };
-        Ok(f(range.start)?..f(range.end)?)
+        Ok(f(range.start, f64::floor)?..f(range.end, f64::ceil)?)
     }
 
     fn to_json(&self) -> Vec<u8> {
@@ -482,11 +534,11 @@ impl Val {
     fn index_opt(self, index: &Self) -> Result<Option<Val>, Error> {
         Ok(match (self, index) {
             (Val::Null, _) => None,
-            (Val::BStr(a), Val::Num(i @ (Num::Int(_) | Num::BigInt(_)))) => i
+            (Val::BStr(a), Val::Num(i)) => i
                 .as_pos_usize()
                 .and_then(|i| abs_index(i, a.len()))
                 .map(|i| usize::from(a[i]).into()),
-            (Val::Arr(a), Val::Num(i @ (Num::Int(_) | Num::BigInt(_)))) => i
+            (Val::Arr(a), Val::Num(i)) => i
                 .as_pos_usize()
                 .and_then(|i| abs_index(i, a.len()))
                 .map(|i| a[i].clone()),
@@ -553,12 +605,6 @@ impl FromIterator<Self> for Val {
     }
 }
 
-fn bigint_to_int_saturated(i: &BigInt) -> isize {
-    let (min, max) = (isize::MIN, isize::MAX);
-    i.to_isize()
-        .unwrap_or_else(|| if i.is_negative() { min } else { max })
-}
-
 impl core::ops::Add for Val {
     type Output = ValR;
     fn add(self, rhs: Self) -> Self::Output {
@@ -618,23 +664,24 @@ fn obj_merge(l: &mut Rc<Map>, r: Rc<Map>) {
 impl core::ops::Mul for Val {
     type Output = ValR;
     fn mul(self, rhs: Self) -> Self::Output {
-        use crate::Num::{BigInt, Int};
         use Val::*;
         match (self, rhs) {
             (Num(x), Num(y)) => Ok(Num(x * y)),
-            (s @ (BStr(_) | TStr(_)), Num(BigInt(i)))
-            | (Num(BigInt(i)), s @ (BStr(_) | TStr(_))) => {
-                s * Num(Int(bigint_to_int_saturated(&i)))
+            // toolwing: as jq 1.8: the count truncated, 0 the empty string,
+            // a negative count or NaN null (jaq: integers only, 0 null)
+            (s @ (BStr(_) | TStr(_)), Num(n)) | (Num(n), s @ (BStr(_) | TStr(_))) => {
+                let d = n.as_f64();
+                if d.is_nan() || d < 0.0 {
+                    return Ok(Null);
+                }
+                let (BStr(b) | TStr(b)) = &s else { return Ok(Null) };
+                let count = d.min(f64::from(i32::MAX)) as usize;
+                if b.len().saturating_mul(count) >= i32::MAX as usize {
+                    return Err(Error::str("Repeat string result too long"));
+                }
+                let repeated = b.repeat(count);
+                Ok(if matches!(s, BStr(_)) { Self::byte_str(repeated) } else { Self::utf8_str(repeated) })
             }
-            (BStr(s), Num(Int(i))) | (Num(Int(i)), BStr(s)) if i > 0 => {
-                Ok(Self::byte_str(s.repeat(i as usize)))
-            }
-            (TStr(s), Num(Int(i))) | (Num(Int(i)), TStr(s)) if i > 0 => {
-                Ok(Self::utf8_str(s.repeat(i as usize)))
-            }
-            // string multiplication with negatives or 0 results in null
-            // <https://jqlang.github.io/jq/manual/#Builtinoperatorsandfunctions>
-            (BStr(_) | TStr(_), Num(Int(_))) | (Num(Int(_)), BStr(_) | TStr(_)) => Ok(Null),
             (Obj(mut l), Obj(r)) => {
                 obj_merge(&mut l, r);
                 Ok(Obj(l))
@@ -665,6 +712,10 @@ impl core::ops::Div for Val {
             split(&x, &y).map(|s| into(x.slice_ref(s))).collect()
         };
         match (self, rhs) {
+            // toolwing: jq refuses a zero divisor (jaq: infinity or NaN)
+            (Self::Num(x), Self::Num(y)) if y.as_f64() == 0.0 => Err(Error::str(format_args!(
+                "number ({x}) and number ({y}) cannot be divided because the divisor is zero"
+            ))),
             (Self::Num(x), Self::Num(y)) => Ok(Self::Num(x / y)),
             (Self::TStr(x), Self::TStr(y)) => Ok(fs(*x, *y, Val::utf8_str)),
             (Self::BStr(x), Self::BStr(y)) => Ok(fs(*x, *y, Val::byte_str)),
@@ -677,9 +728,14 @@ impl core::ops::Rem for Val {
     type Output = ValR;
     fn rem(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Self::Num(x), Self::Num(y)) if !(x.is_int() && y.is_int() && y == Num::Int(0)) => {
-                Ok(Self::Num(x % y))
+            // toolwing: as jq's, on the operands truncated to integers
+            (Self::Num(x), Self::Num(y)) if x.as_f64().is_nan() || y.as_f64().is_nan() => {
+                Ok(Self::Num(Num::Float(f64::NAN)))
             }
+            (Self::Num(x), Self::Num(y)) if y.as_int_truncated() == 0 => Err(Error::str(format_args!(
+                "number ({x}) and number ({y}) cannot be divided (remainder) because the divisor is zero"
+            ))),
+            (Self::Num(x), Self::Num(y)) => Ok(Self::Num(x % y)),
             (l, r) => Err(Error::math(l, ops::Math::Rem, r)),
         }
     }

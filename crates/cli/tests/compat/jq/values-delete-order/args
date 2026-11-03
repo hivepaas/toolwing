@@ -1,0 +1,2 @@
+-c
+del(.a, .c), del(.b) , (to_entries | map(select(.value > 1)) | from_entries)

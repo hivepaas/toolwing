@@ -131,7 +131,8 @@ pub struct Ran {
 
 /// Runs `program` as jq does: on each input (or once on `null`, with
 /// `runner.null_input`), its outputs to `out`. An error the program raises
-/// on one input goes to `error`, and the run goes on with the next, as jq's
+/// on one input goes to `error` (the value it raised: jq writes a string as
+/// it is, anything else as JSON), and the run goes on with the next, as jq's
 /// does; `filename` is what `input_filename` gives at the time.
 pub fn run(
     runner: &Runner,
@@ -140,7 +141,7 @@ pub fn run(
     inputs: impl Iterator<Item = std::io::Result<Val>>,
     filename: impl Fn() -> Val,
     mut out: impl FnMut(Val) -> std::io::Result<()>,
-    mut error: impl FnMut(String),
+    mut error: impl FnMut(Val),
 ) -> Result<Ran, Stop> {
     let inputs: Box<dyn Iterator<Item = Result<Val, String>>> =
         Box::new(inputs.map(|r| r.map_err(|e| e.to_string())));
@@ -167,7 +168,7 @@ pub fn run(
                 }
                 Err(e) => match e.get_err() {
                     Ok(e) => {
-                        error(e.to_string());
+                        error(e.into_val());
                         ran.failed = true;
                         break;
                     }
@@ -214,7 +215,7 @@ mod tests {
         )
         .map_err(|e| format!("{e:?}"))?;
         if let Some(e) = errors.into_iter().next() {
-            return Err(e);
+            return Err(e.to_string());
         }
         Ok(outputs)
     }

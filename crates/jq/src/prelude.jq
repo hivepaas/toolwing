@@ -1,18 +1,27 @@
 # jq 1.8.2's own definitions (src/builtin.jq; jq is copyright (C) 2012
 # Stephen Dolan, MIT license in LICENSE-jq), where jaq 3.1's differ or are
 # missing (docs/design/jq.md). Loaded after jaq's, so these are the ones a
-# program sees. setpath, delpaths and del stand in for the value type's own
-# until its patch (jq.md, "Value type").
+# program sees.
+
+# jaq's number definitions, bound to a `nan` and `infinite` made without
+# dividing by zero, which jq refuses (and so does the value type now).
+def infinite: 1e1000 + 0;
+def nan: infinite - infinite;
+def isnan:      . < nan and nan < .;
+def isinfinite: . == infinite or  . == -infinite;
+def isfinite:   isnumber and (isinfinite | not);
+def isnormal:   isnumber and ((. == 0 or isnan or isinfinite) | not);
+def logb:
+    if . == 0.0 then -infinite
+  elif isinfinite then infinite
+  elif isnan then .
+  else ilogb | . + 0.0 end;
+def significand:
+    if isinfinite or isnan then .
+  elif . == 0.0 then 0.0
+  else scalbln(.; ilogb | -1 * .) end;
 def have_literal_numbers: true;
 def have_decnum: false;
-def setpath($p; $v):
-  if ($p | length) == 0 then $v
-  else $p[0] as $k
-  | (if . == null then (if ($k | type) == "number" then [] else {} end) else . end)
-  | if type == "array" and ($k | type) == "number" and $k >= length
-    then . + [range(length; $k + 1) | null] else . end
-  | .[$k] |= setpath($p[1:]; $v)
-  end;
 def _del1($p):
   if ($p | length) == 1 then del(.[$p[0]])
   elif . == null then .

@@ -101,7 +101,8 @@ fn parse_num<L: LexAlloc>(lexer: &mut L) -> Result<Num, hifijson::Error> {
         "+" if lexer.strip_prefix(b"Infinity") => Num::Float(f64::INFINITY),
         "-" if lexer.strip_prefix(b"Infinity") => Num::Float(f64::NEG_INFINITY),
         _ if num.ends_with(|c: char| c.is_ascii_digit()) => {
-            if parts.is_int() {
+            // toolwing: `-0` stays as written, as jq keeps a literal
+            if parts.is_int() && num != "-0" {
                 Num::from_str_radix(num, 10).unwrap()
             } else {
                 Num::Dec(num.to_string().into())

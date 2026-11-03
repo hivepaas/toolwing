@@ -105,3 +105,7 @@ default-features = false
 
 [dev-dependencies.serde_json]
 version = "1.0"
+
+# toolwing: what jaq's workspace gives its tests (`jaq_std::funs`).
+[dev-dependencies.jaq-std]
+version = "3.0.4"
