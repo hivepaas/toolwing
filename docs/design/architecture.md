@@ -5,10 +5,13 @@
 ```
 crates/
   core/    toolwing-core    the tool model: Meta, Param, Value, Output, Error, Ctx
-  jq/      toolwing-jq      jq on jaq-core: value type, writer, prelude, natives (jq.md)
+  jq/      toolwing-jq      jq on jaq-core: prelude, natives, Oniguruma regex (jq.md)
   tools/   toolwing-tools   every tool, one module per group; the registry
   cli/     toolwing-cli     binary `tw`: commands built from the registry
   app/     toolwing         binary `toolwing`: GPUI + gpui-component
+vendor/
+  jaq-json/                 jaq's value type, reader and writer, patched to behave as
+                            jq's (vendor/README.md), for every crate that uses it
 ```
 
 Dependencies point one way: `core` ← `jq` ← `tools` ← `cli`, `app`.

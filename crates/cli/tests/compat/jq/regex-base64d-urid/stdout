@@ -1,0 +1,4 @@
+{"a":1}
+✓ a
+string ("%FX") is not a valid uri encoding
+string ("QUJDa") trailing base64 byte found

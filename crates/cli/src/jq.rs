@@ -476,7 +476,13 @@ fn run(cli: Cli) -> Result<u8, Failure> {
             inputs,
             || Val::from(current.borrow().clone()),
             |v| emit(o, &v),
-            |e| eprintln!("tw jq: error (at {}): {e}", current.borrow()),
+            |e| match e {
+                Val::TStr(s) | Val::BStr(s) => {
+                    let s = String::from_utf8_lossy(&s);
+                    eprintln!("tw jq: error (at {}): {s}", current.borrow());
+                }
+                e => eprintln!("tw jq: error (at {}) (not a string): {e}", current.borrow()),
+            },
         )
     })
     .map_err(Failure::Stop)?;

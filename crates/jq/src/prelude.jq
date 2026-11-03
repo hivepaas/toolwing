@@ -1,18 +1,72 @@
 # jq 1.8.2's own definitions (src/builtin.jq; jq is copyright (C) 2012
 # Stephen Dolan, MIT license in LICENSE-jq), where jaq 3.1's differ or are
 # missing (docs/design/jq.md). Loaded after jaq's, so these are the ones a
-# program sees. setpath, delpaths and del stand in for the value type's own
-# until its patch (jq.md, "Value type").
+# program sees.
+
+# jaq's number definitions, bound to a `nan` and `infinite` made without
+# dividing by zero, which jq refuses (and so does the value type now).
+def infinite: 1e1000 + 0;
+def nan: infinite - infinite;
+def isnan:      . < nan and nan < .;
+def isinfinite: . == infinite or  . == -infinite;
+def isfinite:   isnumber and (isinfinite | not);
+def isnormal:   isnumber and ((. == 0 or isnan or isinfinite) | not);
+def logb:
+    if . == 0.0 then -infinite
+  elif isinfinite then infinite
+  elif isnan then .
+  else ilogb | . + 0.0 end;
+def significand:
+    if isinfinite or isnan then .
+  elif . == 0.0 then 0.0
+  else scalbln(.; ilogb | -1 * .) end;
+# Natives (natives.rs).
+def @base64d: tostring | _toolwing_base64d;
+def @urid: tostring | _toolwing_urid;
+# Regex: jq's own definitions on `_match_impl`, Oniguruma (regex.rs).
+def match(re; mode): _match_impl(re; mode; false)|.[];
+def match($val): ($val|type) as $vt | if $vt == "string" then match($val; null)
+   elif $vt == "array" and ($val | length) > 1 then match($val[0]; $val[1])
+   elif $vt == "array" and ($val | length) > 0 then match($val[0]; null)
+   else error( $vt + " not a string or array") end;
+def test(re; mode): _match_impl(re; mode; true);
+def test($val): ($val|type) as $vt | if $vt == "string" then test($val; null)
+   elif $vt == "array" and ($val | length) > 1 then test($val[0]; $val[1])
+   elif $vt == "array" and ($val | length) > 0 then test($val[0]; null)
+   else error( $vt + " not a string or array") end;
+def capture(re; mods): match(re; mods) | reduce ( .captures | .[] | select(.name != null) | { (.name) : .string } ) as $pair ({}; . + $pair);
+def capture($val): ($val|type) as $vt | if $vt == "string" then capture($val; null)
+   elif $vt == "array" and ($val | length) > 1 then capture($val[0]; $val[1])
+   elif $vt == "array" and ($val | length) > 0 then capture($val[0]; null)
+   else error( $vt + " not a string or array") end;
+def scan($re; $flags):
+  match($re; "g" + $flags)
+    | if (.captures|length > 0)
+      then [ .captures | .[] | .string ]
+      else .string
+      end;
+def scan($re): scan($re; null);
+def splits($re; $flags):
+  .[foreach (match($re; $flags+"g"), null) as {$offset, $length}
+      (null; {start: .next, end: $offset, next: ($offset+$length)})];
+def splits($re): splits($re; null);
+def split($re; $flags): [ splits($re; $flags) ];
+def sub($re; s; $flags):
+   . as $in
+   | (reduce match($re; $flags) as $edit
+        ({result: [], previous: 0};
+            $in[ .previous: ($edit | .offset) ] as $gap
+            | [reduce ( $edit | .captures | .[] | select(.name != null) | { (.name) : .string } ) as $pair
+                 ({}; . + $pair) | s ] as $inserts
+            | reduce range(0; $inserts|length) as $ix (.; .result[$ix] += $gap + $inserts[$ix])
+            | .previous = ($edit | .offset + .length ) )
+          | .result[] + $in[.previous:] )
+      // $in;
+def sub($re; s): sub($re; s; "");
+def gsub($re; s; flags): sub($re; s; flags + "g");
+def gsub($re; s): sub($re; s; "g");
 def have_literal_numbers: true;
 def have_decnum: false;
-def setpath($p; $v):
-  if ($p | length) == 0 then $v
-  else $p[0] as $k
-  | (if . == null then (if ($k | type) == "number" then [] else {} end) else . end)
-  | if type == "array" and ($k | type) == "number" and $k >= length
-    then . + [range(length; $k + 1) | null] else . end
-  | .[$k] |= setpath($p[1:]; $v)
-  end;
 def _del1($p):
   if ($p | length) == 1 then del(.[$p[0]])
   elif . == null then .

@@ -1,1 +1,0 @@
-jaq's regex has no lookaround, and leaves out groups that did not take part (jq gives them null): Oniguruma (docs/design/jq.md).

@@ -1,0 +1,2 @@
+-c
+[match("(x)?b(?<n>c)?")], [match("X"; "g")], [match("(?=u)"; "g")]

@@ -1,0 +1,12 @@
+/home/tiendc/dev/toolwing/vendor/jaq-json/target/debug/deps/jaq_std-decb451592393a9d.d: /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/lib.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/input.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/math.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/regex.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/time.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/defs.jq
+
+/home/tiendc/dev/toolwing/vendor/jaq-json/target/debug/deps/libjaq_std-decb451592393a9d.rlib: /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/lib.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/input.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/math.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/regex.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/time.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/defs.jq
+
+/home/tiendc/dev/toolwing/vendor/jaq-json/target/debug/deps/libjaq_std-decb451592393a9d.rmeta: /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/lib.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/input.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/math.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/regex.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/time.rs /home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/defs.jq
+
+/home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/lib.rs:
+/home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/input.rs:
+/home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/math.rs:
+/home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/regex.rs:
+/home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/time.rs:
+/home/tiendc/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/jaq-std-3.0.4/src/defs.jq:

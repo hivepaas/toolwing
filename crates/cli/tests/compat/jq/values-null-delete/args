@@ -1,0 +1,2 @@
+-c
+[(null | del(.a)), (null | del(.[0])), (null | del(.[1:2])), (null | .["a"] |= empty), null[1:2]]

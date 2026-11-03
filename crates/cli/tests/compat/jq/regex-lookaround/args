@@ -1,0 +1,2 @@
+-c
+[test("foo(?=bar)"), test("(?<!x)bar"), test("(?<=foo)bar")]

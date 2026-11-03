@@ -1,0 +1,2 @@
+-c
+[test("T"; "i"), test("t e s t"; "x"), ([match("a*?"; "gl")] | length), ([match("^b"; "g")] | length), ([match("[a-z]"; "gi").string] | join(""))]

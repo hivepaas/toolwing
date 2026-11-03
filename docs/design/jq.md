@@ -13,14 +13,14 @@ official jq 1.8.2 binary, with the scripts in `scripts/jq-compat/`.
 jq's runner judges them: outputs compared as values, in order). jq passes all
 879 with `PAGER=less` set, as its `mantest` sets it.
 
-| Suite | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq` |
-| --- | --- | --- | --- |
-| `jq.test` (550) | 373 (67.8%) | 396 (72.0%) | 394 (71.6%) |
-| `man.test`, the manual's examples (231) | 209 (90.5%) | 216 (93.5%) | 216 (93.5%) |
-| `onig.test` + `manonig.test`, regex (66) | 54 (81.8%) | 54 | 54 |
-| `base64.test` + `uri.test` (30) | 20 (66.7%) | 20 | 20 |
-| `optional.test` (2) | 2 | 2 | 2 |
-| **All (879)** | **658 (74.9%)** | **688 (78.3%)** | **686 (78.0%)** |
+| Suite | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq`: prelude | `tw jq`: + values, natives, Oniguruma |
+| --- | --- | --- | --- | --- |
+| `jq.test` (550) | 373 (67.8%) | 396 (72.0%) | 394 (71.6%) | 428 (77.8%) |
+| `man.test`, the manual's examples (231) | 209 (90.5%) | 216 (93.5%) | 216 (93.5%) | 221 (95.7%) |
+| `onig.test` + `manonig.test`, regex (66) | 54 (81.8%) | 54 | 54 | **66 (100%)** |
+| `base64.test` + `uri.test` (30) | 20 (66.7%) | 20 | 20 | **30 (100%)** |
+| `optional.test` (2) | 2 | 2 | 2 | 2 |
+| **All (879)** | **658 (74.9%)** | **688 (78.3%)** | **686 (78.0%)** | **747 (85.0%)** |
 
 The prototype pasted the prelude in front of each program, which made two
 `module` cases in `jq.test` fail to compile as they must, by accident; `tw jq`
@@ -32,9 +32,9 @@ run them on kubectl, AWS, GitHub, Docker and package.json output, logs, number
 formatting, `@csv`/`@tsv`/`@sh`, regex and dates, compared **byte for byte**
 with exit codes):
 
-| | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq` |
-| --- | --- | --- | --- |
-| Identical output and exit code | 148 / 170 (87.1%) | 156 / 170 (91.8%) | 156 / 170 (91.8%) |
+| | jaq 3.1.2 | jaq + prelude (prototype) | `tw jq`: prelude | `tw jq`: + values, natives, Oniguruma |
+| --- | --- | --- | --- | --- |
+| Identical output and exit code | 148 / 170 (87.1%) | 156 / 170 (91.8%) | 156 / 170 (91.8%) | **170 / 170 (100%)** |
 
 The suite compares values, so it misses what bytes show: jaq's `del(.a)`
 reorders the remaining keys (`{"d":4,"b":2,"c":3}`), and it prints `10 / 5` as
@@ -45,11 +45,11 @@ reorders the remaining keys (`{"d":4,"b":2,"c":3}`), and it prints `10 / 5` as
 | Difference | Seen in | Fixed in |
 | --- | --- | --- |
 | Builtins missing or defined differently: `IN`, `INDEX`, `JOIN`, `tostream`, `fromstream`, `truncate_stream`, `trimstr`, `pick`, `have_literal_numbers`; `join` with nulls, `from_entries` with `Key`/`Value` (AWS tags), `limit`/`skip`/`nth`/`flatten` with negative counts | suite 32, idioms 8 | **Prelude**: jq's own definitions from `src/builtin.jq` (MIT), loaded before every program. **Done**: `crates/jq/src/prelude.jq`. |
-| Assigning into `null` (`null \| .a.b = 1`, `jq -n '.x = 1'`), extending arrays (`.[3] = 1`), deleting keeps key order, `delpaths` with several paths | suite ~23, idioms 4 | **Value type**: our own, started from `jaq-json` (MIT, ~2,000 lines): its `map_index` fails on `null`, refuses indices past the end and uses `swap_remove`. |
-| Number output: literals in jq's canonical form (`1e3` → `1E+3`), computed doubles as jq prints them (`2`, not `2.0`; `1e-07`), `-0`, integers past 2^53 rounded as doubles in arithmetic | suite ~30, idioms 6 | **Value type and writer**: jq's number formatting, and `tostring`/`tojson` through it. |
-| Regex: jaq uses `regex-bites` (no look-around, ASCII `\b`, optional groups dropped from `capture`) | suite 12, idioms 2 | **Oniguruma**, the engine jq uses, through the `onig` crate, as native `_match_impl`. Same engine, same results. |
-| `@base64d` refuses unpadded input (every JWT payload: `split(".")[1] \| @base64d`), `@urid` accepts invalid input | suite 10, idioms 2 | **Native filters** with jq's rules. |
-| Division by zero gives `Infinity`, `NaN` literals in input, `strftime` on short arrays | suite ~6 | Value type and natives. |
+| Assigning into `null` (`null \| .a.b = 1`, `jq -n '.x = 1'`), extending arrays (`.[3] = 1`), deleting keeps key order, `delpaths` with several paths, fractional indices | suite ~23, idioms 4 | **Value type**: jaq-json vendored (`vendor/jaq-json`, MIT) and patched for the whole build: `map_index` sets into `null` and past an array's end, deletes with `shift_remove`. **Done** (vendor/README.md). |
+| Number output: literals in jq's canonical form (`1e3` → `1E+3`), computed doubles as jq prints them (`2`, not `2.0`; `1e-07`), `-0`, integers past 2^53 rounded as doubles in arithmetic | suite ~30, idioms 6 | **Value type and writer**: jq's `jvp_dtoa_fmt` for doubles, decNumber's canonical form for literals, arithmetic in doubles. **Done**. |
+| Regex: jaq uses `regex-bites` (no look-around, ASCII `\b`, optional groups dropped from `capture`) | suite 12, idioms 2 | **Oniguruma**, the engine jq uses (6.9.10, through the `onig` crate), as native `_match_impl` ported from jq's `f_match`; `match`, `test`, `capture`, `scan`, `splits`, `sub`, `gsub` from jq's builtin.jq. **Done**: `crates/jq/src/regex.rs`. |
+| `@base64d` refuses unpadded input (every JWT payload: `split(".")[1] \| @base64d`), `@urid` accepts invalid input | suite 10, idioms 2 | **Native filters** with jq's rules and messages. **Done**: `crates/jq/src/natives.rs`. |
+| Division by zero gives `Infinity`, `%` on fractions, `NaN` literals in input, `strftime` on short arrays | suite ~6 | Value type and natives. **Done** for division and `%`; the others remain. |
 | Syntax jaq lacks: `?//` destructuring alternatives, `$__loc__`, `{$name: pattern}`, `reduce`/`foreach` with `/` in the source | suite ~28, of which 4 in the manual | **jaq-core**: pull requests upstream; a patch taken in only while one waits, as shellwing does with `gpui-pre-linux`. |
 | Modules: `import "x" as $data`, `modulemeta`, `builtins` | suite ~12 | jaq-core and natives. |
 | Depth: jaq overflows its stack at 10,000 levels (`reduce range(10000) as $_ ([];[.]) \| tojson \| fromjson` aborts the process); jq stops with "too deep" | suite 14 | Depth limits of 10,000 in the parser, writer, comparison and paths, as jq has. |
@@ -57,12 +57,12 @@ reorders the remaining keys (`{"d":4,"b":2,"c":3}`), and it prints `10 / 5` as
 
 ## Expected results
 
-Estimates from the measured categories, not yet measured:
+Estimates from the measured categories, the first two rows measured:
 
 | After | Suite | Real-world programs |
 | --- | --- | --- |
-| Prelude (`tw jq` today, measured) | 78.0% | 91.8% |
-| + value type, number writer, Oniguruma, natives | ~88% | 100% |
+| Prelude (measured) | 78.0% | 91.8% |
+| + value type, number writer, Oniguruma, natives (measured) | 85.0% | 100% |
 | + jaq-core syntax, modules, depth limits | ~94% | 100% |
 | + jq's error messages | ~97–99% | 100% |
 
@@ -87,14 +87,16 @@ patches waiting upstream.
 Both measurements run in CI, through the `tw` binary:
 
 - **Compatibility cases**, `crates/cli/tests/compat/jq/`: the 170 real-world
-  programs, and 46 cases of the command line itself (options after the
+  programs, 46 cases of the command line itself (options after the
   filter, `-c` against `--tab`, a name given twice to `--arg`, `--`, `-1` as
   a filter, several files, `-f`, `-L`, unreadable files, `halt_error`, the
-  exit codes). `scripts/compat_record.sh jq` records each from jq 1.8.2's
-  release binary (its sha256 checked) and `tw` must give the same stdout and
-  exit code. A case that still differs has a `known` file saying why (17
-  now); it must keep differing, so a fix fails the test until its `known`
-  is removed.
+  exit codes), and 32 of values and regex (setting into `null`, padding,
+  fractional indices, the arithmetic, number printing, match objects,
+  look-around, modifiers, `@base64d`, `@urid`). `scripts/compat_record.sh
+  jq` records each from jq 1.8.2's release binary (its sha256 checked) and
+  `tw` must give the same stdout and exit code. A case that still differs
+  has a `known` file saying why (3 now: the flags not done yet); it must
+  keep differing, so a fix fails the test until its `known` is removed.
 - **jq's suite**, `crates/cli/tests/jq-suite/` (jq 1.8.2's `tests/*.test` and
   modules, MIT): `jq_suite.rs` judges each case as jq's runner does, and
   holds each file's count of passing cases as a ratchet. Fewer fails the

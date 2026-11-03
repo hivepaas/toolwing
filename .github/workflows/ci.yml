@@ -66,10 +66,14 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      # Includes the compatibility cases: tw against what GNU coreutils recorded
-      # (scripts/compat_record.sh).
+      # Includes the compatibility cases: tw against what the reference tools
+      # recorded (GNU coreutils and diffutils, jq; scripts/compat_record.sh),
+      # and jq's own suite.
       - name: Test
         run: cargo test --workspace
+
+      - name: Test the vendored crates
+        run: cargo test --manifest-path vendor/jaq-json/Cargo.toml --all-features
 
       - name: UI test (headless)
         if: runner.os == 'Linux'
