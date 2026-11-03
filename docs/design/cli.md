@@ -68,8 +68,9 @@ Two kinds of command, and every tool says which it is (tools.md):
 | 4 | A file could not be read or written |
 
 Drop-in commands keep their reference's codes: `tw jq` exits 2 on a usage or
-system error, 3 on a filter that does not compile, 5 on a runtime error, and
-with `-e` 1 or 4 as jq does; `tw sha256sum -c` exits 1 when a line fails.
+system error, 3 on a filter that does not compile, 5 on a runtime error on
+the last input or an input that does not parse, and with `-e` 1 or 4 as jq
+does (jq.md); `tw sha256sum -c` exits 1 when a line fails.
 
 ## Large input
 

@@ -2,6 +2,10 @@
 //! was run against the reference tool by `scripts/compat_record.sh`, and `tw`
 //! must give the same stdout, byte for byte, and the same exit code. A case's
 //! `files/` folder, when it has one, is where the command runs.
+//!
+//! A case with a `known` file is a difference not yet fixed, the file saying
+//! why: it must still differ, so that a fix shows up as a failure here until
+//! the file is removed.
 
 use std::fs;
 use std::io::Write;
@@ -20,8 +24,16 @@ fn tw_matches_the_reference_tools() {
             .unwrap_or_default();
         for case in sorted_dirs(&group) {
             count += 1;
-            if let Err(why) = check(&name, &case) {
-                failures.push(format!("{name}/{}: {why}", case.display()));
+            let label = format!(
+                "{name}/{}",
+                case.file_name().unwrap_or_default().to_string_lossy()
+            );
+            match (check(&name, &case), case.join("known").exists()) {
+                (Err(why), false) => failures.push(format!("{label}: {why}")),
+                (Ok(()), true) => failures.push(format!(
+                    "{label}: same as the reference now; remove its `known`"
+                )),
+                _ => {}
             }
         }
     }

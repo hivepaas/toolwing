@@ -1,0 +1,2 @@
+-c
+[(10 | sqrt | floor), (2 | pow(.; 10)), (-1.5 | fabs), (3.7 | round), (17 | log2 | floor)]

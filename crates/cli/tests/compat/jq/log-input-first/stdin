@@ -1,0 +1,4 @@
+{"ts": "2026-11-03T01:00:00Z", "level": "info", "msg": "start", "ms": 3}
+{"ts": "2026-11-03T01:00:01Z", "level": "error", "msg": "db timeout", "ms": 5003, "err": {"code": "ETIMEDOUT"}}
+{"ts": "2026-11-03T01:00:02Z", "level": "warn", "msg": "slow", "ms": 1200}
+{"ts": "2026-11-03T01:00:03Z", "level": "error", "msg": "db timeout", "ms": 5001}

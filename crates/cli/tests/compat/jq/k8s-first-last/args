@@ -1,0 +1,2 @@
+-c
+[first(.items[]).metadata.name, (.items | last).metadata.name]

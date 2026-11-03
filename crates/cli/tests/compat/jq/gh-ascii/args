@@ -1,0 +1,2 @@
+-c
+.[1].title | explode | map(select(. < 128)) | implode

@@ -1,0 +1,2 @@
+-c
+.Reservations[].Instances[] | .Tags | from_entries

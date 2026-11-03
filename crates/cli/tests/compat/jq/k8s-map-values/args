@@ -1,0 +1,2 @@
+-c
+.items[0].metadata.labels | map_values(ascii_upcase)

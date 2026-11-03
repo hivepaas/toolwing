@@ -1,0 +1,1 @@
+del moves the last key into the deleted one's place (jaq-json's swap_remove): the jaq-json patch (docs/design/jq.md).

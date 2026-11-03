@@ -14,6 +14,7 @@ crates/cli/tests/compat/base64/no-wrap/
   stdout   YWJj      recorded from the reference
   exit     0         recorded from the reference
   files/             optional: the folder the command runs in, with its files
+  known              optional: why tw still differs; the case must then differ
 ```
 
 - **Recorded from the real tool, not written by hand.**
@@ -26,10 +27,13 @@ crates/cli/tests/compat/base64/no-wrap/
   any drift, so a new reference version is noticed.
 - Cases cover the commonly used flags, empty input, input without a trailing
   newline, invalid input, large input, and non-ASCII text.
-- `tw jq` also runs jq's own suite and the real-world corpus, with the gates
-  in [jq.md](jq.md): 100% of the corpus byte for byte, 100% of `man.test`, 90%
-  of the whole suite for 1.0. The scripts that measured jaq
-  (`scripts/jq-compat/`) are the start of these tests.
+- A difference not fixed yet is a case with a `known` file, not a missing
+  case: the test fails when such a case starts to match, so the list of
+  differences stays true.
+- `tw jq` also runs jq's own suite, its pass counts held as a ratchet, and
+  the real-world corpus as compatibility cases, with the gates in
+  [jq.md](jq.md): 100% of the corpus byte for byte, 100% of `man.test`, 90%
+  of the whole suite for 1.0.
 
 ## Other tests
 

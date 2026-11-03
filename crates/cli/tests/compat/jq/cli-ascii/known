@@ -1,0 +1,1 @@
+-a, --ascii-output is not supported yet: tw jq says so and exits 2 (docs/design/jq.md).

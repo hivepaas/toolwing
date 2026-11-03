@@ -1,0 +1,1 @@
+{"build":"tsc -p .","test":"vitest run"}

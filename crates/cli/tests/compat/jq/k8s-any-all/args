@@ -1,0 +1,2 @@
+-c
+[.items[] | .status.containerStatuses // [] | (any(.ready | not), all(.ready))]

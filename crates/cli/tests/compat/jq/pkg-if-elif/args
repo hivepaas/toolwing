@@ -1,0 +1,2 @@
+-r
+.version | if test("^1\\.") then "v1" elif test("^2\\.") then "v2" else "other" end

@@ -38,20 +38,21 @@ pub fn root() -> Command {
             None => group_command(g),
         });
     }
-    cmd.subcommand(
-        Command::new("list")
-            .about("List every tool")
-            .arg(json_flag()),
-    )
-    .subcommand(
-        Command::new("completions")
-            .about("Print shell completions")
-            .arg(
-                Arg::new("shell")
-                    .required(true)
-                    .value_parser(value_parser!(clap_complete::Shell)),
-            ),
-    )
+    cmd.subcommand(crate::jq::command())
+        .subcommand(
+            Command::new("list")
+                .about("List every tool")
+                .arg(json_flag()),
+        )
+        .subcommand(
+            Command::new("completions")
+                .about("Print shell completions")
+                .arg(
+                    Arg::new("shell")
+                        .required(true)
+                        .value_parser(value_parser!(clap_complete::Shell)),
+                ),
+        )
 }
 
 fn group_command(name: &'static str) -> Command {

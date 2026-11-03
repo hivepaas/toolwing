@@ -1,0 +1,2 @@
+-r
+.Reservations[].Instances[] | [.InstanceId, .InstanceType, .State.Name, (.PrivateIpAddress // "")] | @csv

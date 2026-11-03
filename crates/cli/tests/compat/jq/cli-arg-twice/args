@@ -1,0 +1,9 @@
+-n
+-c
+--arg
+x
+1
+--arg
+x
+2
+[$x, $ARGS.named]

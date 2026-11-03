@@ -1,0 +1,2 @@
+-c
+.items[2] | walk(if type == "object" then del(.labels) else . end)

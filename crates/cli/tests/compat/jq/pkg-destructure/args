@@ -1,0 +1,2 @@
+-c
+. as {name: $n, version: $v} | "\($n)-\($v)"

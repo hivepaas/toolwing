@@ -1,0 +1,2 @@
+-c
+[foreach .[] as $i (0; . + $i.number)]

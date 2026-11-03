@@ -1,0 +1,2 @@
+-r
+.items[] | select(.metadata.labels.app == "api") | .spec.nodeName

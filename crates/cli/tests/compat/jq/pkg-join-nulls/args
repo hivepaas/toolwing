@@ -1,0 +1,2 @@
+-r
+[.name, null, .version] | join("-")

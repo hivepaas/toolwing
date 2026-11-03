@@ -1,0 +1,2 @@
+-r
+.[] | "https://x.test/?q=\(.title | @uri)"

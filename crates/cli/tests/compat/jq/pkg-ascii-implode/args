@@ -1,0 +1,2 @@
+-c
+"abc" | explode | map(. + 1) | implode

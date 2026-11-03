@@ -22,6 +22,7 @@ Commands:
   diff         Compare two files line by line, as GNU diff does
   case         One name in every case code uses: camelCase, snake_case, kebab-case…
   base         A number in binary, octal, decimal, hex or any base from 2 to 36
+  jq           Query and transform JSON, as jq 1.8 does
   list         List every tool
   completions  Print shell completions
   help         Print this message or the help of the given subcommand(s)

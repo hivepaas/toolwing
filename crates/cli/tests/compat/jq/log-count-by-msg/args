@@ -1,0 +1,3 @@
+-s
+-c
+map(select(.level == "error")) | group_by(.msg) | map({msg: .[0].msg, n: length})

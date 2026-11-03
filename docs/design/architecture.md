@@ -112,8 +112,9 @@ unique, every param has help text, every group has compatibility cases
 
 - **CLI:** each group becomes a clap subcommand, built with clap's builder API
   from `Meta` and `Param`, so flags cannot drift from the app's options. Tools
-  whose reference has an unusual command line, `jq` and the `*sum` hashes, have
-  a hand-written parser that fills the same `Values`.
+  whose reference has an unusual command line have a hand-written parser: the
+  `*sum` hashes and `diff` fill the same `Values`; `tw jq` reads jq's
+  arguments as jq does and runs `toolwing-jq` (jq.md).
 - **App:** each group gets a generic page built from its params: input editor,
   options bar, output view. A group can register its own page instead (color,
   QR, diff, cron), still calling the same `Tool::run`.

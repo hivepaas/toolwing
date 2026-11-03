@@ -1,0 +1,2 @@
+-c
+[ltrimstr("x"), rtrimstr("z"), trim, ltrim, rtrim]

@@ -13,6 +13,7 @@ publish = false
 [workspace.dependencies]
 toolwing-core = { path = "crates/core" }
 toolwing-tools = { path = "crates/tools" }
+toolwing-jq = { path = "crates/jq" }
 # GPUI as published by Longbridge, a newer snapshot than the other -wing apps:
 # the one gpui-component 0.9.0 pins. The three move together (architecture.md).
 gpui = { package = "gpui-pre", version = "=0.3.11" }

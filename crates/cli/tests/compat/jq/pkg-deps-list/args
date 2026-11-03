@@ -1,0 +1,2 @@
+-r
+.dependencies | to_entries[] | "\(.key)@\(.value)"

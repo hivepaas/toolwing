@@ -1,0 +1,2 @@
+-c
+.scripts.lint = "eslint ." | .scripts | keys

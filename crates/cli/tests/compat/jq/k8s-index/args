@@ -1,0 +1,2 @@
+-c
+.items | INDEX(.metadata.name) | keys

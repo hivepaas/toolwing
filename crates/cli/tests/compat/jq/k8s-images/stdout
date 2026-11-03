@@ -1,0 +1,4 @@
+busybox
+envoy:1.31
+ghcr.io/acme/api:2.4.1
+nginx:1.27

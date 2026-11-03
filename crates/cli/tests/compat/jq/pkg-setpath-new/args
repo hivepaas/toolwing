@@ -1,0 +1,2 @@
+-c
+setpath(["engines","node"]; ">=22") | .engines

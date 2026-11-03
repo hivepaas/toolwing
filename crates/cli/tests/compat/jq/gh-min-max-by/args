@@ -1,0 +1,2 @@
+-c
+[min_by(.number).number, max_by(.number).number]

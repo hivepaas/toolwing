@@ -1,0 +1,2 @@
+-c
+reduce .[] as $i ({}; .[$i.state] += 1)
