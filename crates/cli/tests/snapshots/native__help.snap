@@ -9,6 +9,7 @@ Usage: tw <COMMAND>
 Commands:
   base64       Encode and decode Base64 (RFC 4648)
   url          Percent-encode and decode text for URLs
+  jwt          Decode, verify and create JSON Web Tokens (RFC 7519)
   md5sum       MD5 checksums of files, or check them
   sha1sum      SHA-1 checksums of files, or check them
   sha256sum    SHA-256 checksums of files, or check them

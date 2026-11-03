@@ -8,9 +8,11 @@ use gpui::{
     IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement as _, Styled,
     Subscription, Window, div, prelude::FluentBuilder as _,
 };
+use gpui_component::IndexPath;
 use gpui_component::button::{Button, ButtonVariants as _};
 use gpui_component::checkbox::Checkbox;
 use gpui_component::input::{Input, InputEvent, InputState, Textarea, TextareaState};
+use gpui_component::select::{Select, SelectEvent, SelectState};
 use gpui_component::tab::{Tab, TabBar};
 use gpui_component::{ActiveTheme as _, h_flex, v_flex};
 use toolwing_core::{Ctx, Error, Field, Group, InputKind, Output, ParamKind, Tool, Value, Values};
@@ -18,6 +20,30 @@ use toolwing_tools::{command, group};
 
 /// Typing pauses this long before a run (app.md).
 const DEBOUNCE: Duration = Duration::from_millis(60);
+/// A choice of more options than this is a dropdown, not a row of tabs.
+const TABS_MAX: usize = 6;
+
+type Dropdown = Entity<SelectState<Vec<&'static str>>>;
+
+/// The choices a param offers, what leaving it out means first.
+fn choices(kind: ParamKind) -> Vec<&'static str> {
+    match kind {
+        ParamKind::Choice { options, unset, .. } => unset
+            .into_iter()
+            .chain(options.iter().map(|(o, _)| *o))
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// The value a choice stands for: empty for what leaving it out means.
+fn choice_value(kind: ParamKind, choice: &str) -> String {
+    match kind {
+        ParamKind::Choice { unset: Some(u), .. } if u == choice => String::new(),
+        _ => choice.to_owned(),
+    }
+}
+
 /// Output longer than this shows in part.
 const SHOWN_MAX: usize = 1 << 20;
 
@@ -31,6 +57,8 @@ pub struct ToolPage {
     output: Entity<TextareaState>,
     /// Text fields of Int and Text params, by (action, key).
     fields: Vec<(usize, &'static str, Entity<InputState>)>,
+    /// Dropdowns of long choices, by (action, key).
+    dropdowns: Vec<(usize, &'static str, Dropdown)>,
     error: Option<Error>,
     /// The last result's named values, shown as rows instead of the editor.
     result_fields: Option<Vec<Field>>,
@@ -63,10 +91,19 @@ impl ToolPage {
                     Value::Text(s) => s.clone(),
                     Value::Bool(_) => continue,
                 };
-                if !matches!(p.kind, ParamKind::Int { .. } | ParamKind::Text) {
+                if !matches!(
+                    p.kind,
+                    ParamKind::Int { .. } | ParamKind::Text | ParamKind::Secret
+                ) {
                     continue;
                 }
-                let state = cx.new(|cx| InputState::new(window, cx).default_value(initial));
+                // A secret is masked, and kept nowhere but here (app.md).
+                let masked = matches!(p.kind, ParamKind::Secret);
+                let state = cx.new(|cx| {
+                    InputState::new(window, cx)
+                        .default_value(initial)
+                        .masked(masked)
+                });
                 let key = p.key;
                 subscriptions.push(cx.subscribe_in(
                     &state,
@@ -81,6 +118,30 @@ impl ToolPage {
                 fields.push((action, key, state));
             }
         }
+        let mut dropdowns = Vec::new();
+        for (action, tool) in tools.iter().enumerate() {
+            for p in tool.params() {
+                let items = choices(p.kind);
+                if items.len() <= TABS_MAX {
+                    continue;
+                }
+                let key = p.key;
+                let kind = p.kind;
+                let state =
+                    cx.new(|cx| SelectState::new(items, Some(IndexPath::new(0)), window, cx));
+                subscriptions.push(cx.subscribe_in(
+                    &state,
+                    window,
+                    move |this, _, event: &SelectEvent<Vec<&'static str>>, window, cx| {
+                        if let SelectEvent::Confirm(Some(choice)) = event {
+                            this.values[action].set(key, Value::Text(choice_value(kind, choice)));
+                            this.schedule(window, cx);
+                        }
+                    },
+                ));
+                dropdowns.push((action, key, state));
+            }
+        }
         let mut page = ToolPage {
             group: group_info,
             values: vec![Values::new(); tools.len()],
@@ -89,6 +150,7 @@ impl ToolPage {
             input,
             output,
             fields,
+            dropdowns,
             error: None,
             result_fields: None,
             stale: false,
@@ -121,8 +183,25 @@ impl ToolPage {
             .fields
             .iter()
             .find(|(a, k, _)| *a == self.action && *k == key);
-        if let (Some(text), Some((_, _, state))) = (text, field) {
+        if let (Some(text), Some((_, _, state))) = (text.clone(), field) {
             state.update(cx, |state, cx| state.set_value(text, window, cx));
+        }
+        let kind = self
+            .tool()
+            .params()
+            .iter()
+            .find(|p| p.key == key)
+            .map(|p| p.kind);
+        let dropdown = self
+            .dropdowns
+            .iter()
+            .find(|(a, k, _)| *a == self.action && *k == key);
+        if let (Some(text), Some(kind), Some((_, _, state))) = (text, kind, dropdown) {
+            let index = choices(kind)
+                .iter()
+                .position(|c| choice_value(kind, c) == text)
+                .map(IndexPath::new);
+            state.update(cx, |state, cx| state.set_selected_index(index, window, cx));
         }
         self.values[self.action].set(key, value);
         self.schedule(window, cx);
@@ -229,7 +308,7 @@ impl ToolPage {
                     Ok(output) => {
                         this.error = None;
                         this.result_fields = match &output {
-                            Output::Fields(f) => Some(f.clone()),
+                            Output::Fields(f) | Output::Record { fields: f, .. } => Some(f.clone()),
                             _ => None,
                         };
                         let text = shown(&output);
@@ -263,6 +342,20 @@ impl ToolPage {
                         this.set_value(key, Value::Bool(*checked), window, cx)
                     }))
                     .into_any_element(),
+                ParamKind::Choice { .. } if choices(p.kind).len() > TABS_MAX => {
+                    let state = self
+                        .dropdowns
+                        .iter()
+                        .find(|(a, k, _)| *a == action && *k == key)
+                        .map(|(_, _, s)| s.clone());
+                    h_flex()
+                        .gap_2()
+                        .child(label(p.label, cx))
+                        .when_some(state, |row, state| {
+                            row.child(div().w_40().child(Select::new(&state)))
+                        })
+                        .into_any_element()
+                }
                 ParamKind::Choice { options, unset, .. } => {
                     // What leaving it out means comes first, as a choice of its own.
                     let choices: Vec<&'static str> = unset
@@ -295,7 +388,7 @@ impl ToolPage {
                         )
                         .into_any_element()
                 }
-                ParamKind::Int { .. } | ParamKind::Text => {
+                ParamKind::Int { .. } | ParamKind::Text | ParamKind::Secret => {
                     let field = self
                         .fields
                         .iter()
@@ -305,7 +398,7 @@ impl ToolPage {
                         .gap_2()
                         .child(label(p.label, cx))
                         .when_some(field, |row, state| {
-                            let text = matches!(p.kind, ParamKind::Text);
+                            let text = matches!(p.kind, ParamKind::Text | ParamKind::Secret);
                             row.child(
                                 div()
                                     .when(text, |d| d.w_56())
@@ -339,7 +432,7 @@ fn shown(output: &Output) -> String {
     let text = match output {
         Output::Text(s) => s.clone(),
         Output::Lines(lines) => lines.join("\n"),
-        Output::Fields(fields) => fields
+        Output::Fields(fields) | Output::Record { fields, .. } => fields
             .iter()
             .map(|f| format!("{}: {}", f.label, f.value))
             .collect::<Vec<_>>()
@@ -364,17 +457,35 @@ fn shown(output: &Output) -> String {
 fn field_rows(fields: &[Field], cx: &Context<ToolPage>) -> impl IntoElement {
     let border = cx.theme().border;
     let muted = cx.theme().muted_foreground;
-    v_flex()
-        .rounded_lg()
-        .border_1()
-        .border_color(border)
-        .children(fields.iter().enumerate().map(|(i, f)| {
-            let copy = f.value.clone();
+    let mut list = v_flex().rounded_lg().border_1().border_color(border);
+    let mut section: Option<&str> = None;
+    for (i, f) in fields.iter().enumerate() {
+        if f.section.as_deref() != section {
+            section = f.section.as_deref();
+            if let Some(name) = section {
+                list = list.child(
+                    div()
+                        .px_4()
+                        .pt_3()
+                        .pb_1()
+                        .when(i > 0, |d| d.border_t_1().border_color(border))
+                        .text_xs()
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(muted)
+                        .child(name.to_uppercase()),
+                );
+            }
+        }
+        let copy = f.value.clone();
+        let first_of_section = i == 0 || fields[i - 1].section != f.section;
+        list = list.child(
             h_flex()
                 .gap_3()
                 .px_4()
                 .py_2()
-                .when(i > 0, |row| row.border_t_1().border_color(border))
+                .when(i > 0 && !first_of_section, |row| {
+                    row.border_t_1().border_color(border)
+                })
                 .child(
                     div()
                         .w_40()
@@ -398,8 +509,10 @@ fn field_rows(fields: &[Field], cx: &Context<ToolPage>) -> impl IntoElement {
                         .on_click(move |_, _, cx| {
                             cx.write_to_clipboard(ClipboardItem::new_string(copy.clone()))
                         }),
-                )
-        }))
+                ),
+        );
+    }
+    list
 }
 
 /// "decode" → "Decode": the tab under the group's title says only the action.

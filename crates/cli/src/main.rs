@@ -120,7 +120,7 @@ fn run_drop_in(name: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Failur
         error,
         drop_in: true,
     };
-    let values = commands::values(m, tool.params());
+    let values = commands::values(m, tool.params()).map_err(fail)?;
     let mut input: Box<dyn Read> = match m.get_one::<String>("file").map(String::as_str) {
         None | Some("-") => Box::new(io::stdin().lock()),
         Some(path) => Box::new(
@@ -142,7 +142,7 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
         error,
         drop_in: false,
     };
-    let values = commands::values(m, tool.params());
+    let values = commands::values(m, tool.params()).map_err(fail)?;
     let input = read_input(tool.meta().input, m).map_err(fail)?;
     let output = tool.run(&Ctx::new(), &input, &values).map_err(fail)?;
     let mut out = io::stdout().lock();
@@ -157,6 +157,8 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
                     .map(|f| (f.key.clone(), serde_json::Value::from(f.value.as_str())))
                     .collect(),
             ),
+            Output::Record { json, .. } => serde_json::from_str(json)
+                .unwrap_or_else(|_| serde_json::Value::from(json.as_str())),
             Output::Bytes(b) => serde_json::Value::from(String::from_utf8_lossy(b).as_ref()),
         };
         writeln!(out, "{json}")
@@ -164,16 +166,8 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
         match &output {
             Output::Text(s) if newline => writeln!(out, "{s}"),
             Output::Text(s) => write!(out, "{s}"),
-            Output::Fields(fields) => {
-                let width = fields
-                    .iter()
-                    .map(|f| f.label.chars().count())
-                    .max()
-                    .unwrap_or(0);
-                fields.iter().try_for_each(|f| {
-                    let pad = width - f.label.chars().count();
-                    writeln!(out, "{}{}  {}", f.label, " ".repeat(pad), f.value)
-                })
+            Output::Fields(fields) | Output::Record { fields, .. } => {
+                write_fields(&mut out, fields)
             }
             Output::Lines(lines) => {
                 let text = lines.join("\n");
@@ -194,6 +188,29 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
     written
         .and_then(|()| out.flush())
         .map_err(|e| fail(e.into()))
+}
+
+/// Aligned `label  value` lines, under their sections' headings when they
+/// have them.
+fn write_fields(out: &mut dyn Write, fields: &[toolwing_core::Field]) -> io::Result<()> {
+    let width = fields
+        .iter()
+        .map(|f| f.label.chars().count())
+        .max()
+        .unwrap_or(0);
+    let mut section: Option<&str> = None;
+    for f in fields {
+        if f.section.as_deref() != section {
+            section = f.section.as_deref();
+            if let Some(s) = section {
+                writeln!(out, "{s}")?;
+            }
+        }
+        let indent = if section.is_some() { "  " } else { "" };
+        let pad = width - f.label.chars().count();
+        writeln!(out, "{indent}{}{}  {}", f.label, " ".repeat(pad), f.value)?;
+    }
+    Ok(())
 }
 
 fn read_input(kind: InputKind, m: &ArgMatches) -> Result<Vec<u8>, Error> {

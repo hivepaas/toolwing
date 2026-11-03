@@ -27,7 +27,7 @@ parser.
 | `md5sum`, `sha1sum`, `sha256sum`, `sha512sum`, `b2sum` | Hash files and check lists (`-c`, `--tag`, `-z`, `-l`) | GNU coreutils 9.7 | drop-in | RustCrypto `md-5`, `sha1`, `sha2`; `blake2b_simd` (blake2 0.11 takes no length at run time) |
 | `b3sum` | BLAKE3 | b3sum 1.8 | drop-in | `blake3`; the app shows BLAKE3 already, the command waits for a reference image to record its cases from (`debian:13` has no b3sum) |
 | `hmac` | HMAC-SHA1/256/512 of input with a key | `openssl dgst -hmac` | output | RustCrypto `hmac` |
-| `jwt` | Decode, verify (HS/RS/ES/PS/EdDSA, JWKS file), encode | RFC 7519, 7515 | standard | `jsonwebtoken` |
+| `jwt` | Decode (times in your zone), verify (HMAC secret, PEM, JWK or JWKS by `kid`; a key of the wrong kind refused; exp/nbf with a leeway, iss, aud), encode | RFC 7519, 7515 (its appendix A.1 is a test) | standard | `jsonwebtoken` with its pure-Rust crypto; its `rsa` crate carries RUSTSEC-2023-0071 (Marvin, timing of private-key operations: RS/PS signing, not verifying) |
 | `time` | Epoch (unit guessed from its size) ⇄ RFC 3339/ISO 8601/RFC 9557/RFC 2822, time zones, relative ("in 3 days", "2 hours ago"), `--format` strftime | GNU date 9.7 (`-R`, `%s`, `%:z`; ISO in UTC ends in `Z` where `date -Iseconds` writes `+00:00`) | output | `jiff`, its zone database bundled so containers with no tzdata know every zone |
 | `uuid` | Generate v4/v7 (v1, v3, v5 too), inspect version and time | RFC 9562, `uuidgen` | standard | `uuid` |
 | `ulid` | Generate, inspect, convert to UUID | ULID spec | standard | `ulid` |

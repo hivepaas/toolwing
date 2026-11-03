@@ -2,7 +2,7 @@
 //! subcommand, each param a flag spelled as its `Cli` says.
 
 use clap::{Arg, ArgAction, ArgGroup, ArgMatches, Command, value_parser};
-use toolwing_core::{InputKind, Param, ParamKind, Tool, Value, Values};
+use toolwing_core::{Error, ErrorKind, InputKind, Param, ParamKind, Tool, Value, Values};
 use toolwing_tools::{group, group_info, groups};
 
 /// What a group's command looks like.
@@ -153,6 +153,32 @@ fn param_args(cmd: Command, p: &'static Param) -> Command {
                 .value_parser(value_parser!(i64).range(min..=max)),
         ),
         ParamKind::Text => cmd.arg(named(Arg::new(p.key)).value_name("TEXT")),
+        // The value, or where to read it: a secret need not be in shell
+        // history or `ps` (cli.md).
+        ParamKind::Secret => {
+            let (file, env) = (format!("{}:file", p.key), format!("{}:env", p.key));
+            cmd.arg(named(Arg::new(p.key)).value_name("SECRET"))
+                .arg(
+                    Arg::new(file.clone())
+                        .long(format!("{}-file", p.cli.long))
+                        .value_name("FILE")
+                        .help(format!("Read the {} from FILE", p.label.to_lowercase())),
+                )
+                .arg(
+                    Arg::new(env.clone())
+                        .long(format!("{}-env", p.cli.long))
+                        .value_name("NAME")
+                        .help(format!(
+                            "Read the {} from the environment variable NAME",
+                            p.label.to_lowercase()
+                        )),
+                )
+                .group(
+                    ArgGroup::new(format!("{}:any", p.key))
+                        .args([p.key.to_owned(), file, env])
+                        .multiple(false),
+                )
+        }
         ParamKind::Choice {
             options,
             flags: false,
@@ -185,8 +211,9 @@ fn param_args(cmd: Command, p: &'static Param) -> Command {
     }
 }
 
-/// The values given on the command line for `params`; the rest take their defaults.
-pub fn values(m: &ArgMatches, params: &[Param]) -> Values {
+/// The values given on the command line for `params`; the rest take their
+/// defaults. A secret named by its file or environment variable is read here.
+pub fn values(m: &ArgMatches, params: &[Param]) -> Result<Values, Error> {
     let mut v = Values::new();
     for p in params {
         match p.kind {
@@ -205,6 +232,27 @@ pub fn values(m: &ArgMatches, params: &[Param]) -> Values {
                     v.set(p.key, Value::Text(s.clone()));
                 }
             }
+            ParamKind::Secret => {
+                let file = m.get_one::<String>(&format!("{}:file", p.key));
+                let env = m.get_one::<String>(&format!("{}:env", p.key));
+                let secret = if let Some(s) = m.get_one::<String>(p.key) {
+                    Some(s.clone())
+                } else if let Some(path) = file {
+                    let text = std::fs::read_to_string(path)
+                        .map_err(|e| Error::new(ErrorKind::Io, format!("{path}: {e}")))?;
+                    // A file written by `echo` ends with a newline the secret has not.
+                    Some(text.strip_suffix('\n').unwrap_or(&text).to_owned())
+                } else if let Some(name) = env {
+                    Some(std::env::var(name).map_err(|_| {
+                        Error::usage(format!("the environment variable {name} is not set"))
+                    })?)
+                } else {
+                    None
+                };
+                if let Some(s) = secret {
+                    v.set(p.key, Value::Text(s));
+                }
+            }
             ParamKind::Choice {
                 options,
                 flags: true,
@@ -219,7 +267,7 @@ pub fn values(m: &ArgMatches, params: &[Param]) -> Values {
             }
         }
     }
-    v
+    Ok(v)
 }
 
 #[cfg(test)]
@@ -240,7 +288,8 @@ mod tests {
         let v = values(
             sub,
             toolwing_tools::find("uuid").map_or(&[], |t| t.params()),
-        );
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(v.get("version"), Some(&Value::Text("v7".into())));
         assert_eq!(v.get("count"), Some(&Value::Int(3)));
         assert_eq!(v.get("upper"), Some(&Value::Bool(true)));
@@ -268,7 +317,7 @@ mod tests {
                         want.set(k, value.clone());
                     }
                 }
-                assert_eq!(values(m, tool.params()), want, "{args:?}");
+                assert_eq!(values(m, tool.params()).ok(), Some(want), "{args:?}");
             }
         }
     }
@@ -282,6 +331,9 @@ mod tests {
                 ParamKind::Flag => vec![Value::Bool(true)],
                 ParamKind::Int { min, max } => vec![Value::Int(min), Value::Int(max)],
                 ParamKind::Text => vec![Value::Text("a b".into())],
+                // Copied as --x-env TW_SECRET: read from the environment, not
+                // given back; secret_params_are_copied_by_name checks them.
+                ParamKind::Secret => continue,
                 ParamKind::Choice { options, .. } => options
                     .iter()
                     .map(|(o, _)| Value::Text((*o).into()))

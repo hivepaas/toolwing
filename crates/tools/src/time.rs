@@ -135,7 +135,7 @@ static PARAMS: &[Param] = &[
     },
 ];
 
-fn zone(name: &str) -> Result<TimeZone, Error> {
+pub(crate) fn zone(name: &str) -> Result<TimeZone, Error> {
     if name.is_empty() {
         return Ok(TimeZone::system());
     }
@@ -287,7 +287,7 @@ pub fn describe(from: &Zoned, to: &Zoned) -> String {
     }
 }
 
-fn local(z: &Zoned) -> String {
+pub(crate) fn local(z: &Zoned) -> String {
     z.strftime("%a %Y-%m-%d %H:%M:%S %:z").to_string()
 }
 
