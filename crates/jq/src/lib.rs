@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub mod doc;
 mod natives;
 mod regex;
+mod syntax;
 
 pub use jaq_all::data::{Filter, Runner};
 pub use jaq_all::fmts::Format;
@@ -58,6 +59,8 @@ pub fn compile(
     let vars: Vec<String> = vars.iter().map(|v| format!("${v}")).collect();
     let arena = Arena::default();
     let loader = Loader::new(defs()).with_std_read(paths);
+    // jq syntax jaq lacks, rewritten first (syntax.rs).
+    let code = &*syntax::locations(code);
     let file = File {
         path: PathBuf::from(path),
         code,

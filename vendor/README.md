@@ -32,3 +32,19 @@ Changed so that `tw jq` behaves as jq 1.8.2 (docs/design/jq.md):
   workspace gives it.
 
 Each change is marked with a `toolwing:` comment.
+
+## jaq-core 3.1.2
+
+jaq's parser, compiler and interpreter (MIT, `jaq-core/LICENSE-MIT`).
+Changed so that `tw jq` parses what jq 1.8.2 parses:
+
+- **`?//`, destructuring alternatives** (`. as [$a] ?// $a | ...`): the
+  parser rewrites `l as p1 ?// p2 | r` into `l as $v | try (nulls | $v as p1
+  | r) catch (nulls | $v as p2 | r)`, every pattern's variables first bound
+  to null, so an error in a pattern or in `r` tries the next pattern, as in
+  jq (`Parser::alternatives` in `src/load/parse.rs`).
+
+Each change is marked with a `toolwing:` comment. jaq-core's own tests use
+jaq-json through jaq's workspace, so they do not build on their own here;
+jq's suite and the compatibility cases cover the change.
+
