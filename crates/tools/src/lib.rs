@@ -7,6 +7,7 @@ pub mod command;
 pub mod cron;
 pub mod diff;
 pub mod hash;
+pub mod json;
 pub mod jwt;
 pub mod regex;
 pub mod time;
@@ -17,6 +18,11 @@ use toolwing_core::{Group, Tool, en};
 
 /// The groups, in the order `tw --help` and the app's sidebar show them.
 pub static GROUPS: &[Group] = &[
+    Group {
+        name: "json",
+        title: en!("JSON"),
+        summary: en!("Format, minify and validate JSON, written as jq . writes it"),
+    },
     Group {
         name: "base64",
         title: en!("Base64"),
@@ -97,6 +103,9 @@ pub static GROUPS: &[Group] = &[
 /// Every tool, in the order `tw --help` and the app's sidebar show them. A
 /// group's first tool is its default action.
 pub static TOOLS: &[&dyn Tool] = &[
+    &json::Pretty,
+    &json::Minify,
+    &json::Validate,
     &base64::Encode,
     &base64::Decode,
     &url::Encode,

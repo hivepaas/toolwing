@@ -7,6 +7,7 @@ Fast, native developer tools
 Usage: tw <COMMAND>
 
 Commands:
+  json         Format, minify and validate JSON, written as jq . writes it
   base64       Encode and decode Base64 (RFC 4648)
   url          Percent-encode and decode text for URLs
   jwt          Decode, verify and create JSON Web Tokens (RFC 7519)

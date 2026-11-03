@@ -28,6 +28,20 @@ impl core::fmt::Display for Error {
     }
 }
 
+// toolwing: where the error is and what it is, apart, so a tool can show
+// the place in the input (jaq: only the two written together)
+impl Error {
+    /// The byte offset in the input where parsing stopped.
+    pub fn offset(&self) -> usize {
+        self.0
+    }
+
+    /// What went wrong, without the offset.
+    pub fn message(&self) -> alloc::string::String {
+        alloc::string::ToString::to_string(&self.1)
+    }
+}
+
 #[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
