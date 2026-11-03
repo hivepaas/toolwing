@@ -164,7 +164,7 @@ fn every_page_draws_and_runs() {
     ui.save("2-base64-decode-error");
 
     // URL encoding.
-    let p = ui.tool("URL encoding");
+    let p = ui.tool("URL");
     ui.on(&p, |p, window, cx| {
         p.set_value("form", Value::Bool(true), window, cx);
         p.set_input("q=tiếng việt & more", window, cx);
@@ -512,4 +512,45 @@ fn every_page_draws_and_runs() {
     let json = ui.cx.update(|cx| p.read(cx).output(cx));
     assert!(json.contains("\"VERSION\": \"1.10\""), "{json}");
     ui.save("20-convert");
+
+    // URL parse: the sketch's URL, its query decoded.
+    let p = ui.tool("URL");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(2, window, cx);
+        p.set_input(
+            "https://admin@api.example.com:8443/v1/search?q=ti%E1%BA%BFng%20vi%E1%BB%87t&page=2&sort=-created&tag=a&tag=b#results",
+            window,
+            cx,
+        );
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "host").as_deref(),
+        Some("api.example.com")
+    );
+    assert_eq!(field(&mut ui, &p, "param.0").as_deref(), Some("tiếng việt"));
+    ui.save("21-url-parse");
+
+    // Hex and Base32.
+    let p = ui.tool("Hex");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("hello, toolwing ☕", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "68656c6c6f2c20746f6f6c77696e6720e29895"
+    );
+    ui.save("22-hex");
+    let p = ui.tool("Base32");
+    ui.on(&p, |p, window, cx| p.set_input("foobar", window, cx));
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "MZXW6YTBOI======\n"
+    );
+    ui.save("23-base32");
 }

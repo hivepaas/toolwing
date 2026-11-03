@@ -1,13 +1,9 @@
-//! `base64`, as GNU coreutils' `base64` (drop-in: tools.md).
-//!
-//! Decoding follows GNU's rules, checked against GNU coreutils 9.7: newlines
-//! are skipped (no other whitespace), padding may end any quantum and a new
-//! one may follow, a last quantum of two or three characters needs no
-//! padding, and unused bits must be zero. On invalid input, the bytes decoded
-//! before it are written, then the error.
+//! `base64`, as GNU coreutils' `base64` (drop-in: tools.md). The rules for
+//! writing and reading are basen.rs's, shared with `base32`.
 
 use std::io::{Read, Write};
 
+use crate::basen::BASE64;
 use toolwing_core::{
     Category, Cli, Compat, Ctx, Error, InputKind, Meta, Output, Param, ParamKind, Reference, Tool,
     Value, Values, en,
@@ -18,11 +14,6 @@ const REFERENCE: Option<Reference> = Some(Reference {
     version: "9.7",
     compat: Compat::DropIn,
 });
-
-const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-/// How many bytes are read at a time when streaming: a multiple of 3 and 4.
-const CHUNK: usize = 3 * 4 * 16 * 1024;
 
 pub struct Encode;
 pub struct Decode;
@@ -106,56 +97,8 @@ impl Tool for Encode {
     ) -> Result<(), Error> {
         let wrap = usize::try_from(values.int(ENCODE_PARAMS, "wrap"))
             .map_err(|_| Error::usage("invalid wrap size"))?;
-        let mut buf = vec![0; CHUNK];
-        let mut held = 0; // bytes at the start of `buf` not yet encoded
-        let mut encoded = Vec::new();
-        let mut column = 0;
-        let mut wrote = false;
-        loop {
-            ctx.check()?;
-            let n = read_some(input, &mut buf[held..])?;
-            let end = held + n;
-            let last = n == 0;
-            let take = if last { end } else { end - end % 3 };
-            encoded.clear();
-            encoded.resize(data_encoding::BASE64.encode_len(take), 0);
-            data_encoding::BASE64.encode_mut(&buf[..take], &mut encoded);
-            wrote |= !encoded.is_empty();
-            write_wrapped(out, &encoded, wrap, &mut column)?;
-            buf.copy_within(take..end, 0);
-            held = end - take;
-            if last {
-                break;
-            }
-        }
-        if wrap > 0 && wrote && column > 0 {
-            out.write_all(b"\n")?;
-        }
-        Ok(())
+        BASE64.encode(ctx, input, out, wrap)
     }
-}
-
-fn write_wrapped(
-    out: &mut dyn Write,
-    mut text: &[u8],
-    wrap: usize,
-    column: &mut usize,
-) -> std::io::Result<()> {
-    if wrap == 0 {
-        return out.write_all(text);
-    }
-    while !text.is_empty() {
-        let room = wrap - *column;
-        let n = room.min(text.len());
-        out.write_all(&text[..n])?;
-        *column += n;
-        text = &text[n..];
-        if *column == wrap {
-            out.write_all(b"\n")?;
-            *column = 0;
-        }
-    }
-    Ok(())
 }
 
 impl Tool for Decode {
@@ -181,101 +124,7 @@ impl Tool for Decode {
         values: &Values,
     ) -> Result<(), Error> {
         let ignore_garbage = values.flag(DECODE_PARAMS, "ignore_garbage");
-        let mut buf = vec![0; CHUNK];
-        let mut quantum = Quantum::default();
-        let mut decoded = Vec::with_capacity(CHUNK);
-        loop {
-            ctx.check()?;
-            let n = read_some(input, &mut buf)?;
-            if n == 0 {
-                return quantum.finish(out);
-            }
-            decoded.clear();
-            let result = buf[..n]
-                .iter()
-                .filter(|&&c| c != b'\n' && (!ignore_garbage || c == b'=' || value(c).is_some()))
-                .try_for_each(|&c| quantum.push(c, &mut decoded));
-            out.write_all(&decoded)?;
-            result?;
-        }
-    }
-}
-
-fn value(c: u8) -> Option<u8> {
-    ALPHABET.iter().position(|&a| a == c).map(|i| i as u8)
-}
-
-fn invalid() -> Error {
-    Error::input("invalid input")
-}
-
-/// The characters of the quantum being read: up to four.
-#[derive(Default)]
-struct Quantum {
-    chars: [u8; 4],
-    len: usize,
-}
-
-impl Quantum {
-    fn push(&mut self, c: u8, out: &mut Vec<u8>) -> Result<(), Error> {
-        self.chars[self.len] = c;
-        self.len += 1;
-        if self.len == 4 {
-            let complete = self.decode(out);
-            self.len = 0;
-            complete?;
-        }
-        Ok(())
-    }
-
-    /// The end of the input: a quantum of two or three characters is decoded
-    /// as if padded.
-    fn finish(&mut self, out: &mut dyn Write) -> Result<(), Error> {
-        let mut decoded = Vec::new();
-        let result = match self.len {
-            0 => Ok(()),
-            1 => Err(invalid()),
-            _ => self.decode(&mut decoded),
-        };
-        out.write_all(&decoded)?;
-        result
-    }
-
-    /// Writes what the quantum's leading alphabet characters give, then says
-    /// whether the quantum was valid: complete, or padded (or at the end) with
-    /// its unused bits zero.
-    fn decode(&self, out: &mut Vec<u8>) -> Result<(), Error> {
-        let q = &self.chars[..self.len];
-        let values: Vec<u8> = q.iter().map_while(|&c| value(c)).collect();
-        let bits = values.iter().fold(0u32, |acc, &v| acc << 6 | u32::from(v));
-        let bytes = match values.len() {
-            4 => [(bits >> 16) as u8, (bits >> 8) as u8, bits as u8].to_vec(),
-            3 => [(bits >> 10) as u8, (bits >> 2) as u8].to_vec(),
-            2 => [(bits >> 4) as u8].to_vec(),
-            _ => Vec::new(),
-        };
-        out.extend_from_slice(&bytes);
-        let padding = &q[values.len()..];
-        let padded = padding.iter().all(|&c| c == b'=') && q.len() == 4 || padding.is_empty();
-        let unused_zero = match values.len() {
-            3 => bits & 0b11 == 0,
-            2 => bits & 0b1111 == 0,
-            _ => true,
-        };
-        if values.len() >= 2 && padded && unused_zero {
-            Ok(())
-        } else {
-            Err(invalid())
-        }
-    }
-}
-
-fn read_some(input: &mut dyn Read, buf: &mut [u8]) -> std::io::Result<usize> {
-    loop {
-        match input.read(buf) {
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-            other => return other,
-        }
+        BASE64.decode(ctx, input, out, ignore_garbage)
     }
 }
 
@@ -359,7 +208,9 @@ mod tests {
 
     #[test]
     fn round_trips_across_chunks() {
-        let data: Vec<u8> = (0..CHUNK * 2 + 7).map(|i| (i * 31 % 251) as u8).collect();
+        let data: Vec<u8> = (0..crate::basen::CHUNK * 2 + 7)
+            .map(|i| (i * 31 % 251) as u8)
+            .collect();
         let text = encode(&data, 76);
         assert_eq!(decode(&text, false), (data, true));
     }

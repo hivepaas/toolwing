@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 
 # The reference of each group, and the image that has it at its pinned version.
 declare -A IMAGE COMMAND VERSION
-for tool in base64 md5sum sha1sum sha256sum sha512sum b2sum; do
+for tool in base64 base32 md5sum sha1sum sha256sum sha512sum b2sum; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
   VERSION[$tool]="$tool (GNU coreutils) 9.7"

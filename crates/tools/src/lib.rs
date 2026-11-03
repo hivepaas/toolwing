@@ -1,13 +1,16 @@
 //! toolwing's tools and their registry (docs/design/architecture.md).
 
 pub mod base;
+pub mod base32;
 pub mod base64;
+mod basen;
 pub mod case;
 pub mod command;
 pub mod convert;
 pub mod cron;
 pub mod diff;
 pub mod hash;
+pub mod hex;
 pub mod jq;
 pub mod json;
 pub mod jwt;
@@ -41,9 +44,19 @@ pub static GROUPS: &[Group] = &[
         summary: en!("Encode and decode Base64 (RFC 4648)"),
     },
     Group {
+        name: "base32",
+        title: en!("Base32"),
+        summary: en!("Encode and decode Base32 (RFC 4648), as GNU base32 does"),
+    },
+    Group {
+        name: "hex",
+        title: en!("Hex"),
+        summary: en!("Bytes as hexadecimal and back, as xxd -p and xxd -r -p"),
+    },
+    Group {
         name: "url",
-        title: en!("URL encoding"),
-        summary: en!("Percent-encode and decode text for URLs"),
+        title: en!("URL"),
+        summary: en!("Percent-encode, decode and take URLs apart (RFC 3986, WHATWG)"),
     },
     Group {
         name: "jwt",
@@ -122,8 +135,13 @@ pub static TOOLS: &[&dyn Tool] = &[
     &convert::Convert,
     &base64::Encode,
     &base64::Decode,
+    &base32::Encode,
+    &base32::Decode,
+    &hex::Encode,
+    &hex::Decode,
     &url::Encode,
     &url::Decode,
+    &url::Parse,
     &jwt::Decode,
     &jwt::Verify,
     &jwt::Encode,
