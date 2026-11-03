@@ -714,6 +714,8 @@ impl<'s, F> Compiler<&'s str, F> {
                 };
                 let t = match op {
                     Pipe(pat) => Term::Pipe(l, pat.map(|pat| self.pattern(pat)), r),
+                    // toolwing: the parser rewrites these (`Parser::alternatives`)
+                    PipeAlt(_) => Term::Pipe(l, None, r),
                     Comma => Term::Comma(l, r),
                     Math(op) => Term::Math(l, op, r),
                     Assign => Term::Assign(l, r),
