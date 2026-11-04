@@ -465,6 +465,12 @@ pub trait Tool: Sync {
     fn command_args(&self, _values: &Values) -> Option<Vec<String>> {
         None
     }
+
+    /// The input is the command's last argument (`ipcalc 10.0.0.1/8`), not
+    /// its stdin; with [`Tool::command_args`].
+    fn input_in_args(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]

@@ -1,0 +1,11 @@
+Address:	10.0.0.5
+Network:	10.0.0.0/12
+Netmask:	255.240.0.0 = 12
+Broadcast:	10.15.255.255
+Reverse DNS:	0-15.10.in-addr.arpa.
+
+Address space:	Private Use
+Address class:	Class A
+HostMin:	10.0.0.1
+HostMax:	10.15.255.254
+Hosts/Net:	1048574

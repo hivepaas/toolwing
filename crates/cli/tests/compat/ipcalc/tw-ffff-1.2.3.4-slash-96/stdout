@@ -1,0 +1,10 @@
+Full Address:	0000:0000:0000:0000:0000:ffff:0102:0304
+Address:	::ffff:1.2.3.4
+Full Network:	0000:0000:0000:0000:0000:ffff:0000:0000/96
+Network:	::ffff:0.0.0.0/96
+Netmask:	ffff:ffff:ffff:ffff:ffff:ffff:: = 96
+
+Address space:	IPv4-mapped Address
+HostMin:	::ffff:0.0.0.0
+HostMax:	::ffff:255.255.255.255
+Hosts/Net:	2^(32) = 4294967296

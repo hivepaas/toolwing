@@ -1,0 +1,9 @@
+Address:	200.1.1.1
+Network:	200.1.1.0/24
+Netmask:	255.255.255.0 = 24
+Broadcast:	200.1.1.255
+
+Address space:	Internet
+HostMin:	200.1.1.1
+HostMax:	200.1.1.254
+Hosts/Net:	254

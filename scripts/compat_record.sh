@@ -42,6 +42,11 @@ BUILD[argon2]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq
 COMMAND[argon2]=argon2
 VERSION[argon2]="0~20190702+dfsg-4+b2"
 VERSION_OF[argon2]="dpkg-query -W -f=\${Version} argon2"
+# ipcalc: Red Hat's ipcalc 1.0.3, which Debian ships as ipcalc-ng.
+IMAGE[ipcalc]=toolwing-ref/ipcalc:1.0.3
+BUILD[ipcalc]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq ipcalc-ng > /dev/null && rm -rf /var/lib/apt/lists/*'
+COMMAND[ipcalc]=ipcalc-ng
+VERSION[ipcalc]="ipcalc-ng 1.0.3"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do

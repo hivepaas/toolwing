@@ -1,0 +1,8 @@
+[Split networks]
+Network:	::/10
+Network:	40::/10
+Network:	80::/10
+Network:	c0::/10
+
+Total:  	4
+Hosts/Net:	3323069989462289682259517650700

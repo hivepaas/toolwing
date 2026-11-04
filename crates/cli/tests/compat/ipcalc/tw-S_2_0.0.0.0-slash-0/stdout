@@ -1,0 +1,8 @@
+[Split networks]
+Network:	0.0.0.0/2
+Network:	64.0.0.0/2
+Network:	128.0.0.0/2
+Network:	192.0.0.0/2
+
+Total:  	4
+Hosts/Net:	1073741822

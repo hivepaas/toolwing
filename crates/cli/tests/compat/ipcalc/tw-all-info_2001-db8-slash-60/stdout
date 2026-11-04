@@ -1,0 +1,9 @@
+Full Network:	2001:0db8:0000:0000:0000:0000:0000:0000/60
+Network:	2001:db8::/60
+Netmask:	ffff:ffff:ffff:fff0:: = 60
+Reverse DNS:	0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.
+
+Address space:	Documentation
+HostMin:	2001:db8::
+HostMax:	2001:db8:0:f:ffff:ffff:ffff:ffff
+Hosts/Net:	2^(68) = 295147905179352825856

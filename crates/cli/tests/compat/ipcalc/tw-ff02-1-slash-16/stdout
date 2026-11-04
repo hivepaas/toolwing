@@ -1,0 +1,10 @@
+Full Address:	ff02:0000:0000:0000:0000:0000:0000:0001
+Address:	ff02::1
+Full Network:	ff02:0000:0000:0000:0000:0000:0000:0000/16
+Network:	ff02::/16
+Netmask:	ffff:: = 16
+
+Address space:	Multicast
+HostMin:	ff02::
+HostMax:	ff02:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+Hosts/Net:	2^(112) = 5192296858534827628530496329220096

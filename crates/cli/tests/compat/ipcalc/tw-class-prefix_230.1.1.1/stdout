@@ -1,0 +1,9 @@
+Address:	230.1.1.1
+Network:	230.1.1.0/24
+Netmask:	255.255.255.0 = 24
+Broadcast:	230.1.1.255
+
+Address space:	Multicast
+HostMin:	230.1.1.1
+HostMax:	230.1.1.254
+Hosts/Net:	254

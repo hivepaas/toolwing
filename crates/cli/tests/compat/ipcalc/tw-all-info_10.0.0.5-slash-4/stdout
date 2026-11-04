@@ -1,0 +1,10 @@
+Address:	10.0.0.5
+Network:	0.0.0.0/4
+Netmask:	240.0.0.0 = 4
+Broadcast:	15.255.255.255
+
+Address space:	This host on this network
+Address class:	Class A
+HostMin:	0.0.0.1
+HostMax:	15.255.255.254
+Hosts/Net:	268435454

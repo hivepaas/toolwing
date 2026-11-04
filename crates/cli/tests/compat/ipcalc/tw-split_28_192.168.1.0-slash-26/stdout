@@ -1,0 +1,8 @@
+[Split networks]
+Network:	192.168.1.0/28
+Network:	192.168.1.16/28
+Network:	192.168.1.32/28
+Network:	192.168.1.48/28
+
+Total:  	4
+Hosts/Net:	14
