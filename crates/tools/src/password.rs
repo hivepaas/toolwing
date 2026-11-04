@@ -246,10 +246,7 @@ impl Tool for BcryptHash {
             "2a" => bcrypt::Version::TwoA,
             _ => bcrypt::Version::TwoB,
         };
-        Ok(Output::Text(format!(
-            "{}\n",
-            parts.format_for_version(version)
-        )))
+        Ok(Output::Text(parts.format_for_version(version)))
     }
 
     fn costly(&self) -> bool {
@@ -892,7 +889,7 @@ mod tests {
                     ("salt", Value::Text(salt.into())),
                 ],
             );
-            assert_eq!(got.map(text), Ok(format!("{hash}\n")), "{password:?}");
+            assert_eq!(got.map(text), Ok(hash.to_owned()), "{password:?}");
             let checked = run(
                 &BcryptVerify,
                 password.as_bytes(),
@@ -960,7 +957,7 @@ mod tests {
         let b = run(&BcryptHash, b"a", &[("cost", Value::Int(4))]).map(text);
         assert_ne!(a, b);
         let a = a.unwrap_or_default();
-        assert!(a.starts_with("$2b$04$") && a.len() == 61, "{a}");
+        assert!(a.starts_with("$2b$04$") && a.len() == 60, "{a}");
     }
 
     /// What `echo -n password | argon2 somesalt …` printed (Debian 13's

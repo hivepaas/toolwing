@@ -1,0 +1,1 @@
+<!DOCTYPE a [<!ELEMENT a (b|c)*><!ATTLIST a id ID #REQUIRED kind (x|y) "x" n CDATA #FIXED 'v'><!ELEMENT b (#PCDATA)><!ELEMENT c (d,(e|f)+,g?)>]><a id="1"><b>t</b></a>

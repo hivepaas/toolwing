@@ -125,3 +125,10 @@ path = "fuzz_targets/html.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "xml_format"
+path = "fuzz_targets/xml_format.rs"
+test = false
+doc = false
+bench = false

@@ -1,0 +1,11 @@
+0
+<?xml version="1.0"?>
+<!DOCTYPE a [
+<!ELEMENT a (b | c)*>
+<!ATTLIST a id ID #REQUIRED>
+<!ATTLIST a kind (x | y) "x">
+<!ATTLIST a n CDATA #FIXED "v">
+<!ELEMENT b (#PCDATA)>
+<!ELEMENT c (d , (e | f)+ , g?)>
+]>
+<a id="1"><b>t</b></a>

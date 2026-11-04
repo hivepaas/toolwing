@@ -34,6 +34,7 @@ Commands:
   diff         Compare two files line by line, as GNU diff does
   html         Escape text for HTML, or read its character references as a browser does
   ipcalc       An address and prefix's network, netmask, broadcast, hosts and address space
+  xml          Format or minify XML, checked well-formed, as xmllint writes it
   case         One name in every case code uses: camelCase, snake_case, kebab-case…
   base         A number in binary, octal, decimal, hex or any base from 2 to 36
   list         List every tool

@@ -1,0 +1,7 @@
+0
+<?xml version="1.0"?>
+<r xmlns="urn:d" xmlns:x="urn:x">
+  <x:a x:attr="1">
+    <b/>
+  </x:a>
+</r>

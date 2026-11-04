@@ -25,6 +25,7 @@ pub mod time;
 pub mod ulid;
 pub mod url;
 pub mod uuid;
+pub mod xml;
 
 use toolwing_core::{Group, Tool, en};
 
@@ -168,6 +169,11 @@ pub static GROUPS: &[Group] = &[
         ),
     },
     Group {
+        name: "xml",
+        title: en!("XML"),
+        summary: en!("Format or minify XML, checked well-formed, as xmllint writes it"),
+    },
+    Group {
         name: "case",
         title: en!("Case"),
         summary: en!("One name in every case code uses: camelCase, snake_case, kebab-case…"),
@@ -228,6 +234,8 @@ pub static TOOLS: &[&dyn Tool] = &[
     &ipcalc::NetInfo,
     &ipcalc::NetSplit,
     &ipcalc::NetDeaggregate,
+    &xml::Format,
+    &xml::Minify,
     &case::Convert,
     &base::Convert,
 ];

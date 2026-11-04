@@ -1,0 +1,1 @@
+<!DOCTYPE a [<!ATTLIST a t NMTOKENS #IMPLIED>]><a t="  x   y  "/>
