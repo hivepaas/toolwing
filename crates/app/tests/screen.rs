@@ -635,4 +635,42 @@ fn every_page_draws_and_runs() {
         Some("valid, expires in 3 months")
     );
     ui.save("28-cert");
+
+    // bcrypt: htpasswd's hash of "secret" checked. A password hash waits
+    // for Ctrl+Enter, the password masked.
+    let p = ui.tool("bcrypt");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(1, window, cx);
+        p.set_value(
+            "hash",
+            Value::Text("$2y$05$CHEzABv8He3HA.aYEGJj/eZYsINOZh41wgAP3kRVOa1znFxhNCtWC".into()),
+            window,
+            cx,
+        );
+        p.set_input("secret", window, cx);
+    });
+    assert!(ui.cx.update(|cx| p.read(cx).waiting()));
+    ui.on(&p, |p, window, cx| p.run_now(window, cx));
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "matches").as_deref(), Some("yes"));
+    assert_eq!(field(&mut ui, &p, "cost").as_deref(), Some("5"));
+    ui.save("29-bcrypt");
+
+    // Argon2: the reference command's own example, as Argon2id.
+    let p = ui.tool("Argon2");
+    ui.on(&p, |p, window, cx| {
+        p.set_value("salt", Value::Text("somesalt".into()), window, cx);
+        p.set_input("password", window, cx);
+        p.run_now(window, cx);
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "encoded").as_deref(),
+        Some(
+            "$argon2id$v=19$m=4096,t=3,p=1$c29tZXNhbHQ$qLml5cbqFAO6YxVHhrSBHP0UWdxrIxkNcM8aMX3blzU"
+        )
+    );
+    ui.save("30-argon2");
 }

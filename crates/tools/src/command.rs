@@ -8,6 +8,9 @@ use crate::group;
 /// The arguments after `tw` for running `tool` with `values`, without its
 /// input. Values equal to their default are left out.
 pub fn args(tool: &dyn Tool, values: &Values) -> Vec<String> {
+    if let Some(args) = tool.command_args(values) {
+        return args;
+    }
     let m = tool.meta();
     let mut args = vec![m.group.to_owned()];
     let tools = group(m.group);
@@ -60,6 +63,10 @@ pub fn shell_line(tool: &dyn Tool, values: &Values, input: &str) -> String {
         line.push_str(&quote(&a));
     }
     let m = tool.meta();
+    if tool.secret_input() && m.input != InputKind::None {
+        // Never the secret itself: it is read from the environment.
+        return format!("printf %s \"$TW_SECRET\" | {line}");
+    }
     match m.input {
         InputKind::None => {}
         _ if m.drop_in() => line.push_str(" < input"),

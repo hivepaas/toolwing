@@ -16,6 +16,7 @@ pub mod hmac;
 pub mod jq;
 pub mod json;
 pub mod jwt;
+pub mod password;
 pub mod random;
 pub mod regex;
 pub mod time;
@@ -108,6 +109,16 @@ pub static GROUPS: &[Group] = &[
         summary: en!("HMAC of the input with a secret key, as openssl dgst -hmac"),
     },
     Group {
+        name: "bcrypt",
+        title: en!("bcrypt"),
+        summary: en!("Hash a password with bcrypt, or check one against its hash"),
+    },
+    Group {
+        name: "argon2",
+        title: en!("Argon2"),
+        summary: en!("Hash a password with Argon2, as the argon2 command does, or check one"),
+    },
+    Group {
         name: "random",
         title: en!("Random"),
         summary: en!("Passwords, tokens and bytes from the system's secure generator"),
@@ -182,6 +193,10 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::B2SUM,
     &hash::B3SUM,
     &hmac::Digest,
+    &password::BcryptHash,
+    &password::BcryptVerify,
+    &password::Argon2Hash,
+    &password::Argon2Verify,
     &random::Password,
     &random::Token,
     &random::Bytes,
@@ -237,7 +252,7 @@ pub fn find(id: &str) -> Option<&'static dyn Tool> {
 mod tests {
     use super::*;
     use std::collections::HashSet;
-    use toolwing_core::{Compat, ParamKind, Value};
+    use toolwing_core::{Compat, ParamKind, Value, Values};
 
     #[test]
     fn ids_are_unique_and_spelled_from_group_and_action() {
@@ -279,7 +294,10 @@ mod tests {
                 let m = t.meta();
                 assert_eq!(m.action.is_empty(), single, "{}: action", m.id);
                 assert_eq!(m.drop_in(), tools[0].meta().drop_in(), "{}: compat", m.id);
-                if m.drop_in() && !single {
+                // A command that writes its own line (argon2's salt first,
+                // `argon2 verify`) names its actions itself.
+                let own_line = t.command_args(&Values::new()).is_some();
+                if m.drop_in() && !single && !own_line {
                     // The first action is the default; the others have a flag.
                     assert_eq!(
                         m.action_flag.is_none(),

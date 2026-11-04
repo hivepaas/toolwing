@@ -1,5 +1,6 @@
 //! `tw`: toolwing's tools on the command line (docs/design/cli.md).
 
+mod argon2s;
 mod b3sums;
 mod commands;
 mod diffs;
@@ -51,6 +52,10 @@ use toolwing_tools::{TOOLS, group};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
+    // argon2's too, as the reference's main reads them (argon2s.rs).
+    if args.get(1).is_some_and(|a| a == "argon2") {
+        return ExitCode::from(argon2s::main(&args[2..]));
+    }
     // jq's arguments are read as jq reads them (jq.rs), not by clap.
     if args.get(1).is_some_and(|a| a == "jq") {
         // On a large stack, as the app's jq worker: values nested 10,000

@@ -39,6 +39,7 @@ pub fn root() -> Command {
             None if g == "diff" => crate::diffs::command(),
             None if g == "b3sum" => crate::b3sums::command(),
             None if g == "jq" => crate::jq::command(),
+            None if g == "argon2" => crate::argon2s::command(),
             None => group_command(g),
         });
     }
@@ -314,6 +315,11 @@ mod tests {
     #[test]
     fn copied_commands_parse_back() {
         for tool in toolwing_tools::TOOLS {
+            // A command that reads its own arguments checks them itself
+            // (argon2s.rs).
+            if tool.command_args(&Values::new()).is_some() {
+                continue;
+            }
             for v in sample_values(tool.params()) {
                 let args = toolwing_tools::command::args(*tool, &v);
                 let all = std::iter::once("tw".to_owned()).chain(args.iter().cloned());

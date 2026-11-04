@@ -1,0 +1,8 @@
+Type:		Argon2i
+Iterations:	2
+Memory:		65536 KiB
+Parallelism:	4
+Hash:		45d7ac72e76f242b20b77b9bf9bf9d5915894e669a24e6c6
+Encoded:	$argon2i$v=19$m=65536,t=2,p=4$c29tZXNhbHQ$RdescudvJCsgt3ub+b+dWRWJTmaaJObG
+0.106 seconds
+Verification ok

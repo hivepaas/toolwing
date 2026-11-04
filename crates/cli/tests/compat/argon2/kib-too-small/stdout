@@ -1,0 +1,4 @@
+Type:		Argon2i
+Iterations:	3
+Memory:		7 KiB
+Parallelism:	1

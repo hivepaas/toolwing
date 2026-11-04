@@ -123,7 +123,9 @@ unique, every param has help text, every group has compatibility cases
   QR, diff, cron), still calling the same `Tool::run`.
 - **Round trip:** for every tool, a test fills random `Values`, turns them into a
   `tw` command line the way "copy as command" does, parses it back with the CLI
-  and checks the two are equal.
+  and checks the two are equal. A command that reads its own arguments
+  (`argon2`: the salt first) writes its line itself (`Tool::command_args`) and
+  checks its round trip in its own module.
 
 ## Threads
 
