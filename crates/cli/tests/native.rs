@@ -457,3 +457,20 @@ fn b3sum_escapes_names_as_b3sum_does() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// A text result ends with one newline: a tool's text has none of its own.
+#[test]
+fn text_results_end_with_one_newline() {
+    for (args, stdin) in [
+        (&["bcrypt", "hash", "-C", "4"][..], "hunter2"),
+        (&["xml", "format"][..], "<a><b/></a>"),
+        (&["xml", "minify"][..], "<a> <b/> </a>"),
+        (&["html", "escape"][..], "<a>"),
+    ] {
+        let out = tw(args, stdin).stdout;
+        assert!(
+            out.ends_with('\n') && !out.ends_with("\n\n"),
+            "{args:?}: {out:?}"
+        );
+    }
+}

@@ -1,0 +1,10 @@
+0
+<?xml version="1.0"?>
+<!DOCTYPE a [
+<!ENTITY % p "pv">
+<!ENTITY q 'say "x"'>
+<!ENTITY s SYSTEM "s.xml">
+<!ENTITY u PUBLIC "-//X//Y" "u.xml">
+<!ENTITY pct "50&#37;">
+]>
+<a/>

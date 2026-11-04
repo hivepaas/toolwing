@@ -1,0 +1,4 @@
+0
+<?xml version="1.0"?>
+<?xml-stylesheet href="s.css" type="text/css"?>
+<a><?php echo 1; ?><b/><?empty?></a>

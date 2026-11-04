@@ -1,0 +1,6 @@
+0
+<?xml version="1.0"?>
+<!DOCTYPE a [
+<!ELEMENT a (b , c , d , (e | f)* , g)>
+]>
+<a/>

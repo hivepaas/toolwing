@@ -1,0 +1,3 @@
+0
+<?xml version="1.0"?>
+<a x="&lt;&amp;&gt;&quot;" y="say &quot;hi&quot;" z="a&#10;b&#9;c&#13;d" w="'"/>

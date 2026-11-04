@@ -705,4 +705,21 @@ fn every_page_draws_and_runs() {
         "Café & crème <3 © 2026 😀"
     );
     ui.save("32-html");
+
+    // XML: a document indented as xmllint --format indents it.
+    let p = ui.tool("XML");
+    ui.on(&p, |p, window, cx| {
+        p.set_input(
+            "<catalog><book id=\"1\"><title>Rust &amp; XML</title><price>29.99</price></book><!-- more --><book id=\"2\"/></catalog>",
+            window,
+            cx,
+        )
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "<?xml version=\"1.0\"?>\n<catalog>\n  <book id=\"1\">\n    <title>Rust &amp; XML</title>\n    <price>29.99</price>\n  </book>\n  <!-- more -->\n  <book id=\"2\"/>\n</catalog>"
+    );
+    ui.save("33-xml");
 }

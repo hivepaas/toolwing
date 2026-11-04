@@ -1,0 +1,6 @@
+0
+<?xml version="1.0"?>
+<a xml:space="preserve">
+  <b/>
+  <c xml:space="default"><d/></c>
+</a>

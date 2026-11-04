@@ -1,0 +1,1 @@
+<!DOCTYPE a [<!ENTITY e "v">]><a x="1&e;2&amp;"/>

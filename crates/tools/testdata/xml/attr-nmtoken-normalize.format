@@ -1,0 +1,6 @@
+0
+<?xml version="1.0"?>
+<!DOCTYPE a [
+<!ATTLIST a t NMTOKENS #IMPLIED>
+]>
+<a t="x y"/>

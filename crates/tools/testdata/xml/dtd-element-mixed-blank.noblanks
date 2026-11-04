@@ -1,0 +1,7 @@
+0
+<?xml version="1.0"?>
+<!DOCTYPE a [
+<!ELEMENT a (#PCDATA | b)*>
+<!ELEMENT b EMPTY>
+]>
+<a> <b/> </a>
