@@ -1,0 +1,2 @@
+wpt-*.jsonl: web-platform-tests b133f0ecbd2ee43347d271222c9a9b480f44cb2b, css/css-color/parsing (BSD-3-Clause), by scripts/wpt_color.mjs
+colorjs.jsonl: Color.js 0.5.2 (MIT), by scripts/colorjs_record.sh

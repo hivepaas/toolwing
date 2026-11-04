@@ -141,3 +141,10 @@ path = "fuzz_targets/qrencode.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "color"
+path = "fuzz_targets/color.rs"
+test = false
+doc = false
+bench = false

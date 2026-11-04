@@ -732,4 +732,14 @@ fn every_page_draws_and_runs() {
     settle(&mut ui.cx, move |cx| q.read(cx).settled());
     assert!(ui.cx.update(|cx| p.read(cx).error().is_none()));
     ui.save("34-qrencode");
+
+    // Color: a wide-gamut OKLCH color in every form, mapped into sRGB.
+    let p = ui.tool("Color");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("oklch(70% 0.2 150)", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "hex").as_deref(), Some("#00bf54"));
+    ui.save("35-color");
 }

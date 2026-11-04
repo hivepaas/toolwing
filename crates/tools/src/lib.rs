@@ -6,6 +6,7 @@ pub mod base64;
 mod basen;
 pub mod case;
 pub mod cert;
+pub mod color;
 pub mod command;
 pub mod convert;
 pub mod cron;
@@ -168,6 +169,11 @@ pub static GROUPS: &[Group] = &[
         summary: en!("Escape text for HTML, or read its character references as a browser does"),
     },
     Group {
+        name: "color",
+        title: en!("Color"),
+        summary: en!("A CSS color in every form, and its contrast, as CSS Color 4 has them"),
+    },
+    Group {
         name: "ipcalc",
         title: en!("IP network"),
         summary: en!(
@@ -238,6 +244,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &diff::Compare,
     &html::Escape,
     &html::Unescape,
+    &color::Convert,
     &ipcalc::NetInfo,
     &ipcalc::NetSplit,
     &ipcalc::NetDeaggregate,
