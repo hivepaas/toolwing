@@ -173,7 +173,7 @@ CASES = [
     ("pkg-paths-leaf", ["-c", '[paths(scalars)] | map(join("."))'], PKG),
     ("pkg-tostream", ["-c", '[tostream] | length'], PKG),
     ("pkg-env", ["-r", "env.HOME | type"], PKG),
-    ("pkg-ENV", ["-r", "$ENV.HOME | type"], PKG),
+    ("pkg-dollar-env", ["-r", "$ENV.HOME | type"], PKG),
     ("pkg-input-filename", ["-c", "input_filename"], PKG),
     ("pkg-type-filters", ["-c", '[.[] | type]'], PKG),
     ("pkg-if-elif", ["-r", '.version | if test("^1\\\\.") then "v1" elif test("^2\\\\.") then "v2" else "other" end'], PKG),
