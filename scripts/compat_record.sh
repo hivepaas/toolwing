@@ -47,6 +47,12 @@ IMAGE[ipcalc]=toolwing-ref/ipcalc:1.0.3
 BUILD[ipcalc]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq ipcalc-ng > /dev/null && rm -rf /var/lib/apt/lists/*'
 COMMAND[ipcalc]=ipcalc-ng
 VERSION[ipcalc]="ipcalc-ng 1.0.3"
+# qrencode: libqrencode's command, Debian's build.
+IMAGE[qrencode]=toolwing-ref/qrencode:4.1.1
+BUILD[qrencode]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq qrencode > /dev/null && rm -rf /var/lib/apt/lists/*'
+COMMAND[qrencode]=qrencode
+VERSION[qrencode]="qrencode version 4.1.1"
+VERSION_OF[qrencode]="qrencode -V"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do

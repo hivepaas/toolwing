@@ -22,6 +22,8 @@ clap_complete = "4.6"
 serde_json = { version = "1", features = ["preserve_order"] }
 # diff's headers: a file's time, as GNU writes it, in this computer's zone.
 jiff = "0.2"
+# qrencode's error correction levels (qrencodes.rs).
+qrcode = { version = "0.14", default-features = false }
 
 [dev-dependencies]
 insta = "1.49"

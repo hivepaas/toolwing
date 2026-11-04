@@ -1,0 +1,1 @@
+tw's PNG has the same pixels and chunks, but another zlib stream; qr.rs tests read both.

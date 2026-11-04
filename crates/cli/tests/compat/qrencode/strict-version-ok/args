@@ -1,0 +1,8 @@
+-t
+ASCII
+-m
+0
+-v
+3
+--strict-version
+abc

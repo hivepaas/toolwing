@@ -4,8 +4,10 @@ mod argon2s;
 mod b3sums;
 mod commands;
 mod diffs;
+mod getopt;
 mod ipcalcs;
 mod jq;
+mod qrencodes;
 mod sums;
 
 /// stdout, as a command line tool's should be: when the reader has gone
@@ -56,6 +58,10 @@ fn main() -> ExitCode {
     // argon2's too, as the reference's main reads them (argon2s.rs).
     if args.get(1).is_some_and(|a| a == "argon2") {
         return ExitCode::from(argon2s::main(&args[2..]));
+    }
+    // qrencode's too (qrencodes.rs).
+    if args.get(1).is_some_and(|a| a == "qrencode") {
+        return ExitCode::from(qrencodes::main(&args[2..]));
     }
     // ipcalc's as glibc's getopt_long reads them for it (ipcalcs.rs).
     if args.get(1).is_some_and(|a| a == "ipcalc") {
@@ -239,7 +245,9 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
             ),
             Output::Record { json, .. } => serde_json::from_str(json)
                 .unwrap_or_else(|_| serde_json::Value::from(json.as_str())),
-            Output::Bytes(b) => serde_json::Value::from(String::from_utf8_lossy(b).as_ref()),
+            Output::Bytes(b) | Output::Image(b) => {
+                serde_json::Value::from(String::from_utf8_lossy(b).as_ref())
+            }
         };
         writeln!(out, "{json}")
     } else {
@@ -257,12 +265,12 @@ fn run_native(command: &str, tool: &dyn Tool, m: &ArgMatches) -> Result<(), Fail
                     write!(out, "{text}")
                 }
             }
-            Output::Bytes(_) if out.is_terminal() => {
+            Output::Bytes(_) | Output::Image(_) if out.is_terminal() => {
                 return Err(fail(Error::usage(
                     "binary output is not written to a terminal; redirect it to a file",
                 )));
             }
-            Output::Bytes(b) => out.write_all(b),
+            Output::Bytes(b) | Output::Image(b) => out.write_all(b),
         }
     };
     written
