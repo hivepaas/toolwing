@@ -1,3 +1,8 @@
 # The compatibility cases are compared byte for byte: a checkout on Windows
 # must not turn their line ends into CRLF.
 crates/cli/tests/compat/** -text
+# So are the jq suites and the tools' test data (jq's own .test files, the
+# certificates and the OpenSSL text they are checked against).
+crates/cli/tests/jq-suite/** -text
+crates/tools/testdata/** -text
+crates/tools/src/testdata/** -text
