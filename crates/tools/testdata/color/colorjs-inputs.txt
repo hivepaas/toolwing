@@ -1,0 +1,338 @@
+aliceblue
+antiquewhite
+aqua
+aquamarine
+azure
+beige
+bisque
+black
+blanchedalmond
+blue
+blueviolet
+brown
+burlywood
+cadetblue
+chartreuse
+chocolate
+coral
+cornflowerblue
+cornsilk
+crimson
+cyan
+darkblue
+darkcyan
+darkgoldenrod
+darkgray
+darkgreen
+darkgrey
+darkkhaki
+darkmagenta
+darkolivegreen
+darkorange
+darkorchid
+darkred
+darksalmon
+darkseagreen
+darkslateblue
+darkslategray
+darkslategrey
+darkturquoise
+darkviolet
+deeppink
+deepskyblue
+dimgray
+dimgrey
+dodgerblue
+firebrick
+floralwhite
+forestgreen
+fuchsia
+gainsboro
+ghostwhite
+gold
+goldenrod
+gray
+green
+greenyellow
+grey
+honeydew
+hotpink
+indianred
+indigo
+ivory
+khaki
+lavender
+lavenderblush
+lawngreen
+lemonchiffon
+lightblue
+lightcoral
+lightcyan
+lightgoldenrodyellow
+lightgray
+lightgreen
+lightgrey
+lightpink
+lightsalmon
+lightseagreen
+lightskyblue
+lightslategray
+lightslategrey
+lightsteelblue
+lightyellow
+lime
+limegreen
+linen
+magenta
+maroon
+mediumaquamarine
+mediumblue
+mediumorchid
+mediumpurple
+mediumseagreen
+mediumslateblue
+mediumspringgreen
+mediumturquoise
+mediumvioletred
+midnightblue
+mintcream
+mistyrose
+moccasin
+navajowhite
+navy
+oldlace
+olive
+olivedrab
+orange
+orangered
+orchid
+palegoldenrod
+palegreen
+paleturquoise
+palevioletred
+papayawhip
+peachpuff
+peru
+pink
+plum
+powderblue
+purple
+rebeccapurple
+red
+rosybrown
+royalblue
+saddlebrown
+salmon
+sandybrown
+seagreen
+seashell
+sienna
+silver
+skyblue
+slateblue
+slategray
+slategrey
+snow
+springgreen
+steelblue
+tan
+teal
+thistle
+tomato
+turquoise
+violet
+wheat
+white
+whitesmoke
+yellow
+yellowgreen
+#82c9b0
+#b791f7
+#0ed9c5
+#ee6617
+#7f83d4
+#1a8c82
+#504ed1
+#39f621
+#be5bb2
+#f029d1
+#7e3ecb
+#c2f2b3
+#3435fd
+#7fa846
+#06b6e7
+#6ef735
+#d0f92c
+#8f1850
+#5d3905
+#c76453
+#51b7a4
+#24d43c
+#470c85
+#e3c180
+#40deb8
+#43b512
+#00e8a2
+#02b867
+#6b3ddd
+#6e538c
+#54eb22
+#553d74
+#941fce
+#a096e9
+#65d4d2
+#68d8dc
+#5d03ac
+#64cd54
+#c435de
+#98fadb
+#0b0b40
+#b8ede3
+#d46ea7
+#54f831
+#4a9970
+#87125b
+#2159fe
+#a9e8d4
+#9a4bbd
+#01bb6e
+#ad00d1
+#21cdb1
+#9eb2ce
+#b5f09c
+#9cb474
+#f6243b
+#a1afa2
+#5e9a99
+#f66241
+#f1f08b
+hsl(90 7% 32%)
+hsl(11 95% 45%)
+hsl(206 2% 70%)
+hsl(214 46% 48%)
+hsl(296 1% 57%)
+hsl(23 90% 23%)
+hsl(319 25% 15%)
+hsl(125 59% 44%)
+hsl(262 45% 67%)
+hsl(128 99% 59%)
+hsl(55 75% 95%)
+hsl(188 37% 4%)
+hsl(221 11% 26%)
+hsl(174 65% 78%)
+hsl(185 18% 43%)
+hsl(141 89% 69%)
+hsl(47 39% 87%)
+hsl(162 39% 22%)
+hsl(40 80% 19%)
+hsl(352 39% 61%)
+hsl(82 92% 6%)
+hsl(41 76% 68%)
+hsl(207 4% 30%)
+hsl(304 44% 32%)
+hsl(233 83% 53%)
+hsl(74 7% 81%)
+hsl(16 63% 42%)
+hsl(106 16% 93%)
+hsl(288 16% 80%)
+hsl(211 13% 21%)
+oklch(0.435 0.060 304.1)
+oklch(0.295 0.181 359.7)
+oklch(0.852 0.390 163.3)
+oklch(0.488 0.292 172.5)
+oklch(0.291 0.162 52.7)
+oklch(0.377 0.395 345.5)
+oklch(0.627 0.200 121.9)
+oklch(0.089 0.109 281.5)
+oklch(0.867 0.145 283.0)
+oklch(0.775 0.278 239.0)
+oklch(0.760 0.145 253.6)
+oklch(0.281 0.194 277.1)
+oklch(0.691 0.118 340.4)
+oklch(0.650 0.232 4.2)
+oklch(0.547 0.100 241.8)
+oklch(0.463 0.327 233.1)
+oklch(0.798 0.139 231.9)
+oklch(0.738 0.331 126.0)
+oklch(0.843 0.348 247.8)
+oklch(0.976 0.383 186.5)
+oklch(0.529 0.066 301.2)
+oklch(0.937 0.191 248.9)
+oklch(0.720 0.292 61.9)
+oklch(0.780 0.232 239.6)
+oklch(0.421 0.249 278.9)
+oklch(0.637 0.288 9.9)
+oklch(0.160 0.176 234.0)
+oklch(0.219 0.274 227.1)
+oklch(0.042 0.189 81.4)
+oklch(0.054 0.053 114.2)
+lab(18.15 -76.66 -116.09)
+lab(46.53 -29.93 27.95)
+lab(59.02 -65.54 100.80)
+lab(0.07 -23.66 -55.37)
+lab(41.00 -96.23 82.84)
+lab(37.39 -115.98 28.39)
+lab(9.48 11.31 -40.16)
+lab(58.09 114.58 79.63)
+lab(41.91 78.25 35.57)
+lab(36.94 -89.47 23.98)
+lab(56.39 114.30 117.00)
+lab(60.86 -37.22 98.37)
+lab(0.09 -98.02 16.45)
+lab(61.52 -89.82 32.36)
+lab(89.13 -31.04 -17.08)
+lab(22.63 -52.13 118.11)
+lab(37.98 115.28 103.44)
+lab(59.58 -60.04 120.25)
+lab(49.63 -21.13 -45.21)
+lab(98.43 -2.06 -53.40)
+lab(47.69 -94.53 30.42)
+lab(44.35 -51.72 70.43)
+lab(82.68 -121.70 8.14)
+lab(27.38 108.81 70.48)
+lab(24.57 -58.08 -86.31)
+color(display-p3 0.989 0.293 0.608)
+color(display-p3 0.475 0.645 0.604)
+color(display-p3 0.743 0.118 0.760)
+color(display-p3 0.301 0.533 0.336)
+color(display-p3 0.297 0.530 0.464)
+color(display-p3 0.361 0.745 0.591)
+color(display-p3 0.036 0.252 0.456)
+color(display-p3 0.917 0.888 0.546)
+color(display-p3 0.015 0.778 0.428)
+color(display-p3 0.576 0.708 0.632)
+color(display-p3 0.482 0.912 0.385)
+color(display-p3 0.392 0.852 0.196)
+color(display-p3 0.296 0.830 0.066)
+color(display-p3 0.836 0.695 0.433)
+color(display-p3 0.286 0.781 0.911)
+color(display-p3 0.143 0.478 0.549)
+color(display-p3 0.498 0.331 0.154)
+color(display-p3 0.586 0.812 0.068)
+color(display-p3 0.230 0.820 0.792)
+color(display-p3 0.664 0.026 0.723)
+color(display-p3 0.979 0.998 0.701)
+color(display-p3 0.049 0.842 0.219)
+color(display-p3 0.646 0.952 0.712)
+color(display-p3 0.135 0.292 0.918)
+color(display-p3 0.150 0.611 0.414)
+rgb(82 34 109 / 0.04)
+rgb(55 194 36 / 0.28)
+rgb(60 204 68 / 0.01)
+rgb(46 161 250 / 0.49)
+rgb(191 28 70 / 0.70)
+rgb(77 148 112 / 0.26)
+rgb(120 130 145 / 0.52)
+rgb(68 120 190 / 0.45)
+rgb(199 91 67 / 0.71)
+rgb(174 43 18 / 0.09)
+oklch(0.7 0.4 150)
+lab(50 120 -120)
+color(rec2020 1 0 0)
+oklch(1 0.2 100)
+oklch(0 0.2 100)
+color(xyz-d65 0.5 0.5 0.5)
+color(prophoto-rgb 0.2 0.9 0.1)
+color(a98-rgb 0 1 0)
+hwb(200 20% 30%)
+lch(70 150 30)

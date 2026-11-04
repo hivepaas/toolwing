@@ -34,6 +34,7 @@ Commands:
   regex        Test a pattern, see its matches and groups, replace with it
   diff         Compare two files line by line, as GNU diff does
   html         Escape text for HTML, or read its character references as a browser does
+  color        A CSS color in every form, and its contrast, as CSS Color 4 has them
   ipcalc       An address and prefix's network, netmask, broadcast, hosts and address space
   xml          Format or minify XML, checked well-formed, as xmllint writes it
   case         One name in every case code uses: camelCase, snake_case, kebab-case…
