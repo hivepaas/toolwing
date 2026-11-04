@@ -1,0 +1,40 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 11111822610015 (0xa1b2c3d4e5f)
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: C=VN, O=Toolwing Test, CN=Toolwing Test Intermediate
+        Validity
+            Not Before: Mar  1 00:00:00 2026 GMT
+            Not After : Mar  1 00:00:00 2027 GMT
+        Subject: O=Example Test, CN=api.example.test
+        Subject Public Key Info:
+            Public Key Algorithm: ED25519
+                ED25519 Public-Key:
+                pub:
+                    0b:2d:e9:32:f5:95:cc:4a:b8:f5:1f:e2:d1:94:d9:
+                    5b:57:2e:5b:76:d2:69:09:12:b1:b8:8d:ea:f2:b1:
+                    41:8e
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Key Usage: critical
+                Digital Signature
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication, TLS Web Client Authentication
+            X509v3 Subject Alternative Name: 
+                DNS:api.example.test, DNS:*.example.test, IP Address:10.0.0.12, IP Address:2001:DB8:0:0:0:0:0:1, email:ops@example.test
+            X509v3 Subject Key Identifier: 
+                05:2E:CA:E7:00:0B:80:5E:3C:4C:76:7C:EF:AA:45:57:3D:73:03:23
+            X509v3 Authority Key Identifier: 
+                4D:43:EB:0A:1A:18:AC:F1:51:A9:98:1E:80:B8:81:F5:59:CF:43:2A
+    Signature Algorithm: ecdsa-with-SHA256
+    Signature Value:
+        30:65:02:31:00:fa:f9:ea:44:41:10:f6:c2:46:39:32:54:85:
+        3c:62:44:dd:22:f2:49:2b:74:58:9c:51:6d:f5:b3:a1:20:cd:
+        27:f3:0b:de:8d:da:c6:1f:8b:5a:16:70:92:79:e9:19:52:02:
+        30:56:40:8b:20:be:f2:53:2e:2c:0d:c6:84:a2:b9:16:17:b5:
+        d9:00:dc:3c:ab:c7:dc:5f:dd:fa:59:98:68:09:a4:ac:b6:1e:
+        1f:1d:89:d5:40:72:af:cc:4f:82:b5:f2:bd
+sha256 Fingerprint=18:76:7F:48:AF:62:92:7D:17:14:26:BF:3C:D1:BF:73:AD:5A:38:2D:6A:5E:B1:39:B4:B8:D3:8C:0D:A2:90:2A
+sha1 Fingerprint=D7:26:06:51:9C:3B:E0:B1:C0:D7:AD:C2:ED:BE:6B:48:EE:B4:FB:86

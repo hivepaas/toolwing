@@ -95,3 +95,10 @@ path = "fuzz_targets/tools.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "cert"
+path = "fuzz_targets/cert.rs"
+test = false
+doc = false
+bench = false

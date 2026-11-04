@@ -1,0 +1,59 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 7 (0x7)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: CN=old.example.test
+        Validity
+            Not Before: Jan  1 00:00:00 2020 GMT
+            Not After : Jan  1 00:00:00 2021 GMT
+        Subject: CN=old.example.test
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:a1:27:ad:a8:8a:f1:93:70:43:a7:e0:34:f1:74:
+                    b8:1b:c4:b5:c9:cb:ec:10:20:c4:ce:5a:e3:fe:fe:
+                    96:ba:68:c6:fe:6b:a2:aa:fe:ab:f4:7b:72:e7:1d:
+                    95:a6:a8:a0:ef:c6:43:7e:63:d3:f1:21:3d:72:4f:
+                    c3:9b:52:58:61:1b:4e:e9:40:1b:47:16:60:98:86:
+                    43:39:7b:d9:38:a6:9b:2f:4a:86:9a:37:89:ce:a4:
+                    61:92:ae:e0:41:76:cf:e9:7e:da:e4:f1:82:5c:2b:
+                    39:dd:bc:b3:8a:39:0f:1b:b9:aa:6d:4d:5a:cb:3b:
+                    67:f8:26:ad:2a:b6:eb:de:47:ac:70:93:ac:59:be:
+                    54:ab:42:67:f3:58:04:c8:b5:b1:0f:c5:4e:5c:5c:
+                    d4:f8:4b:1d:8f:fd:17:89:6d:be:62:05:5e:62:4c:
+                    97:77:c5:b3:41:42:b5:21:dc:99:89:ef:b3:be:51:
+                    3a:94:e5:cf:e1:58:cb:6f:64:c1:7a:d9:54:2c:6f:
+                    2a:b3:ea:ae:17:78:73:8e:6e:f6:a3:2c:e2:7e:1e:
+                    98:2e:1e:ff:f1:98:35:12:2d:d0:c3:f7:57:ab:61:
+                    16:5a:d3:0a:78:a5:17:f5:6c:8e:38:27:58:62:5d:
+                    91:ab:cd:a2:47:c9:fb:d7:15:eb:f6:1d:fb:da:a4:
+                    cb:bf
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                14:D8:E7:18:7B:FC:9C:53:44:CE:63:E1:09:FC:9D:67:B8:33:4A:02
+            X509v3 Authority Key Identifier: 
+                14:D8:E7:18:7B:FC:9C:53:44:CE:63:E1:09:FC:9D:67:B8:33:4A:02
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+    Signature Algorithm: sha256WithRSAEncryption
+    Signature Value:
+        99:83:4a:09:a1:1c:2a:96:16:55:cb:e0:33:55:ca:9c:e1:92:
+        0d:75:40:25:a0:6c:05:22:17:b3:67:97:4e:f9:28:1f:18:5e:
+        8e:19:55:d2:75:f7:62:78:0f:d9:9a:26:a4:18:a0:f9:ca:93:
+        d8:38:dd:8e:fc:ab:9f:b1:ea:a1:77:06:fb:ed:e6:2b:f1:26:
+        52:fe:49:bb:48:2b:a4:fd:c6:1e:4f:88:b9:d7:1c:6d:2d:1b:
+        fb:5e:7b:dd:04:5b:71:56:44:fd:49:51:80:5e:a6:77:ee:05:
+        54:77:ff:5a:e4:b5:4b:57:41:27:7f:f8:1a:06:a1:e3:52:fe:
+        4e:df:0c:b5:3d:93:a7:18:c0:32:93:99:a3:bc:3b:2d:79:70:
+        bc:11:e4:4f:ea:7f:d2:34:d5:a4:87:90:fd:50:cc:8a:7b:41:
+        5f:e1:2a:d6:02:9c:98:7c:6b:1b:9b:01:05:e6:1e:39:74:fd:
+        b0:9a:1a:b8:77:82:ae:9b:64:8b:59:50:b9:99:63:a6:e9:24:
+        51:37:0e:16:fa:12:3e:6f:a6:9b:3f:93:a8:41:d7:b7:24:19:
+        12:1f:72:58:a2:03:16:ea:ec:63:d8:26:f5:08:0f:f0:a9:7a:
+        f1:37:b4:38:ef:9d:c2:c7:af:55:95:10:ee:fd:34:6e:25:7c:
+        1a:4e:7c:8e
+sha256 Fingerprint=78:B9:5C:97:20:8C:13:FA:40:7A:2E:EC:AD:C1:D5:8A:51:F6:0D:BE:FF:5D:45:9A:B2:AF:55:12:F2:D4:71:F4
+sha1 Fingerprint=59:96:80:9C:35:D9:7E:98:43:13:79:39:FC:48:19:A3:4B:A5:6D:6D

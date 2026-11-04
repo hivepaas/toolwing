@@ -1,0 +1,36 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: C=VN, O=Toolwing Test, CN=Toolwing Test Root
+        Validity
+            Not Before: Jan  1 00:00:00 2026 GMT
+            Not After : Jan  1 00:00:00 2036 GMT
+        Subject: C=VN, O=Toolwing Test, CN=Toolwing Test Root
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (256 bit)
+                pub:
+                    04:14:5f:14:e4:a3:15:6f:6b:dc:7e:22:b0:94:c3:
+                    31:cf:2b:7e:31:ed:2d:bc:a5:0c:e1:bf:ec:a3:dd:
+                    89:44:38:93:a8:ab:57:7b:7b:16:c5:98:ce:8e:49:
+                    3b:b5:f4:6a:d9:04:ca:a0:35:19:71:23:00:05:f4:
+                    f4:86:c6:c0:dc
+                ASN1 OID: prime256v1
+                NIST CURVE: P-256
+        X509v3 extensions:
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Subject Key Identifier: 
+                AD:0A:88:3D:C3:BC:B4:43:EE:18:C9:D4:2D:B0:18:57:D0:D0:3A:5E
+    Signature Algorithm: ecdsa-with-SHA256
+    Signature Value:
+        30:46:02:21:00:d7:22:76:81:90:95:68:4e:92:6e:18:56:0a:
+        21:50:1a:94:c0:46:60:22:17:09:59:4d:7c:0a:d3:d7:8f:89:
+        c1:02:21:00:ba:ca:f0:57:97:2e:a0:75:04:f2:b4:a0:a8:8d:
+        fb:1a:2e:35:79:2f:93:5c:83:00:9e:45:36:fc:f1:f3:65:19
+sha256 Fingerprint=3F:CF:98:E4:42:6E:8E:B9:9A:D5:D7:8C:D8:0C:82:6F:CE:6D:DC:53:A5:B9:7C:88:03:06:8B:DE:8D:B9:36:9D
+sha1 Fingerprint=F0:C3:13:14:BE:E5:FB:E7:FD:8E:4B:40:F1:2C:C4:CE:08:84:17:C4
