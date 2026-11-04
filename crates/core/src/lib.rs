@@ -363,16 +363,31 @@ impl From<std::io::Error> for Error {
     }
 }
 
-/// A run's context: cancellation, checked by long loops. The CLI never
-/// cancels; the app cancels when the input changes.
+/// A run's context: cancellation, checked by long loops, and whether the
+/// run is the app's. The CLI never cancels; the app cancels when the input
+/// changes, and holds costly params to limits (architecture.md).
 #[derive(Clone, Debug, Default)]
 pub struct Ctx {
     cancelled: Arc<AtomicBool>,
+    interactive: bool,
 }
 
 impl Ctx {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// The app's context: a costly param past its limit is refused, as a
+    /// run that cannot be cancelled would hold a thread until it ends.
+    pub fn interactive() -> Self {
+        Ctx {
+            interactive: true,
+            ..Self::default()
+        }
+    }
+
+    pub fn is_interactive(&self) -> bool {
+        self.interactive
     }
 
     pub fn cancel(&self) {
@@ -430,6 +445,24 @@ pub trait Tool: Sync {
     }
 
     fn detect(&self, _sample: &[u8]) -> Option<Score> {
+        None
+    }
+
+    /// A run takes long by design (a password hash): the app runs it on
+    /// Ctrl+Enter, not as the input changes (app.md).
+    fn costly(&self) -> bool {
+        false
+    }
+
+    /// The input is a secret (a password): the app masks it, and "copy as
+    /// command" reads it from TW_SECRET, never writing it (cli.md).
+    fn secret_input(&self) -> bool {
+        false
+    }
+
+    /// The arguments after `tw`, for a command whose line is not made of
+    /// its params as flags (argon2's salt comes first); `None` for the rest.
+    fn command_args(&self, _values: &Values) -> Option<Vec<String>> {
         None
     }
 }

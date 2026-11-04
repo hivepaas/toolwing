@@ -54,6 +54,9 @@ pub struct ToolPage {
     /// Each action's values, kept while switching between them.
     values: Vec<Values>,
     input: Entity<TextareaState>,
+    /// For tools whose input is a secret (a password): a masked field, in
+    /// place of the input editor.
+    password: Option<Entity<InputState>>,
     output: Entity<TextareaState>,
     /// Text fields of Int and Text params, by (action, key).
     fields: Vec<(usize, &'static str, Entity<InputState>)>,
@@ -64,6 +67,8 @@ pub struct ToolPage {
     result_fields: Option<Vec<Field>>,
     /// The output shown is from an earlier input: dimmed while a run is due.
     stale: bool,
+    /// A costly tool's run waits for Ctrl+Enter (app.md).
+    waiting: bool,
     generation: u64,
     ctx: Ctx,
     _subscriptions: Vec<Subscription>,
@@ -75,14 +80,40 @@ impl ToolPage {
         let input =
             cx.new(|cx| TextareaState::new(window, cx).placeholder("Type or paste the input here"));
         let output = cx.new(|cx| TextareaState::new(window, cx));
-        let mut subscriptions =
-            vec![
-                cx.subscribe_in(&input, window, |this, _, event: &InputEvent, window, cx| {
-                    if let InputEvent::Change = event {
-                        this.schedule(window, cx);
-                    }
-                }),
-            ];
+        let on_input =
+            |this: &mut Self, event: &InputEvent, window: &mut Window, cx: &mut Context<Self>| {
+                match event {
+                    InputEvent::Change => this.schedule(window, cx),
+                    InputEvent::PressEnter {
+                        secondary: true, ..
+                    } => this.run_now(window, cx),
+                    _ => {}
+                }
+            };
+        let mut subscriptions = vec![cx.subscribe_in(
+            &input,
+            window,
+            move |this, _, event: &InputEvent, window, cx| on_input(this, event, window, cx),
+        )];
+        // A password is one line, masked, and kept nowhere but here (app.md).
+        let password = tools[0].secret_input().then(|| {
+            cx.new(|cx| {
+                InputState::new(window, cx)
+                    .masked(true)
+                    .placeholder("Type or paste the password")
+            })
+        });
+        if let Some(password) = &password {
+            subscriptions.push(cx.subscribe_in(
+                password,
+                window,
+                |this, _, event: &InputEvent, window, cx| match event {
+                    InputEvent::Change => this.schedule(window, cx),
+                    InputEvent::PressEnter { .. } => this.run_now(window, cx),
+                    _ => {}
+                },
+            ));
+        }
         let mut fields = Vec::new();
         for (action, tool) in tools.iter().enumerate() {
             for p in tool.params() {
@@ -108,11 +139,13 @@ impl ToolPage {
                 subscriptions.push(cx.subscribe_in(
                     &state,
                     window,
-                    move |this, state, event: &InputEvent, window, cx| {
-                        if let InputEvent::Change = event {
+                    move |this, state, event: &InputEvent, window, cx| match event {
+                        InputEvent::Change => {
                             let text = state.read(cx).value().to_string();
                             this.set_field(action, key, &text, window, cx);
                         }
+                        InputEvent::PressEnter { .. } => this.run_now(window, cx),
+                        _ => {}
                     },
                 ));
                 fields.push((action, key, state));
@@ -148,14 +181,16 @@ impl ToolPage {
             tools,
             action: 0,
             input,
+            password,
             output,
             fields,
             dropdowns,
             error: None,
             result_fields: None,
             stale: false,
+            waiting: false,
             generation: 0,
-            ctx: Ctx::new(),
+            ctx: Ctx::interactive(),
             _subscriptions: subscriptions,
         };
         page.schedule(window, cx);
@@ -239,9 +274,33 @@ impl ToolPage {
 
     /// Replaces the input, as typing or pasting it would.
     pub fn set_input(&mut self, text: &str, window: &mut Window, cx: &mut Context<Self>) {
-        self.input
-            .update(cx, |input, cx| input.set_value(text.to_owned(), window, cx));
+        match &self.password {
+            Some(password) => {
+                password.update(cx, |p, cx| p.set_value(text.to_owned(), window, cx));
+            }
+            None => self
+                .input
+                .update(cx, |input, cx| input.set_value(text.to_owned(), window, cx)),
+        }
         self.schedule(window, cx);
+    }
+
+    fn input_text(&self, cx: &Context<Self>) -> String {
+        match &self.password {
+            Some(password) => password.read(cx).value().to_string(),
+            None => self.input.read(cx).value().to_string(),
+        }
+    }
+
+    /// A costly tool's run is waiting for Ctrl+Enter.
+    pub fn waiting(&self) -> bool {
+        self.waiting
+    }
+
+    /// Runs now, without the pause typing has: Ctrl+Enter, or the Run button.
+    pub fn run_now(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.waiting = false;
+        self.start(Duration::ZERO, window, cx);
     }
 
     /// The last run has finished and its result is shown.
@@ -275,20 +334,33 @@ impl ToolPage {
     }
 
     /// Runs the tool after a pause, in the background; a newer run cancels
-    /// this one, and a result that is not the latest is dropped.
+    /// this one, and a result that is not the latest is dropped. A costly
+    /// tool waits for Ctrl+Enter instead (app.md).
     fn schedule(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.tool().costly() {
+            self.generation += 1;
+            self.ctx.cancel();
+            self.waiting = true;
+            self.stale = true;
+            cx.notify();
+            return;
+        }
+        self.start(DEBOUNCE, window, cx);
+    }
+
+    fn start(&mut self, pause: Duration, window: &mut Window, cx: &mut Context<Self>) {
         self.generation += 1;
         let generation = self.generation;
         self.ctx.cancel();
-        self.ctx = Ctx::new();
+        self.ctx = Ctx::interactive();
         let ctx = self.ctx.clone();
         let tool = self.tool();
         let values = self.values[self.action].clone();
-        let input = self.input.read(cx).value().to_string();
+        let input = self.input_text(cx);
         self.stale = true;
         cx.notify();
         cx.spawn_in(window, async move |this, cx| {
-            cx.background_executor().timer(DEBOUNCE).await;
+            cx.background_executor().timer(pause).await;
             let due = this
                 .update(cx, |this, _| this.generation == generation)
                 .unwrap_or(false);
@@ -324,7 +396,7 @@ impl ToolPage {
     }
 
     fn command_line(&self, cx: &Context<Self>) -> String {
-        let input = self.input.read(cx).value();
+        let input = self.input_text(cx);
         command::shell_line(self.tool(), &self.values[self.action], &input)
     }
 
@@ -535,6 +607,7 @@ impl Render for ToolPage {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let meta = self.tool().meta();
         let takes_input = meta.input != InputKind::None;
+        let costly = self.tool().costly();
         let command_line = self.command_line(cx);
         let error = self.error.as_ref().map(|e| match e.span {
             Some(s) => format!("{} (line {}, column {})", e.message, s.line, s.column),
@@ -585,8 +658,14 @@ impl Render for ToolPage {
                                 .min_w_0()
                                 .h_full()
                                 .gap_1()
-                                .child(label("Input", cx))
-                                .child(Textarea::new(&self.input).h_full()),
+                                .map(|col| match &self.password {
+                                    Some(password) => col
+                                        .child(label("Password", cx))
+                                        .child(Input::new(password).mask_toggle()),
+                                    None => col
+                                        .child(label("Input", cx))
+                                        .child(Textarea::new(&self.input).h_full()),
+                                }),
                         )
                     })
                     .child(
@@ -595,19 +674,37 @@ impl Render for ToolPage {
                             .min_w_0()
                             .h_full()
                             .gap_1()
-                            .child(h_flex().justify_between().child(label("Output", cx)).when(
-                                !takes_input,
-                                |row| {
-                                    row.child(
-                                        Button::new("again")
-                                            .ghost()
-                                            .label("Generate again")
-                                            .on_click(cx.listener(|this, _, window, cx| {
-                                                this.schedule(window, cx)
-                                            })),
-                                    )
-                                },
-                            ))
+                            .child(
+                                h_flex()
+                                    .justify_between()
+                                    .child(label("Output", cx))
+                                    .when(!takes_input, |row| {
+                                        row.child(
+                                            Button::new("again")
+                                                .ghost()
+                                                .label("Generate again")
+                                                .on_click(cx.listener(|this, _, window, cx| {
+                                                    this.schedule(window, cx)
+                                                })),
+                                        )
+                                    })
+                                    .when(costly, |row| {
+                                        row.child(
+                                            Button::new("run")
+                                                .primary()
+                                                .label("Run  Ctrl+Enter")
+                                                .on_click(cx.listener(|this, _, window, cx| {
+                                                    this.run_now(window, cx)
+                                                })),
+                                        )
+                                    }),
+                            )
+                            .when(self.waiting, |col| {
+                                col.child(label(
+                                    "Password hashes are slow by design, so this runs on Ctrl+Enter, not as you type.",
+                                    cx,
+                                ))
+                            })
                             .child(
                                 div()
                                     .flex_1()

@@ -93,6 +93,11 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         return Err(format!("exit {exit}, the reference {want_exit}"));
     }
     let stdout = unix_wording(out.stdout);
+    let (stdout, want_stdout) = if group == "argon2" {
+        (untimed(&stdout), untimed(&want_stdout))
+    } else {
+        (stdout, want_stdout)
+    };
     if stdout != want_stdout {
         return Err(format!(
             "stdout differs: {} bytes, the reference {} ({:?}… vs {:?}…)",
@@ -132,8 +137,9 @@ fn unix_wording(stdout: Vec<u8>) -> Vec<u8> {
 }
 
 /// Every case's files can be checked out on Windows too: none is named with
-/// a character it refuses, or as a device, or as another is but for case. (A name b3sum escapes, with a
-/// backslash or a newline, is tested in native.rs instead, on Unix.)
+/// a character it refuses, or as a device, or as another is but for case.
+/// (A name b3sum escapes, with a backslash or a newline, is tested in
+/// native.rs instead, on Unix.)
 #[test]
 fn case_paths_are_portable() {
     fn walk(dir: &Path, bad: &mut Vec<String>) {
@@ -175,6 +181,30 @@ fn case_paths_are_portable() {
         &mut bad,
     );
     assert!(bad.is_empty(), "names Windows refuses:\n{}", bad.join("\n"));
+}
+
+/// argon2's line saying how long it took ("0.006 seconds"), as one that
+/// says no time: the only line of its output that differs run to run.
+fn untimed(stdout: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(stdout.len());
+    for line in stdout.split_inclusive(|&b| b == b'\n') {
+        let text = line.strip_suffix(b"\n").unwrap_or(line);
+        let timed = text.strip_suffix(b" seconds").is_some_and(|n| {
+            let n = String::from_utf8_lossy(n);
+            n.trim_start().split_once('.').is_some_and(|(whole, part)| {
+                !whole.is_empty()
+                    && whole.bytes().all(|b| b.is_ascii_digit())
+                    && part.len() == 3
+                    && part.bytes().all(|b| b.is_ascii_digit())
+            })
+        });
+        if timed {
+            out.extend_from_slice(b"N seconds\n");
+        } else {
+            out.extend_from_slice(line);
+        }
+    }
+    out
 }
 
 fn sorted_dirs(dir: &Path) -> Vec<std::path::PathBuf> {

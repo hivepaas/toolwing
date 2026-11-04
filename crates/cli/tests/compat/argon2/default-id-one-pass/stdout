@@ -1,0 +1,8 @@
+Type:		Argon2id
+Iterations:	1
+Memory:		4096 KiB
+Parallelism:	1
+Hash:		c885b78ca85ce3a260677140728184a30addeafc8ffd64d2cbfc144440269707
+Encoded:	$argon2id$v=19$m=4096,t=1,p=1$c29tZXNhbHQ$yIW3jKhc46JgZ3FAcoGEowrd6vyP/WTSy/wUREAmlwc
+0.003 seconds
+Verification ok

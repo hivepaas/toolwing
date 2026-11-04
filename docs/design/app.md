@@ -31,6 +31,9 @@ palette so it sits with shellwing and tracewing.
   the right (stacked when the window is narrow), options in one row under them.
 - **Command line:** the `tw` command that gives the result on screen, with a
   copy button. Secret values appear as `"$TW_SECRET"`, never in clear text.
+- **A password as the input** (bcrypt, argon2): one masked field with a show
+  button in place of the input editor; the command line reads it with
+  `printf %s "$TW_SECRET" | tw …`.
 
 ## Live results
 

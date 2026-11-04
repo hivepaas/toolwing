@@ -44,7 +44,7 @@ crates/cli/tests/compat/base64/no-wrap/
   so a change to the public surface shows in review.
 - **Fuzzing** with `cargo-fuzz` (`fuzz/`): one target for each parser (JSON,
   YAML, TOML, XML, CSV, JWT, cron, Base64/32 and hex decoding, jq filter
-  compilation, X.509), and `tools`, which gives every tool that
+  compilation, X.509, bcrypt and Argon2 hashes), and `tools`, which gives every tool that
   takes input whatever it makes up. A nightly job (`.github/workflows/fuzz.yml`)
   runs each for 10 minutes; crashes become regression tests. Nothing a tool is
   given may panic, overflow its stack or hang. Run one with

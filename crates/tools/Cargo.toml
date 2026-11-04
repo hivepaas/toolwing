@@ -28,6 +28,11 @@ blake2b_simd = "1.0"
 blake3 = "1.8"
 # HMAC over those hashes (`hmac`).
 hmac = "0.13"
+# Password hashes (`bcrypt`, `argon2`): Keats' bcrypt, as OpenBSD makes
+# it; RustCrypto's Argon2 (RFC 9106), as the reference C makes it. Both
+# without their own generators: salts come from getrandom, below.
+bcrypt = { version = "0.19", default-features = false, features = ["std", "zeroize"] }
+argon2 = { version = "0.6", default-features = false, features = ["alloc", "zeroize"] }
 # The operating system's secure generator (`random`).
 getrandom = "0.3"
 # Case conversion: the word boundaries cargo and clap use.

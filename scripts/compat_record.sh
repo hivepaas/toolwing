@@ -14,7 +14,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # The reference of each group, and the image that has it at its pinned version.
-declare -A IMAGE COMMAND VERSION BUILD
+declare -A IMAGE COMMAND VERSION BUILD VERSION_OF
 for tool in base64 base32 md5sum sha1sum sha256sum sha512sum b2sum; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
@@ -35,6 +35,13 @@ IMAGE[b3sum]=toolwing-ref/b3sum:1.8.2
 BUILD[b3sum]=$'FROM alpine:3.22\nRUN apk add --no-cache bash b3sum'
 COMMAND[b3sum]=b3sum
 VERSION[b3sum]="b3sum 1.8.2"
+# argon2: the reference C's command, Debian's build of it. It has no
+# --version, so the package's version is checked.
+IMAGE[argon2]=toolwing-ref/argon2:20190702
+BUILD[argon2]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq argon2 > /dev/null && rm -rf /var/lib/apt/lists/*'
+COMMAND[argon2]=argon2
+VERSION[argon2]="0~20190702+dfsg-4+b2"
+VERSION_OF[argon2]="dpkg-query -W -f=\${Version} argon2"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
@@ -50,8 +57,8 @@ for group in "${groups[@]}"; do
   fi
   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/w" -w /w "$image" bash -c '
     set -euo pipefail
-    command=$1 version=$2 dir=$3
-    got=$("$command" --version | head -n 1)
+    command=$1 version=$2 dir=$3 version_of=$4
+    got=$(${version_of:-"$command" --version} | head -n 1)
     [ "$got" = "$version" ] || { echo "$command is \"$got\", not \"$version\"" >&2; exit 1; }
     for case in "$dir"/*/; do
       case=$(cd "$case" && pwd)
@@ -64,6 +71,6 @@ for group in "${groups[@]}"; do
       set -e
       cd /w
     done
-  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group"
+  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}"
   echo "$group: recorded $(ls -d crates/cli/tests/compat/"$group"/*/ | wc -l) cases"
 done

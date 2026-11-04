@@ -23,6 +23,8 @@ Commands:
   b2sum        BLAKE2b checksums of files, or check them
   b3sum        BLAKE3 checksums of files, or check them, as b3sum does
   hmac         HMAC of the input with a secret key, as openssl dgst -hmac
+  bcrypt       Hash a password with bcrypt, or check one against its hash
+  argon2       Hash a password with Argon2id, Argon2i or Argon2d, as the argon2 command does
   random       Passwords, tokens and bytes from the system's secure generator
   uuid         Generate UUIDs, or read what one holds (RFC 9562)
   ulid         Generate and read ULIDs: IDs that sort by time, as UUIDs too

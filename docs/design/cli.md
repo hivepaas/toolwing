@@ -45,6 +45,8 @@ Two kinds of command, and every tool says which it is (tools.md):
 - A secret param (`--key`) also comes from a file, `--key-file FILE`, or an
   environment variable, `--key-env NAME`, so it need not appear in shell
   history or `ps`. "Copy as command" always writes `--key-env TW_SECRET`.
+- A password is the input of the tools that hash one (`bcrypt`, `argon2`), read
+  from stdin; "copy as command" writes `printf %s "$TW_SECRET" | tw …`.
 
 ## Output
 

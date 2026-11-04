@@ -21,6 +21,8 @@ libfuzzer-sys = "0.4"
 toolwing-core = { path = "../crates/core" }
 toolwing-tools = { path = "../crates/tools" }
 toolwing-jq = { path = "../crates/jq" }
+# To check a parsed bcrypt hash as the tools do.
+bcrypt = { version = "0.19", default-features = false, features = ["std"] }
 
 [patch.crates-io]
 jaq-json = { path = "../vendor/jaq-json" }
@@ -99,6 +101,13 @@ bench = false
 [[bin]]
 name = "cert"
 path = "fuzz_targets/cert.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "password"
+path = "fuzz_targets/password.rs"
 test = false
 doc = false
 bench = false
