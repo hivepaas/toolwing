@@ -1,0 +1,9 @@
+a.zst 
+# Zstandard Frames: 2
+DictID: 0
+Window Size: 15.6 KiB (16000 B)
+Compressed Size: 5.66 KiB (5792 B)
+Decompressed Size: 31.2 KiB (32000 B)
+Ratio: 5.5249
+Check: XXH64
+

@@ -46,7 +46,7 @@ crates/cli/tests/compat/base64/no-wrap/
   YAML, TOML, XML, CSV, JWT, cron, Base64/32 and hex decoding, jq filter
   compilation, X.509, bcrypt and Argon2 hashes, IP addresses and ranges, HTML character references, XML as `tw xml` reads
   and writes it, QR codes from any text,
-  CSS colors),
+  CSS colors, zstd frames),
   and `tools`, which gives every tool that
   takes input whatever it makes up. A nightly job (`.github/workflows/fuzz.yml`)
   runs each for 10 minutes; crashes become regression tests. Nothing a tool is

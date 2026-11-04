@@ -42,6 +42,7 @@ pub fn root() -> Command {
             None if g == "argon2" => crate::argon2s::command(),
             None if g == "ipcalc" => crate::ipcalcs::command(),
             None if g == "qrencode" => crate::qrencodes::command(),
+            None if g == "zstd" => crate::zstds::command(),
             None => group_command(g),
         });
     }

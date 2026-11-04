@@ -742,4 +742,15 @@ fn every_page_draws_and_runs() {
     settle(&mut ui.cx, move |cx| q.read(cx).settled());
     assert_eq!(field(&mut ui, &p, "hex").as_deref(), Some("#00bf54"));
     ui.save("35-color");
+
+    // Zstandard: text compressed as zstd -c does, as Base64.
+    let p = ui.tool("Zstandard");
+    ui.on(&p, |p, window, cx| p.set_input("hello world\n", window, cx));
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "KLUv/QRYYQAAaGVsbG8gd29ybGQKjG19IA=="
+    );
+    ui.save("36-zstd");
 }

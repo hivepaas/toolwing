@@ -53,6 +53,11 @@ BUILD[qrencode]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -
 COMMAND[qrencode]=qrencode
 VERSION[qrencode]="qrencode version 4.1.1"
 VERSION_OF[qrencode]="qrencode -V"
+# zstd: Debian's build of zstd 1.5.7, libzstd 1.5.7 as zstd-sys bundles it.
+IMAGE[zstd]=toolwing-ref/zstd:1.5.7
+BUILD[zstd]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq zstd > /dev/null && rm -rf /var/lib/apt/lists/*'
+COMMAND[zstd]=zstd
+VERSION[zstd]="*** Zstandard CLI (64-bit) v1.5.7, by Yann Collet ***"
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
