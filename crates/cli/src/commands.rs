@@ -26,7 +26,9 @@ pub fn shape(tools: &[&'static dyn Tool]) -> Shape {
 }
 
 pub fn root() -> Command {
+    // Named as typed, not as the binary is (tw.exe on Windows).
     let mut cmd = Command::new("tw")
+        .bin_name("tw")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Fast, native developer tools")
         .subcommand_required(true)
