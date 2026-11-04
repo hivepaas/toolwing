@@ -44,7 +44,7 @@ parser.
 | --- | --- | --- | --- |
 | `cert` | Read X.509 (PEM/DER): subject, SANs, issuer, validity, fingerprints, chain order | `openssl x509 -noout -text` | `x509-parser` |
 | `bcrypt`, `argon2` | Hash and verify passwords. `bcrypt hash` (`-C` cost, `--prefix` 2b/2y/2a, `--salt`) and `bcrypt verify --hash`; a password past bcrypt's 72 bytes, or with a NUL, is refused rather than cut. `argon2` is drop-in for the reference C's command (65 cases recorded from Debian 13's `argon2`, its timing line set aside), plus `tw argon2 verify ENCODED`. The app runs them on Ctrl+Enter, at most bcrypt cost 16 and Argon2 1 GiB, 64 passes | `htpasswd -B` (output; crypt_blowfish's test vectors), `argon2` 20190702 (drop-in) | Keats' `bcrypt` 0.19, RustCrypto `argon2` 0.6 |
-| `cidr` | Subnet calculator, contains, split | `ipcalc` | `ipnet` |
+| `ipcalc` | An IPv4 or IPv6 network worked out (network, mask, broadcast, hosts, IANA address space, reverse zone), split (`-S`), a range as networks (`-d`), `VAR=value` and JSON output. Drop-in for ipcalc 1.0.3 (Red Hat's; Debian's `ipcalc-ng`): its `getopt_long` arguments and output, 265 cases recorded, 163 of them its own tests' commands. Names are not looked up (`-h`, `-o`): tools stay off the network. Where the reference crashes (`--reverse-dns` with no zone) or never ends (a range up to the last address), tw does not. "Contains" is not in it | ipcalc 1.0.3 (drop-in) | our own, on glibc's `inet_pton`/`inet_ntop` rules |
 | `html` | Escape, unescape entities | WHATWG | to choose |
 | `xml` | Format, minify | `xmllint --format` | `quick-xml` |
 | `qr` | Generate (PNG, SVG, terminal), read from an image | — | `qrcode` |

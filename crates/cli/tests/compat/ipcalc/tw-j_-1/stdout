@@ -1,0 +1,12 @@
+{
+  "FULLADDRESS":"0000:0000:0000:0000:0000:0000:0000:0001",
+  "ADDRESS":"::1",
+  "FULLNETWORK":"0000:0000:0000:0000:0000:0000:0000:0001",
+  "NETWORK":"::1",
+  "NETMASK":"ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+  "PREFIX":"128",
+  "ADDRSPACE":"Loopback Address",
+  "MINADDR":"::1",
+  "MAXADDR":"::1",
+  "ADDRESSES":"1"
+}

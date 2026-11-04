@@ -1,0 +1,8 @@
+[Split networks]
+Network:	2001:db8::/128
+Network:	2001:db8::1/128
+Network:	2001:db8::2/128
+Network:	2001:db8::3/128
+
+Total:  	4
+Hosts/Net:	1

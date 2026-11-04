@@ -1,0 +1,8 @@
+[Split networks]
+Network:	2001:db8::/66
+Network:	2001:db8:0:0:4000::/66
+Network:	2001:db8:0:0:8000::/66
+Network:	2001:db8:0:0:c000::/66
+
+Total:  	4
+Hosts/Net:	4611686018427387904

@@ -1,0 +1,11 @@
+{
+  "ADDRESS":"10.0.0.1",
+  "NETWORK":"10.0.0.1",
+  "NETMASK":"255.255.255.255",
+  "PREFIX":"32",
+  "BROADCAST":"10.0.0.1",
+  "ADDRSPACE":"Private Use",
+  "MINADDR":"10.0.0.1",
+  "MAXADDR":"10.0.0.1",
+  "ADDRESSES":"1"
+}

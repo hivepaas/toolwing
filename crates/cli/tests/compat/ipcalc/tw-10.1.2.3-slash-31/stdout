@@ -1,0 +1,9 @@
+Address:	10.1.2.3
+Network:	10.1.2.2/31
+Netmask:	255.255.255.254 = 31
+Broadcast:	255.255.255.255
+
+Address space:	Private Use
+HostMin:	10.1.2.2
+HostMax:	10.1.2.3
+Hosts/Net:	2

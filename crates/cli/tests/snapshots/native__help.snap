@@ -32,6 +32,7 @@ Commands:
   cron         What a cron expression means, and when it runs next
   regex        Test a pattern, see its matches and groups, replace with it
   diff         Compare two files line by line, as GNU diff does
+  ipcalc       An address and prefix's network, netmask, broadcast, hosts and address space
   case         One name in every case code uses: camelCase, snake_case, kebab-case…
   base         A number in binary, octal, decimal, hex or any base from 2 to 36
   list         List every tool

@@ -1,0 +1,11 @@
+Address:	10.0.0.5
+Network:	10.0.0.4/31
+Netmask:	255.255.255.254 = 31
+Broadcast:	255.255.255.255
+Reverse DNS:	4-255.0.0.10.in-addr.arpa.
+
+Address space:	Private Use
+Address class:	Class A
+HostMin:	10.0.0.4
+HostMax:	10.0.0.5
+Hosts/Net:	2

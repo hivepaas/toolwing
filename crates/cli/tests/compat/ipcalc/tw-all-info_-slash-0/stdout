@@ -1,0 +1,9 @@
+Full Network:	0000:0000:0000:0000:0000:0000:0000:0000/0
+Network:	::/0
+Netmask:	:: = 0
+Reverse DNS:	ip6.arpa.
+
+Address space:	Reserved
+HostMin:	::
+HostMax:	ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+Hosts/Net:	2^(128) = 

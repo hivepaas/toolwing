@@ -111,3 +111,10 @@ path = "fuzz_targets/password.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "ipcalc"
+path = "fuzz_targets/ipcalc.rs"
+test = false
+doc = false
+bench = false

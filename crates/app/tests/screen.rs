@@ -673,4 +673,18 @@ fn every_page_draws_and_runs() {
         )
     );
     ui.save("30-argon2");
+
+    // IP network: a /26 worked out, as ipcalc --all-info does.
+    let p = ui.tool("IP network");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("192.168.1.77/26", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        field(&mut ui, &p, "network").as_deref(),
+        Some("192.168.1.64/26")
+    );
+    assert_eq!(field(&mut ui, &p, "addresses").as_deref(), Some("62"));
+    ui.save("31-ipcalc");
 }

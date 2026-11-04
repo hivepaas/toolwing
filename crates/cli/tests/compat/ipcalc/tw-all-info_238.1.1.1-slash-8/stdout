@@ -1,0 +1,11 @@
+Address:	238.1.1.1
+Network:	238.0.0.0/8
+Netmask:	255.0.0.0 = 8
+Broadcast:	238.255.255.255
+Reverse DNS:	238.in-addr.arpa.
+
+Address space:	Multicast
+Address class:	Class D
+HostMin:	238.0.0.1
+HostMax:	238.255.255.254
+Hosts/Net:	16777214

@@ -13,6 +13,7 @@ pub mod diff;
 pub mod hash;
 pub mod hex;
 pub mod hmac;
+pub mod ipcalc;
 pub mod jq;
 pub mod json;
 pub mod jwt;
@@ -154,6 +155,13 @@ pub static GROUPS: &[Group] = &[
         summary: en!("Compare two texts or files line by line, as diff does"),
     },
     Group {
+        name: "ipcalc",
+        title: en!("IP network"),
+        summary: en!(
+            "An IPv4 or IPv6 network worked out, split, or made of a range, as ipcalc does"
+        ),
+    },
+    Group {
         name: "case",
         title: en!("Case"),
         summary: en!("One name in every case code uses: camelCase, snake_case, kebab-case…"),
@@ -209,6 +217,9 @@ pub static TOOLS: &[&dyn Tool] = &[
     &regex::Match,
     &regex::Replace,
     &diff::Compare,
+    &ipcalc::NetInfo,
+    &ipcalc::NetSplit,
+    &ipcalc::NetDeaggregate,
     &case::Convert,
     &base::Convert,
 ];

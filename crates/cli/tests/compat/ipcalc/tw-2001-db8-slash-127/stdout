@@ -1,0 +1,8 @@
+Full Network:	2001:0db8:0000:0000:0000:0000:0000:0000/127
+Network:	2001:db8::/127
+Netmask:	ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe = 127
+
+Address space:	Documentation
+HostMin:	2001:db8::
+HostMax:	2001:db8::1
+Hosts/Net:	2

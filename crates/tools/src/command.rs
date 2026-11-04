@@ -63,6 +63,11 @@ pub fn shell_line(tool: &dyn Tool, values: &Values, input: &str) -> String {
         line.push_str(&quote(&a));
     }
     let m = tool.meta();
+    if tool.input_in_args() {
+        line.push(' ');
+        line.push_str(&quote(input));
+        return line;
+    }
     if tool.secret_input() && m.input != InputKind::None {
         // Never the secret itself: it is read from the environment.
         return format!("printf %s \"$TW_SECRET\" | {line}");

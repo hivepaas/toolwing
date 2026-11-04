@@ -1,0 +1,10 @@
+Full Address:	fe80:0000:0000:0000:0000:0000:0000:0001
+Address:	fe80::1
+Full Network:	fe80:0000:0000:0000:0000:0000:0000:0000/10
+Network:	fe80::/10
+Netmask:	ffc0:: = 10
+
+Address space:	Link-Scoped Unicast
+HostMin:	fe80::
+HostMax:	febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+Hosts/Net:	2^(118) = 332306998946228968225951765070086144

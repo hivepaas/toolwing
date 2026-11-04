@@ -1,0 +1,1 @@
+ipcalc crashes (SIGSEGV) printing a reverse zone a network has none of; tw leaves the line out.
