@@ -13,6 +13,7 @@ pub mod diff;
 pub mod hash;
 pub mod hex;
 pub mod hmac;
+pub mod html;
 pub mod ipcalc;
 pub mod jq;
 pub mod json;
@@ -155,6 +156,11 @@ pub static GROUPS: &[Group] = &[
         summary: en!("Compare two texts or files line by line, as diff does"),
     },
     Group {
+        name: "html",
+        title: en!("HTML"),
+        summary: en!("Escape text for HTML, or read its character references as a browser does"),
+    },
+    Group {
         name: "ipcalc",
         title: en!("IP network"),
         summary: en!(
@@ -217,6 +223,8 @@ pub static TOOLS: &[&dyn Tool] = &[
     &regex::Match,
     &regex::Replace,
     &diff::Compare,
+    &html::Escape,
+    &html::Unescape,
     &ipcalc::NetInfo,
     &ipcalc::NetSplit,
     &ipcalc::NetDeaggregate,

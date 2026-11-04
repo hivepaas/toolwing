@@ -687,4 +687,22 @@ fn every_page_draws_and_runs() {
     );
     assert_eq!(field(&mut ui, &p, "addresses").as_deref(), Some("62"));
     ui.save("31-ipcalc");
+
+    // HTML: references read as a browser reads them, legacy ones too.
+    let p = ui.tool("HTML");
+    ui.on(&p, |p, window, cx| {
+        p.select_action(1, window, cx);
+        p.set_input(
+            "Caf&eacute; &amp; cr&egrave;me &lt;3 &copy 2026 &#x1F600;",
+            window,
+            cx,
+        );
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "Café & crème <3 © 2026 😀"
+    );
+    ui.save("32-html");
 }

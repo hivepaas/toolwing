@@ -45,6 +45,8 @@ jiff = { version = "0.2", features = ["tzdb-bundle-always"] }
 # look-around and backreferences (backtracking, with a limit).
 regex = "1.13"
 fancy-regex = "0.20"
+# HTML character references as the WHATWG tokenizer reads them (`html`).
+htmlize = { version = "1.1", features = ["unescape"] }
 # Diffs: Myers, as GNU diff uses.
 similar = "3.2"
 # JWTs: signing and verifying, with its pure-Rust crypto (no C to build).
