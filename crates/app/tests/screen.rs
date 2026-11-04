@@ -722,4 +722,14 @@ fn every_page_draws_and_runs() {
         "<?xml version=\"1.0\"?>\n<catalog>\n  <book id=\"1\">\n    <title>Rust &amp; XML</title>\n    <price>29.99</price>\n  </book>\n  <!-- more -->\n  <book id=\"2\"/>\n</catalog>"
     );
     ui.save("33-xml");
+
+    // QR code: a URL drawn as qrencode draws it, as a picture.
+    let p = ui.tool("QR code");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("https://github.com/hivepaas/toolwing", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert!(ui.cx.update(|cx| p.read(cx).error().is_none()));
+    ui.save("34-qrencode");
 }

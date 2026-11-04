@@ -129,90 +129,13 @@ enum Opt {
     NoDecorate,
 }
 
-/// What `getopt_long` returns, in order: options with their values, or '?'
-/// (an unknown option, an ambiguous one, a value missing or not taken).
-/// The operands come after, in their order, as glibc permutes them.
+/// `getopt_long` for ipcalc's options; '?' for what it refuses.
 fn getopt(args: &[String]) -> (Vec<(Opt, Option<String>)>, Vec<String>) {
-    let (mut opts, mut operands) = (Vec::new(), Vec::new());
-    let mut i = 0;
-    while i < args.len() {
-        let a = &args[i];
-        i += 1;
-        if a == "--" {
-            operands.extend(args[i..].iter().cloned());
-            break;
-        }
-        if let Some(body) = a.strip_prefix("--") {
-            let (name, value) = match body.split_once('=') {
-                Some((n, v)) => (n, Some(v.to_owned())),
-                None => (body, None),
-            };
-            let exact = LONG.iter().find(|(n, ..)| *n == name);
-            let found = match exact {
-                Some(o) => Some(o),
-                None => {
-                    let matches: Vec<_> =
-                        LONG.iter().filter(|(n, ..)| n.starts_with(name)).collect();
-                    // Ambiguous unless every match is the same option.
-                    match matches.as_slice() {
-                        [] => None,
-                        [first, rest @ ..]
-                            if rest.iter().all(|o| o.1 == first.1 && o.2 == first.2) =>
-                        {
-                            Some(*first)
-                        }
-                        _ => None,
-                    }
-                }
-            };
-            let Some((_, takes, opt)) = found else {
-                opts.push((Opt::Short('?'), None));
-                continue;
-            };
-            match (takes, value) {
-                (false, Some(_)) => opts.push((Opt::Short('?'), None)),
-                (false, None) => opts.push((*opt, None)),
-                (true, Some(v)) => opts.push((*opt, Some(v))),
-                (true, None) => match args.get(i) {
-                    Some(v) => {
-                        i += 1;
-                        opts.push((*opt, Some(v.clone())));
-                    }
-                    None => opts.push((Opt::Short('?'), None)),
-                },
-            }
-            continue;
-        }
-        if a.len() > 1 && a.starts_with('-') {
-            let chars: Vec<char> = a[1..].chars().collect();
-            let mut k = 0;
-            while k < chars.len() {
-                let c = chars[k];
-                k += 1;
-                let pos = SHORT.find(c).filter(|_| c != ':');
-                let Some(pos) = pos else {
-                    opts.push((Opt::Short('?'), None));
-                    continue;
-                };
-                let takes = SHORT[pos + c.len_utf8()..].starts_with(':');
-                if !takes {
-                    opts.push((Opt::Short(c), None));
-                    continue;
-                }
-                if k < chars.len() {
-                    opts.push((Opt::Short(c), Some(chars[k..].iter().collect())));
-                } else if let Some(v) = args.get(i) {
-                    i += 1;
-                    opts.push((Opt::Short(c), Some(v.clone())));
-                } else {
-                    opts.push((Opt::Short('?'), None));
-                }
-                break;
-            }
-            continue;
-        }
-        operands.push(a.clone());
-    }
+    let (opts, operands) = crate::getopt::getopt(args, SHORT, Opt::Short, LONG);
+    let opts = opts
+        .into_iter()
+        .map(|g| g.map_or((Opt::Short('?'), None), |g| (g.opt, g.value)))
+        .collect();
     (opts, operands)
 }
 

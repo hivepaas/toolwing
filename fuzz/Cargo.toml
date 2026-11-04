@@ -21,6 +21,8 @@ libfuzzer-sys = "0.4"
 toolwing-core = { path = "../crates/core" }
 toolwing-tools = { path = "../crates/tools" }
 toolwing-jq = { path = "../crates/jq" }
+# The QR code's error correction levels.
+qrcode = { version = "0.14", default-features = false }
 # To check a parsed bcrypt hash as the tools do.
 bcrypt = { version = "0.19", default-features = false, features = ["std"] }
 
@@ -129,6 +131,13 @@ bench = false
 [[bin]]
 name = "xml_format"
 path = "fuzz_targets/xml_format.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "qrencode"
+path = "fuzz_targets/qrencode.rs"
 test = false
 doc = false
 bench = false

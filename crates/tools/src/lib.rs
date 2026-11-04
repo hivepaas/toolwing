@@ -19,6 +19,7 @@ pub mod jq;
 pub mod json;
 pub mod jwt;
 pub mod password;
+pub mod qr;
 pub mod random;
 pub mod regex;
 pub mod time;
@@ -105,6 +106,11 @@ pub static GROUPS: &[Group] = &[
         name: "b3sum",
         title: en!("BLAKE3"),
         summary: en!("BLAKE3 checksums of files, or check them, as b3sum does"),
+    },
+    Group {
+        name: "qrencode",
+        title: en!("QR code"),
+        summary: en!("Text as a QR code, as qrencode makes it"),
     },
     Group {
         name: "hmac",
@@ -212,6 +218,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::SHA512SUM,
     &hash::B2SUM,
     &hash::B3SUM,
+    &qr::Encode,
     &hmac::Digest,
     &password::BcryptHash,
     &password::BcryptVerify,

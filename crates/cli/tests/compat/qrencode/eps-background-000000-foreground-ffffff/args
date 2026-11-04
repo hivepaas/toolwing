@@ -1,0 +1,5 @@
+-t
+EPS
+--background=000000
+--foreground=ffffff
+eps

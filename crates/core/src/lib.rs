@@ -283,6 +283,9 @@ pub enum Output {
         json: String,
     },
     Bytes(Vec<u8>),
+    /// A picture, as PNG (a QR code): the app shows it, the CLI writes the
+    /// bytes.
+    Image(Vec<u8>),
 }
 
 /// Where in the input an error is, for the CLI to print and the app to underline.
@@ -439,7 +442,7 @@ pub trait Tool: Sync {
                     writeln!(out, "{}: {}", f.label, f.value)?;
                 }
             }
-            Output::Bytes(b) => out.write_all(&b)?,
+            Output::Bytes(b) | Output::Image(b) => out.write_all(&b)?,
         }
         Ok(())
     }

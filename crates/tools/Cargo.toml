@@ -47,6 +47,10 @@ regex = "1.13"
 fancy-regex = "0.20"
 # HTML character references as the WHATWG tokenizer reads them (`html`).
 htmlize = { version = "1.1", features = ["unescape"] }
+# QR codes (`qrencode`): the symbol by `qrcode` (ISO/IEC 18004), its split
+# and mask chosen as libqrencode chooses them (qr.rs); PNG by `png`.
+qrcode = { version = "0.14", default-features = false }
+png = "0.18"
 # Diffs: Myers, as GNU diff uses.
 similar = "3.2"
 # JWTs: signing and verifying, with its pure-Rust crypto (no C to build).

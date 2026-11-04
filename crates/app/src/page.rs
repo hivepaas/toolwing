@@ -6,7 +6,7 @@ use std::time::Duration;
 use gpui::{
     AppContext as _, ClipboardItem, Context, Entity, FontWeight, InteractiveElement as _,
     IntoElement, ParentElement, Render, SharedString, StatefulInteractiveElement as _, Styled,
-    Subscription, Window, div, prelude::FluentBuilder as _,
+    StyledImage as _, Subscription, Window, div, prelude::FluentBuilder as _,
 };
 use gpui_component::IndexPath;
 use gpui_component::button::{Button, ButtonVariants as _};
@@ -65,6 +65,8 @@ pub struct ToolPage {
     error: Option<Error>,
     /// The last result's named values, shown as rows instead of the editor.
     result_fields: Option<Vec<Field>>,
+    /// The last result's picture (a QR code), shown instead of the editor.
+    result_image: Option<std::sync::Arc<gpui::Image>>,
     /// The output shown is from an earlier input: dimmed while a run is due.
     stale: bool,
     /// A costly tool's run waits for Ctrl+Enter (app.md).
@@ -187,6 +189,7 @@ impl ToolPage {
             dropdowns,
             error: None,
             result_fields: None,
+            result_image: None,
             stale: false,
             waiting: false,
             generation: 0,
@@ -383,6 +386,12 @@ impl ToolPage {
                             Output::Fields(f) | Output::Record { fields: f, .. } => Some(f.clone()),
                             _ => None,
                         };
+                        this.result_image = match &output {
+                            Output::Image(png) => Some(std::sync::Arc::new(
+                                gpui::Image::from_bytes(gpui::ImageFormat::Png, png.clone()),
+                            )),
+                            _ => None,
+                        };
                         let text = shown(&output);
                         this.output
                             .update(cx, |o, cx| o.set_value(text, window, cx));
@@ -509,6 +518,7 @@ fn shown(output: &Output) -> String {
             .map(|f| format!("{}: {}", f.label, f.value))
             .collect::<Vec<_>>()
             .join("\n"),
+        Output::Image(b) => format!("a picture, {} bytes of PNG", b.len()),
         Output::Bytes(b) => match std::str::from_utf8(b) {
             Ok(s) => s.to_owned(),
             Err(_) => format!("{} bytes of binary data", b.len()),
@@ -710,15 +720,22 @@ impl Render for ToolPage {
                                     .flex_1()
                                     .min_h_0()
                                     .when(self.stale || self.error.is_some(), |d| d.opacity(0.5))
-                                    .map(|d| match &self.result_fields {
-                                        Some(fields) => d.child(
+                                    .map(|d| match (&self.result_fields, &self.result_image) {
+                                        (_, Some(image)) => d.child(
+                                            div().size_full().flex().items_center().justify_center().child(
+                                                gpui::img(image.clone())
+                                                    .size_full()
+                                                    .object_fit(gpui::ObjectFit::Contain),
+                                            ),
+                                        ),
+                                        (Some(fields), None) => d.child(
                                             div()
                                                 .id("fields")
                                                 .size_full()
                                                 .overflow_y_scroll()
                                                 .child(field_rows(fields, cx)),
                                         ),
-                                        None => d.child(
+                                        (None, None) => d.child(
                                             Textarea::new(&self.output).h_full().readonly(true),
                                         ),
                                     }),
