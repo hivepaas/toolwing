@@ -43,6 +43,7 @@ pub fn root() -> Command {
             None if g == "ipcalc" => crate::ipcalcs::command(),
             None if g == "qrencode" => crate::qrencodes::command(),
             None if g == "zstd" => crate::zstds::command(),
+            None if g == "gzip" => crate::gzips::command(),
             None => group_command(g),
         });
     }

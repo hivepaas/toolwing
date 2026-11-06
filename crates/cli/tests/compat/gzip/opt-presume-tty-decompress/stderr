@@ -1,0 +1,2 @@
+gzip: compressed data not read from a terminal. Use -f to force decompression.
+For help, type: gzip -h

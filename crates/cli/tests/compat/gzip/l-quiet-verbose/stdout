@@ -1,0 +1,4 @@
+method  crc     date  time           compressed        uncompressed  ratio uncompressed_name
+defla 745bc435 Nov 14 22:13                7690               73893  89.6% a.txt
+defla d1332f41 Nov 14 22:13               70039               70000  -0.0% b.bin
+                                          77729              143893  46.0% (totals)

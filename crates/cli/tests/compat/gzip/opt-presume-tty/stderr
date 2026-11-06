@@ -1,0 +1,2 @@
+gzip: compressed data not written to a terminal. Use -f to force compression.
+For help, type: gzip -h

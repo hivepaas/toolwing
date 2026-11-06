@@ -1,0 +1,2 @@
+gzip: -c: option not valid in GZIP environment variable
+Try `gzip --help' for more information.
