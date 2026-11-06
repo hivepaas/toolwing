@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [json, yaml, toml, xml, csv, jq_compile, jwt, cron, decode, cert, password, ipcalc, html, xml_format, qrencode, color, tools]
+        target: [json, yaml, toml, xml, csv, jq_compile, jwt, cron, decode, cert, password, ipcalc, html, xml_format, qrencode, color, zstd, tools]
     steps:
       - uses: actions/checkout@v4
 

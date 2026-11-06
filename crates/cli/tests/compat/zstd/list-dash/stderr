@@ -1,0 +1,1 @@
+zstd: --list does not support reading from standard input 

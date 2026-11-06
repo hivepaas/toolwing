@@ -2,7 +2,8 @@
 # Records what the reference tools give for each compatibility case
 # (docs/design/quality.md): runs every case under crates/cli/tests/compat/
 # against the real tool, at its pinned version, in a container, and writes
-# the case's `stdout` and `exit`. Commit what changes after reading it.
+# the case's `stdout` and `exit`, and its `stderr` for the groups whose
+# messages are matched too (STDERR). Commit what changes after reading it.
 #
 #   scripts/compat_record.sh            every group
 #   scripts/compat_record.sh base64     one group
@@ -14,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # The reference of each group, and the image that has it at its pinned version.
-declare -A IMAGE COMMAND VERSION BUILD VERSION_OF
+declare -A IMAGE COMMAND VERSION BUILD VERSION_OF STDERR
 for tool in base64 base32 md5sum sha1sum sha256sum sha512sum b2sum; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
@@ -53,6 +54,12 @@ BUILD[qrencode]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -
 COMMAND[qrencode]=qrencode
 VERSION[qrencode]="qrencode version 4.1.1"
 VERSION_OF[qrencode]="qrencode -V"
+# zstd: Debian's build of zstd 1.5.7, libzstd 1.5.7 as zstd-sys bundles it.
+IMAGE[zstd]=toolwing-ref/zstd:1.5.7
+BUILD[zstd]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq zstd > /dev/null && rm -rf /var/lib/apt/lists/*'
+COMMAND[zstd]=zstd
+VERSION[zstd]="*** Zstandard CLI (64-bit) v1.5.7, by Yann Collet ***"
+STDERR[zstd]=1
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
@@ -68,7 +75,7 @@ for group in "${groups[@]}"; do
   fi
   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/w" -w /w "$image" bash -c '
     set -euo pipefail
-    command=$1 version=$2 dir=$3 version_of=$4
+    command=$1 version=$2 dir=$3 version_of=$4 stderr=$5
     got=$(${version_of:-"$command" --version} | head -n 1)
     [ "$got" = "$version" ] || { echo "$command is \"$got\", not \"$version\"" >&2; exit 1; }
     for case in "$dir"/*/; do
@@ -77,11 +84,15 @@ for group in "${groups[@]}"; do
       args=("${args[@]/#@stdin/$case/stdin}")
       cd "$case/files" 2> /dev/null || cd "$case"
       set +e
-      "$command" "${args[@]}" < "$case/stdin" > "$case/stdout" 2> /dev/null
+      if [ -n "$stderr" ]; then
+        "$command" "${args[@]}" < "$case/stdin" > "$case/stdout" 2> "$case/stderr"
+      else
+        "$command" "${args[@]}" < "$case/stdin" > "$case/stdout" 2> /dev/null
+      fi
       echo $? > "$case/exit"
       set -e
       cd /w
     done
-  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}"
+  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}" "${STDERR[$group]:-}"
   echo "$group: recorded $(ls -d crates/cli/tests/compat/"$group"/*/ | wc -l) cases"
 done

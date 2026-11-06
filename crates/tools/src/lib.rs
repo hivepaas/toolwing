@@ -28,6 +28,7 @@ pub mod ulid;
 pub mod url;
 pub mod uuid;
 pub mod xml;
+pub mod zstd;
 
 use toolwing_core::{Group, Tool, en};
 
@@ -112,6 +113,11 @@ pub static GROUPS: &[Group] = &[
         name: "qrencode",
         title: en!("QR code"),
         summary: en!("Text as a QR code, as qrencode makes it"),
+    },
+    Group {
+        name: "zstd",
+        title: en!("Zstandard"),
+        summary: en!("Compress or decompress with Zstandard, as the zstd command does"),
     },
     Group {
         name: "hmac",
@@ -225,6 +231,8 @@ pub static TOOLS: &[&dyn Tool] = &[
     &hash::B2SUM,
     &hash::B3SUM,
     &qr::Encode,
+    &zstd::CompressTool,
+    &zstd::DecompressTool,
     &hmac::Digest,
     &password::BcryptHash,
     &password::BcryptVerify,

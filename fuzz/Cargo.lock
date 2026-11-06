@@ -799,6 +799,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "242402749acf71e6f32f5857598b7002c4058a4e3c3b22b4c7d51cab9aea754e"
 
 [[package]]
+name = "hivepack"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43c523cdf2205110960d780a6bfd4a42d2b76f0b14d8dd26ab80f895ff2fffb3"
+
+[[package]]
 name = "hkdf"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2126,6 +2132,7 @@ dependencies = [
  "fancy-regex",
  "getrandom 0.3.4",
  "heck",
+ "hivepack",
  "hmac 0.13.0",
  "htmlize",
  "jiff",

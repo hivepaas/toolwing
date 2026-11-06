@@ -148,3 +148,10 @@ path = "fuzz_targets/color.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "zstd"
+path = "fuzz_targets/zstd.rs"
+test = false
+doc = false
+bench = false

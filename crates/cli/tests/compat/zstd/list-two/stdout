@@ -1,0 +1,5 @@
+Frames  Skips  Compressed  Uncompressed  Ratio  Check  Filename
+     1      0    2.83 KiB      15.6 KiB  5.525  XXH64  a.zst
+     1      0      25   B                       XXH64  b.zst
+----------------------------------------------------------------- 
+     2      0    2.85 KiB                       XXH64  2 files

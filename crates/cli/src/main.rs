@@ -9,6 +9,7 @@ mod ipcalcs;
 mod jq;
 mod qrencodes;
 mod sums;
+mod zstds;
 
 /// stdout, as a command line tool's should be: when the reader has gone
 /// (`tw … | head`), the process ends quietly with 141, as SIGPIPE would end
@@ -58,6 +59,10 @@ fn main() -> ExitCode {
     // argon2's too, as the reference's main reads them (argon2s.rs).
     if args.get(1).is_some_and(|a| a == "argon2") {
         return ExitCode::from(argon2s::main(&args[2..]));
+    }
+    // zstd's as its own parser reads them (zstds.rs).
+    if args.get(1).is_some_and(|a| a == "zstd") {
+        return ExitCode::from(zstds::main(&args[2..]));
     }
     // qrencode's too (qrencodes.rs).
     if args.get(1).is_some_and(|a| a == "qrencode") {
