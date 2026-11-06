@@ -5,6 +5,7 @@ mod b3sums;
 mod commands;
 mod diffs;
 mod getopt;
+mod gzips;
 mod ipcalcs;
 mod jq;
 mod qrencodes;
@@ -61,6 +62,10 @@ fn main() -> ExitCode {
         return ExitCode::from(argon2s::main(&args[2..]));
     }
     // zstd's as its own parser reads them (zstds.rs).
+    // gzip's as its own getopt_long reads them (gzips.rs).
+    if args.get(1).is_some_and(|a| a == "gzip") {
+        return ExitCode::from(gzips::main(&args[2..]));
+    }
     if args.get(1).is_some_and(|a| a == "zstd") {
         return ExitCode::from(zstds::main(&args[2..]));
     }

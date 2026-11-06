@@ -155,3 +155,10 @@ path = "fuzz_targets/zstd.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "gzip"
+path = "fuzz_targets/gzip.rs"
+test = false
+doc = false
+bench = false

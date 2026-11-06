@@ -53,8 +53,9 @@ qrcode = { version = "0.14", default-features = false }
 png = "0.18"
 # Zstandard (`zstd`): hivepack's safe-Rust port of the reference's own
 # library, libzstd 1.5.7, frames byte for byte as libzstd's, with its worker
-# threads, whose frames the command writes.
-hivepack = { version = "0.8", default-features = false, features = ["zstd"] }
+# threads, whose frames the command writes. gzip's compression: zlib's
+# deflate as hivepack ports it (gzip's own decoders are ported in gzip/).
+hivepack = { version = "0.8", default-features = false, features = ["zstd", "deflate"] }
 # Diffs: Myers, as GNU diff uses.
 similar = "3.2"
 # JWTs: signing and verifying, with its pure-Rust crypto (no C to build).

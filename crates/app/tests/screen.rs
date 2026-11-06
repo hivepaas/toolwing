@@ -753,4 +753,15 @@ fn every_page_draws_and_runs() {
         "KLUv/QRYYQAAaGVsbG8gd29ybGQKjG19IA=="
     );
     ui.save("36-zstd");
+
+    // gzip: text compressed as gzip -c does from a pipe, as Base64.
+    let p = ui.tool("gzip");
+    ui.on(&p, |p, window, cx| p.set_input("hello world\n", window, cx));
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "H4sIAAAAAAAAA8tIzcnJVyjPL8pJ4QIALTsIrwwAAAA="
+    );
+    ui.save("37-gzip");
 }

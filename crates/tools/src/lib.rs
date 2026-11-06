@@ -11,6 +11,7 @@ pub mod command;
 pub mod convert;
 pub mod cron;
 pub mod diff;
+pub mod gzip;
 pub mod hash;
 pub mod hex;
 pub mod hmac;
@@ -118,6 +119,11 @@ pub static GROUPS: &[Group] = &[
         name: "zstd",
         title: en!("Zstandard"),
         summary: en!("Compress or decompress with Zstandard, as the zstd command does"),
+    },
+    Group {
+        name: "gzip",
+        title: en!("gzip"),
+        summary: en!("Compress or decompress gzip (and .Z, pack, LZH), as GNU gzip does"),
     },
     Group {
         name: "hmac",
@@ -233,6 +239,8 @@ pub static TOOLS: &[&dyn Tool] = &[
     &qr::Encode,
     &zstd::CompressTool,
     &zstd::DecompressTool,
+    &gzip::CompressTool,
+    &gzip::DecompressTool,
     &hmac::Digest,
     &password::BcryptHash,
     &password::BcryptVerify,

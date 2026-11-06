@@ -11,11 +11,21 @@
 # A case is a folder: `args` (one argument a line; @stdin is the path of the
 # case's stdin file), `stdin`, and optionally `files/`, the folder the command
 # runs in, with the files it is given.
+#
+# For the groups in WORKDIR (commands that write and remove files, gzip), the
+# command runs in a copy of `files/` (files 644, folders 755), every time set
+# to 1700000000,
+# stdin through a pipe, TZ=UTC, with the variables of the case's `env` file
+# (NAME=VALUE a line); and what the folder holds after is written to the
+# case's `after`: each file's mode, time and name, and the SHA-256 of its
+# bytes; for a gzip file, its header (10 bytes, and the name it keeps), its
+# last 8 bytes and the SHA-256 of what it decompresses to ("bad" when it does
+# not), since tw's deflate bytes are not gzip's.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # The reference of each group, and the image that has it at its pinned version.
-declare -A IMAGE COMMAND VERSION BUILD VERSION_OF STDERR
+declare -A IMAGE COMMAND VERSION BUILD VERSION_OF STDERR WORKDIR
 for tool in base64 base32 md5sum sha1sum sha256sum sha512sum b2sum; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
@@ -60,6 +70,12 @@ BUILD[zstd]=$'FROM debian:13\nRUN apt-get update -qq && apt-get install -y -qq z
 COMMAND[zstd]=zstd
 VERSION[zstd]="*** Zstandard CLI (64-bit) v1.5.7, by Yann Collet ***"
 STDERR[zstd]=1
+# gzip: Debian's gzip 1.13.
+IMAGE[gzip]=debian:13
+COMMAND[gzip]=gzip
+VERSION[gzip]="gzip 1.13"
+STDERR[gzip]=1
+WORKDIR[gzip]=1
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
@@ -75,13 +91,53 @@ for group in "${groups[@]}"; do
   fi
   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/w" -w /w "$image" bash -c '
     set -euo pipefail
-    command=$1 version=$2 dir=$3 version_of=$4 stderr=$5
-    got=$(${version_of:-"$command" --version} | head -n 1)
+    command=$1 version=$2 dir=$3 version_of=$4 stderr=$5 workdir=$6
+    # What a folder holds: mode, time, name, and its content'"'"'s digest.
+    listing() (
+      # head closes its pipes early: no pipefail here.
+      set +o pipefail
+      find . -mindepth 1 | LC_ALL=C sort | while IFS= read -r f; do
+        if [ -d "$f" ]; then echo "dir $f"; continue; fi
+        if [ "$(head -c 2 "$f" | od -An -tx1 | tr -d " \n")" = 1f8b ]; then
+          h=$(head -c 10 "$f" | od -An -tx1 | tr -d " \n")
+          if [ $(( 0x$(head -c 4 "$f" | tail -c 1 | od -An -tx1 | tr -d " ") & 8 )) -ne 0 ]; then
+            h="$h:$(tail -c +11 "$f" | head -c 1024 | tr "\0" "\n" | head -n 1)"
+          fi
+          t=$(tail -c 8 "$f" | od -An -tx1 | tr -d " \n")
+          st=0; gzip -dc < "$f" > /tmp/content 2> /dev/null || st=$?
+          if [ "$st" -eq 1 ]; then d=bad; else d=$(sha256sum < /tmp/content | cut -c1-64); fi
+          d="gz:$h:$t:$d"
+        else
+          d=$(sha256sum < "$f" | cut -c1-64)
+        fi
+        echo "$(stat -c %a "$f") $(stat -c %Y "$f") $f $d"
+      done
+    )
+    got=$(${version_of:-"$command" --version} | sed -n 1p)
     [ "$got" = "$version" ] || { echo "$command is \"$got\", not \"$version\"" >&2; exit 1; }
     for case in "$dir"/*/; do
       case=$(cd "$case" && pwd)
       mapfile -t args < "$case/args"
       args=("${args[@]/#@stdin/$case/stdin}")
+      if [ -n "$workdir" ]; then
+        work=$(mktemp -d)
+        if [ -d "$case/files" ]; then cp -r "$case/files/." "$work/"; fi
+        find "$work" -mindepth 1 -type f -exec chmod 644 {} +
+        find "$work" -mindepth 1 -type d -exec chmod 755 {} +
+        find "$work" -mindepth 1 -exec touch -h -d @1700000000 {} +
+        envs=(TZ=UTC)
+        if [ -f "$case/env" ]; then mapfile -t more < "$case/env"; envs+=("${more[@]}"); fi
+        cd "$work"
+        set +e
+        cat "$case/stdin" | env "${envs[@]}" "$command" "${args[@]}" > "$case/stdout" 2> "$case/stderr"
+        # The status of the command, not of cat (which a command not reading
+        # its input ends with SIGPIPE).
+        echo "${PIPESTATUS[1]}" > "$case/exit"
+        set -e
+        listing > "$case/after"
+        cd /w
+        continue
+      fi
       cd "$case/files" 2> /dev/null || cd "$case"
       set +e
       if [ -n "$stderr" ]; then
@@ -93,6 +149,6 @@ for group in "${groups[@]}"; do
       set -e
       cd /w
     done
-  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}" "${STDERR[$group]:-}"
+  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}" "${STDERR[$group]:-}" "${WORKDIR[$group]:-}"
   echo "$group: recorded $(ls -d crates/cli/tests/compat/"$group"/*/ | wc -l) cases"
 done

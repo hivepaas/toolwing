@@ -3,7 +3,10 @@
 //! must give the same stdout, byte for byte, and the same exit code; and the
 //! same stderr, when the case has a `stderr` file (the groups whose messages
 //! are matched too). A case's `files/` folder, when it has one, is where the
-//! command runs.
+//! command runs. With an `after` file (commands that write and remove files,
+//! gzip), it runs in a copy of `files/` instead, every file's time set to
+//! 1700000000, stdin through a pipe, TZ=UTC and the case's `env` variables,
+//! and the folder after must match `after` (see `scripts/compat_record.sh`).
 //!
 //! A case with a `known` file is a difference not yet fixed, the file saying
 //! why: it must still differ, so that a fix shows up as a failure here until
@@ -70,12 +73,29 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         .map_err(|e| format!("exit: {e}"))?;
 
     let files = case.join("files");
-    let mut child = Command::new(env!("CARGO_BIN_EXE_tw"))
-        .current_dir(if files.is_dir() {
+    let want_after = fs::read_to_string(case.join("after")).ok();
+    let work = match &want_after {
+        Some(_) => Some(Workdir::new(group, case)?),
+        None => None,
+    };
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_tw"));
+    if let Some(w) = &work {
+        cmd.current_dir(&w.path).env_remove("GZIP").env("TZ", "UTC");
+        if let Ok(env) = fs::read_to_string(case.join("env")) {
+            for line in env.lines() {
+                if let Some((k, v)) = line.split_once('=') {
+                    cmd.env(k, v);
+                }
+            }
+        }
+    } else {
+        cmd.current_dir(if files.is_dir() {
             files
         } else {
             case.to_owned()
-        })
+        });
+    }
+    let mut child = cmd
         // As the reference ran, in Docker as root: a case may read $HOME, and
         // a Windows runner has none.
         .env("HOME", "/root")
@@ -102,6 +122,8 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
     let stdout = unix_wording(out.stdout);
     let (stdout, want_stdout) = if group == "argon2" {
         (untimed(&stdout), untimed(&want_stdout))
+    } else if group == "gzip" {
+        (gzip_view(&stdout), gzip_view(&want_stdout))
     } else {
         (stdout, want_stdout)
     };
@@ -129,7 +151,186 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
             ));
         }
     }
+    if let (Some(w), Some(want)) = (&work, want_after) {
+        let got = w.listing();
+        let (got, want) = if cfg!(windows) {
+            // No Unix modes there.
+            (without_modes(&got), without_modes(&want))
+        } else {
+            (got, want)
+        };
+        if got != want {
+            return Err(format!(
+                "the folder after differs:\n{got}the reference:\n{want}"
+            ));
+        }
+    }
     Ok(())
+}
+
+/// A copy of a case's `files/`, every time set as the recorder sets it,
+/// removed when done.
+struct Workdir {
+    path: std::path::PathBuf,
+}
+
+impl Workdir {
+    fn new(group: &str, case: &Path) -> Result<Workdir, String> {
+        let name = case.file_name().unwrap_or_default().to_string_lossy();
+        let path =
+            std::env::temp_dir().join(format!("tw-compat-{group}-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&path);
+        fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+        let files = case.join("files");
+        if files.is_dir() {
+            copy_tree(&files, &path).map_err(|e| e.to_string())?;
+        }
+        Ok(Workdir { path })
+    }
+
+    /// What the folder holds, as the recorder lists it.
+    fn listing(&self) -> String {
+        let mut entries = Vec::new();
+        walk(&self.path, ".", &mut entries);
+        entries.sort();
+        let mut out = String::new();
+        for (rel, is_dir) in entries {
+            if is_dir {
+                out.push_str(&format!("dir {rel}\n"));
+                continue;
+            }
+            let full = self.path.join(rel.trim_start_matches("./"));
+            let Ok(meta) = fs::metadata(&full) else {
+                continue;
+            };
+            let bytes = fs::read(&full).unwrap_or_default();
+            let mtime = meta
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map_or(0, |d| d.as_secs());
+            out.push_str(&format!(
+                "{:o} {mtime} {rel} {}\n",
+                mode(&meta),
+                digest(&bytes)
+            ));
+        }
+        out
+    }
+}
+
+impl Drop for Workdir {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
+}
+
+fn copy_tree(from: &Path, to: &Path) -> std::io::Result<()> {
+    for e in fs::read_dir(from)? {
+        let e = e?;
+        let dest = to.join(e.file_name());
+        if e.file_type()?.is_dir() {
+            fs::create_dir_all(&dest)?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&dest, fs::Permissions::from_mode(0o755))?;
+            }
+            copy_tree(&e.path(), &dest)?;
+        } else {
+            fs::copy(e.path(), &dest)?;
+            // Whatever the checkout's umask, as the recorder sets them.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&dest, fs::Permissions::from_mode(0o644))?;
+            }
+            let t = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+            let f = fs::File::options().write(true).open(&dest)?;
+            f.set_times(fs::FileTimes::new().set_accessed(t).set_modified(t))?;
+        }
+    }
+    Ok(())
+}
+
+fn walk(dir: &Path, rel: &str, out: &mut Vec<(String, bool)>) {
+    let Ok(rd) = fs::read_dir(dir) else { return };
+    for e in rd.flatten() {
+        let name = format!("{rel}/{}", e.file_name().to_string_lossy());
+        let is_dir = e.file_type().is_ok_and(|t| t.is_dir());
+        if is_dir {
+            walk(&e.path(), &name, out);
+        }
+        out.push((name, is_dir));
+    }
+}
+
+#[cfg(unix)]
+fn mode(m: &fs::Metadata) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    m.permissions().mode() & 0o7777
+}
+
+#[cfg(not(unix))]
+fn mode(_: &fs::Metadata) -> u32 {
+    0
+}
+
+/// A listing's lines without their first field, the mode.
+fn without_modes(listing: &str) -> String {
+    listing
+        .lines()
+        .map(|l| match l.split_once(' ') {
+            Some(("dir", _)) | None => format!("{l}\n"),
+            Some((_, rest)) => format!("{rest}\n"),
+        })
+        .collect()
+}
+
+fn hex(b: &[u8]) -> String {
+    b.iter().map(|x| format!("{x:02x}")).collect()
+}
+
+fn sha256(b: &[u8]) -> String {
+    use sha2::Digest;
+    hex(&sha2::Sha256::digest(b))
+}
+
+/// A file's digest in a listing: its SHA-256; for a gzip file, its header,
+/// the name it keeps, its last 8 bytes and the SHA-256 of what it
+/// decompresses to.
+fn digest(b: &[u8]) -> String {
+    if !b.starts_with(&[0x1f, 0x8b]) {
+        return sha256(b);
+    }
+    let mut h = hex(&b[..b.len().min(10)]);
+    if b.len() > 3 && b[3] & 8 != 0 {
+        let name: Vec<u8> = b
+            .get(10..)
+            .unwrap_or_default()
+            .iter()
+            .take(1024)
+            .take_while(|&&c| c != 0 && c != b'\n')
+            .copied()
+            .collect();
+        h = format!("{h}:{}", String::from_utf8_lossy(&name));
+    }
+    let t = hex(&b[b.len().saturating_sub(8)..]);
+    let d = match toolwing_tools::gzip::decompress(b) {
+        Ok(content) => sha256(&content),
+        Err(_) => "bad".to_owned(),
+    };
+    format!("gz:{h}:{t}:{d}")
+}
+
+/// gzip's stdout, compared as `after` compares a file: tw's deflate bytes
+/// are not gzip's.
+fn gzip_view(stdout: &[u8]) -> Vec<u8> {
+    if stdout.starts_with(&[0x1f, 0x8b]) {
+        digest(stdout).into_bytes()
+    } else {
+        stdout.to_vec()
+    }
 }
 
 /// `tw zstd -v`'s banner as zstd's: tw names itself there, as with `-V`.

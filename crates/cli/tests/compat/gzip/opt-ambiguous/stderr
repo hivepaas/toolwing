@@ -1,0 +1,2 @@
+gzip: option '--s' is ambiguous; possibilities: '--stdout' '--silent' '--synchronous' '--suffix'
+Try `gzip --help' for more information.

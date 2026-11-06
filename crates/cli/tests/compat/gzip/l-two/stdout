@@ -1,0 +1,4 @@
+         compressed        uncompressed  ratio uncompressed_name
+               7690               73893  89.6% a.txt
+              70039               70000  -0.0% b.bin
+              77729              143893  46.0% (totals)
