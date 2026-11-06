@@ -5,11 +5,14 @@ mod b3sums;
 mod commands;
 mod diffs;
 mod getopt;
+mod gnu;
 mod gzips;
 mod ipcalcs;
 mod jq;
 mod qrencodes;
+mod quotearg;
 mod sums;
+mod wcs;
 mod zstds;
 
 /// stdout, as a command line tool's should be: when the reader has gone
@@ -61,11 +64,15 @@ fn main() -> ExitCode {
     if args.get(1).is_some_and(|a| a == "argon2") {
         return ExitCode::from(argon2s::main(&args[2..]));
     }
-    // zstd's as its own parser reads them (zstds.rs).
     // gzip's as its own getopt_long reads them (gzips.rs).
     if args.get(1).is_some_and(|a| a == "gzip") {
         return ExitCode::from(gzips::main(&args[2..]));
     }
+    // wc's too (wcs.rs).
+    if args.get(1).is_some_and(|a| a == "wc") {
+        return ExitCode::from(wcs::main(&args[2..]));
+    }
+    // zstd's as its own parser reads them (zstds.rs).
     if args.get(1).is_some_and(|a| a == "zstd") {
         return ExitCode::from(zstds::main(&args[2..]));
     }

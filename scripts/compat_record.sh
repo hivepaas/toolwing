@@ -14,7 +14,7 @@
 #
 # For the groups in WORKDIR (commands that write and remove files, gzip), the
 # command runs in a copy of `files/` (files 644, folders 755), every time set
-# to 1700000000,
+# to 1700000000, in the group's LOCALE if it has one,
 # stdin through a pipe, TZ=UTC, with the variables of the case's `env` file
 # (NAME=VALUE a line); and what the folder holds after is written to the
 # case's `after`: each file's mode, time and name, and the SHA-256 of its
@@ -25,7 +25,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # The reference of each group, and the image that has it at its pinned version.
-declare -A IMAGE COMMAND VERSION BUILD VERSION_OF STDERR WORKDIR
+declare -A IMAGE COMMAND VERSION BUILD VERSION_OF STDERR WORKDIR LOCALE
 for tool in base64 base32 md5sum sha1sum sha256sum sha512sum b2sum; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
@@ -76,6 +76,15 @@ COMMAND[gzip]=gzip
 VERSION[gzip]="gzip 1.13"
 STDERR[gzip]=1
 WORKDIR[gzip]=1
+# The text tools: Debian's coreutils 9.7, in the C.UTF-8 locale tw's are.
+for tool in wc; do
+  IMAGE[$tool]=debian:13
+  COMMAND[$tool]=$tool
+  VERSION[$tool]="$tool (GNU coreutils) 9.7"
+  STDERR[$tool]=1
+  WORKDIR[$tool]=1
+  LOCALE[$tool]=C.UTF-8
+done
 
 groups=("${@:-${!IMAGE[@]}}")
 for group in "${groups[@]}"; do
@@ -91,7 +100,7 @@ for group in "${groups[@]}"; do
   fi
   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/w" -w /w "$image" bash -c '
     set -euo pipefail
-    command=$1 version=$2 dir=$3 version_of=$4 stderr=$5 workdir=$6
+    command=$1 version=$2 dir=$3 version_of=$4 stderr=$5 workdir=$6 locale=$7
     # What a folder holds: mode, time, name, and its content'"'"'s digest.
     listing() (
       # head closes its pipes early: no pipefail here.
@@ -126,6 +135,7 @@ for group in "${groups[@]}"; do
         find "$work" -mindepth 1 -type d -exec chmod 755 {} +
         find "$work" -mindepth 1 -exec touch -h -d @1700000000 {} +
         envs=(TZ=UTC)
+        if [ -n "$locale" ]; then envs+=("LC_ALL=$locale"); fi
         if [ -f "$case/env" ]; then mapfile -t more < "$case/env"; envs+=("${more[@]}"); fi
         cd "$work"
         set +e
@@ -149,6 +159,6 @@ for group in "${groups[@]}"; do
       set -e
       cd /w
     done
-  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}" "${STDERR[$group]:-}" "${WORKDIR[$group]:-}"
+  ' _ "${COMMAND[$group]}" "${VERSION[$group]}" "crates/cli/tests/compat/$group" "${VERSION_OF[$group]:-}" "${STDERR[$group]:-}" "${WORKDIR[$group]:-}" "${LOCALE[$group]:-}"
   echo "$group: recorded $(ls -d crates/cli/tests/compat/"$group"/*/ | wc -l) cases"
 done

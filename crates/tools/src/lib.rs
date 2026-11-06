@@ -11,6 +11,7 @@ pub mod command;
 pub mod convert;
 pub mod cron;
 pub mod diff;
+pub mod glibc;
 pub mod gzip;
 pub mod hash;
 pub mod hex;
@@ -28,6 +29,7 @@ pub mod time;
 pub mod ulid;
 pub mod url;
 pub mod uuid;
+pub mod wc;
 pub mod xml;
 pub mod zstd;
 
@@ -124,6 +126,11 @@ pub static GROUPS: &[Group] = &[
         name: "gzip",
         title: en!("gzip"),
         summary: en!("Compress or decompress gzip (and .Z, pack, LZH), as GNU gzip does"),
+    },
+    Group {
+        name: "wc",
+        title: en!("Count"),
+        summary: en!("Count lines, words, characters and bytes, as wc does"),
     },
     Group {
         name: "hmac",
@@ -241,6 +248,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &zstd::DecompressTool,
     &gzip::CompressTool,
     &gzip::DecompressTool,
+    &wc::CountTool,
     &hmac::Digest,
     &password::BcryptHash,
     &password::BcryptVerify,

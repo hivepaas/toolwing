@@ -764,4 +764,16 @@ fn every_page_draws_and_runs() {
         "H4sIAAAAAAAAA8tIzcnJVyjPL8pJ4QIALTsIrwwAAAA="
     );
     ui.save("37-gzip");
+
+    // Count: lines, words, characters (UTF-8) and widths, as wc counts them.
+    let p = ui.tool("Count");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("héllo wörld\n中文 text\n", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(field(&mut ui, &p, "words").as_deref(), Some("4"));
+    assert_eq!(field(&mut ui, &p, "chars").as_deref(), Some("20"));
+    assert_eq!(field(&mut ui, &p, "max_line_length").as_deref(), Some("11"));
+    ui.save("38-wc");
 }

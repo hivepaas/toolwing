@@ -1,0 +1,7 @@
+wc: ambiguous argument ‘’ for ‘--total’
+Valid arguments are:
+  - ‘auto’
+  - ‘always’
+  - ‘only’
+  - ‘never’
+Try 'wc --help' for more information.
