@@ -229,6 +229,20 @@ fn mtime(m: &Metadata) -> Stamp {
     }
 }
 
+/// `S_ISREG`. On Windows a pipe's metadata says "file" too (`is_file` is
+/// only "not a directory nor a link"), with no times at all: a file has them.
+fn is_regular(m: &Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        m.is_file() && (m.creation_time() != 0 || m.last_write_time() != 0)
+    }
+    #[cfg(not(windows))]
+    {
+        m.is_file()
+    }
+}
+
 #[cfg(unix)]
 fn mode_of(m: &Metadata) -> u32 {
     use std::os::unix::fs::MetadataExt;
@@ -584,7 +598,7 @@ impl Cmd {
     fn input_size_and_time(&mut self, meta: Option<&Metadata>) {
         self.gz.ifile_size = -1;
         self.gz.time_stamp.nsec = -1;
-        if let Some(m) = meta.filter(|m| m.is_file()) {
+        if let Some(m) = meta.filter(|m| is_regular(m)) {
             self.gz.ifile_size = m.len() as i64;
             if !self.gz.no_time || self.gz.list {
                 self.gz.time_stamp = mtime(m);
@@ -876,7 +890,7 @@ impl Cmd {
         };
         if !self.gz.to_stdout {
             let mode = mode_of(&istat);
-            let skip = if !istat.is_file() {
+            let skip = if !is_regular(&istat) {
                 Some(format!(
                     "{ifname} is not a directory or a regular file - ignored"
                 ))
