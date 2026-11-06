@@ -44,6 +44,7 @@ pub fn root() -> Command {
             None if g == "qrencode" => crate::qrencodes::command(),
             None if g == "zstd" => crate::zstds::command(),
             None if g == "gzip" => crate::gzips::command(),
+            None if g == "wc" => crate::wcs::command(),
             None => group_command(g),
         });
     }
