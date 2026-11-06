@@ -776,4 +776,17 @@ fn every_page_draws_and_runs() {
     assert_eq!(field(&mut ui, &p, "chars").as_deref(), Some("20"));
     assert_eq!(field(&mut ui, &p, "max_line_length").as_deref(), Some("11"));
     ui.save("38-wc");
+
+    // Unique lines: adjacent repeats merged, as uniq does.
+    let p = ui.tool("Unique lines");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("apple\napple\nbanana\napple\ncherry\ncherry\n", window, cx)
+    });
+    let q = p.clone();
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "apple\nbanana\napple\ncherry"
+    );
+    ui.save("39-uniq");
 }

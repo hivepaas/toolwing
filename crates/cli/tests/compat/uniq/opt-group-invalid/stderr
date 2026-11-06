@@ -1,0 +1,7 @@
+uniq: invalid argument ‘x’ for ‘--group’
+Valid arguments are:
+  - ‘prepend’
+  - ‘append’
+  - ‘separate’
+  - ‘both’
+Try 'uniq --help' for more information.

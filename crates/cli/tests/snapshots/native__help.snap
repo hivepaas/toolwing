@@ -26,6 +26,7 @@ Commands:
   zstd         Compress or decompress with Zstandard, as the zstd command does
   gzip         Compress or decompress gzip (and .Z, pack, LZH), as GNU gzip does
   wc           Count lines, words, characters and bytes, as wc does
+  uniq         Merge adjacent repeated lines, count or keep only them, as uniq does
   hmac         HMAC of the input with a secret key, as openssl dgst -hmac
   bcrypt       Hash a password with bcrypt, or check one against its hash
   argon2       Hash a password with Argon2id, Argon2i or Argon2d, as the argon2 command does
