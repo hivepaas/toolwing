@@ -14,7 +14,7 @@ libfuzzer_sys::fuzz_target!(|data: &[u8]| {
         let mut back = Vec::new();
         assert!(decompress(&mut &z[..], &mut back, &Decompress::default()).is_ok() || data.is_empty());
         assert_eq!(back, data);
-        let (i, e) = info(&z);
+        let (i, e, _) = info(&z);
         assert!(e.is_none(), "{e:?}");
         assert_eq!(i.decompressed, data.len() as u64);
     }

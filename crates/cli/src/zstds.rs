@@ -2,9 +2,14 @@
 //! (zstdcli.c) reads them, aggregated short options and all, and its files
 //! handled as fileio.c handles them: names (`.zst` added, `.zst` and
 //! `.tzst` taken off), overwriting, `--rm`, a file's mode and time kept,
-//! several inputs into one `-o` output, `--test` and `--list`. Frames come
-//! from libzstd itself, with its parameters (toolwing_tools::zstd), so they
-//! are the command's byte for byte.
+//! several inputs into one `-o` output, `--test` and `--list`, and its
+//! messages, word for word, up to `-v`. Frames come from libzstd 1.5.7 as
+//! hivepack ports it, with the command's parameters (toolwing_tools::zstd),
+//! so they are the command's byte for byte.
+//!
+//! Not the same: from `-vv` on, the parameters and timings the command
+//! adds; and the progress counter it draws on a console (or with
+//! `--progress`), which tw does not draw.
 //!
 //! Not done, and refused: benchmarking (`-b`), dictionary training
 //! (`--train`), `--patch-from`, `--zstd=`, other formats (`--format=gzip`
@@ -65,6 +70,8 @@ struct Cli {
     size_hint: u64,
     block_size: u64,
     pass_through: i8,
+    /// `--progress` (always), `--no-progress` (never), or neither.
+    progress: Option<bool>,
     exclude_compressed: bool,
     files: Vec<String>,
 }
@@ -96,9 +103,12 @@ fn usage_short() -> String {
         .to_owned()
 }
 
-fn bad_usage(arg: &str) -> Exit {
-    eprintln!("Incorrect parameter: {arg}");
-    eprint!("{}", usage_short());
+/// `badUsage`: the parameter, then the usage from level 2.
+fn bad_usage(arg: &str, display: i32) -> Exit {
+    err(display, 1, &format!("Incorrect parameter: {arg} \n"));
+    if display >= 2 {
+        eprint!("{}", usage_short());
+    }
     Exit(1)
 }
 
@@ -106,7 +116,7 @@ fn bad_usage(arg: &str) -> Exit {
 /// and `B`); an overflow ends the command.
 fn read_u32(s: &str) -> Result<(u32, &str), Exit> {
     let overflow = || {
-        eprintln!("error: numeric value overflows 32-bit unsigned int");
+        eprintln!("error: numeric value overflows 32-bit unsigned int ");
         Exit(1)
     };
     let end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
@@ -160,7 +170,7 @@ fn next_u32(rest: &str, args: &[String], i: &mut usize) -> Result<u32, Exit> {
     let (v, tail) = read_u32(&f)?;
     if !tail.is_empty() {
         eprintln!(
-            "error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed"
+            "error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed "
         );
         return Err(Exit(1));
     }
@@ -185,6 +195,7 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
         check: None,
         content_size: true,
         workers: -1,
+        progress: None,
         single_thread: false,
         long_log: None,
         mem_limit: 0,
@@ -242,8 +253,6 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
                 | "--no-sparse"
                 | "--asyncio"
                 | "--no-asyncio"
-                | "--no-progress"
-                | "--progress"
                 | "--no-dictID"
                 | "--priority=rt"
                 | "--row-match-finder"
@@ -253,6 +262,8 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
                 | "--mmap-dict"
                 | "--no-mmap-dict"
                 | "--format=zstd" => {}
+                "--progress" => c.progress = Some(true),
+                "--no-progress" => c.progress = Some(false),
                 "--pass-through" => c.pass_through = 1,
                 "--no-pass-through" => c.pass_through = 0,
                 "--test" => c.op = Op::Test,
@@ -289,7 +300,7 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
                         c.long_log = Some(match r.strip_prefix('=') {
                             Some(v) => read_u32(v)?.0,
                             None if r.is_empty() => 27,
-                            None => return Err(bad_usage(arg)),
+                            None => return Err(bad_usage(arg, c.display)),
                         });
                         c.ultra = true;
                     } else if let Some(r) = with("--fast") {
@@ -297,12 +308,12 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
                             Some(v) => {
                                 let n = read_u32(v)?.0.min(131_072);
                                 if n == 0 {
-                                    return Err(bad_usage(arg));
+                                    return Err(bad_usage(arg, c.display));
                                 }
                                 -i64::from(n)
                             }
                             None if r.is_empty() => -1,
-                            None => return Err(bad_usage(arg)),
+                            None => return Err(bad_usage(arg, c.display)),
                         };
                     } else if [
                         "--train",
@@ -325,7 +336,7 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
                     {
                         return Err(unsupported(arg));
                     } else {
-                        return Err(bad_usage(arg));
+                        return Err(bad_usage(arg, c.display));
                     }
                 }
             }
@@ -388,7 +399,7 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
                     'b' | 'e' | 'i' | 'S' | 's' | 'p' | 'P' | 'r' => {
                         return Err(unsupported(&format!("-{ch}")));
                     }
-                    _ => return Err(bad_usage(&format!("-{ch}"))),
+                    _ => return Err(bad_usage(&format!("-{ch}"), c.display)),
                 }
                 // `-o` and `-D` take a value from the next argument but
                 // read on in this one, as zstdcli does.
@@ -402,11 +413,47 @@ fn parse(args: &[String]) -> Result<Cli, Exit> {
     Ok(c)
 }
 
-fn version() {
-    println!(
+/// The command's `WELCOME_MESSAGE`, naming tw.
+fn banner() -> String {
+    format!(
         "*** tw zstd {} (Zstandard CLI v1.5.7, by Yann Collet) ***",
         env!("CARGO_PKG_VERSION")
-    );
+    )
+}
+
+fn version() {
+    println!("{}", banner());
+}
+
+/// `UTIL_countPhysicalCores`: on Linux, the online processors less their
+/// hyperthreads, as /proc/cpuinfo's siblings and cpu cores tell them.
+fn physical_cores() -> usize {
+    let logical = std::thread::available_parallelism().map_or(1, usize::from);
+    if !cfg!(target_os = "linux") {
+        return logical;
+    }
+    let Ok(info) = std::fs::read_to_string("/proc/cpuinfo") else {
+        return logical;
+    };
+    let field = |name: &str| {
+        info.lines()
+            .filter(|l| l.starts_with(name))
+            .filter_map(|l| l.split_once(':'))
+            .filter_map(|(_, v)| v.trim().parse::<usize>().ok())
+            .next_back()
+            .unwrap_or(0)
+    };
+    let (siblings, cores) = (field("siblings"), field("cpu cores"));
+    let ratio = if siblings > 0 && cores > 0 && siblings > cores {
+        siblings / cores
+    } else {
+        1
+    };
+    if logical > ratio {
+        logical / ratio
+    } else {
+        logical
+    }
 }
 
 /// Runs `tw zstd`; the exit code. `args` are those after `zstd`.
@@ -418,8 +465,17 @@ pub fn main(args: &[String]) -> u8 {
 
 fn run(args: &[String]) -> Result<u8, Exit> {
     let mut c = parse(args)?;
+    err(c.display, 3, &format!("{}\n", banner()));
     if c.op == Op::Decompress && c.workers > 1 && c.display >= 2 {
         eprintln!("Warning : decompression does not support multi-threading");
+    }
+    if c.workers == 0 && !c.single_thread {
+        let n = physical_cores();
+        err(
+            c.display,
+            3,
+            &format!("Note: {n} physical core(s) detected \n"),
+        );
     }
     if c.op == Op::List {
         return Ok(list(&c.files, c.display));
@@ -462,6 +518,10 @@ fn run(args: &[String]) -> Result<u8, Exit> {
     if has_stdout && c.display == 2 {
         c.display = 1;
     }
+    // When stderr is not the console, no progress unless asked for.
+    if !io::stderr().is_terminal() && c.progress != Some(true) {
+        c.progress = Some(false);
+    }
     if has_stdout && c.remove {
         c.remove = false;
     }
@@ -487,12 +547,16 @@ fn run(args: &[String]) -> Result<u8, Exit> {
         dict,
         has_stdin,
         failed: false,
+        exit: None,
+        processed: 0,
+        total_in: 0,
+        total_out: 0,
     };
     match c.op {
         Op::Compress => ctx.compress_all(),
         _ => ctx.decompress_all(),
     }
-    Ok(u8::from(ctx.failed))
+    Ok(ctx.exit.unwrap_or(u8::from(ctx.failed)))
 }
 
 struct Ctx<'a> {
@@ -500,6 +564,12 @@ struct Ctx<'a> {
     dict: Option<Vec<u8>>,
     has_stdin: bool,
     failed: bool,
+    /// An error that ends the command at once (`EXM_THROW`), its code.
+    exit: Option<u8>,
+    /// Files done without error, and the bytes they read and wrote.
+    processed: usize,
+    total_in: u64,
+    total_out: u64,
 }
 
 /// Where output goes: stdout, nowhere (`--test`), or a file being written.
@@ -527,17 +597,29 @@ impl Write for Sink {
     }
 }
 
-fn shown(name: &str) -> &str {
-    match name {
-        STDIN => "*stdin*",
-        STDOUT => "*stdout*",
-        n => n,
-    }
-}
-
 impl Ctx<'_> {
     fn say(&self, level: i32, msg: &str) {
         err(self.c.display, level, msg);
+    }
+
+    /// `SHOULD_DISPLAY_SUMMARY`.
+    fn summaries(&self) -> bool {
+        self.c.display >= 2 || self.c.progress == Some(true)
+    }
+
+    /// A file's summary, or the files' (`DISPLAY_SUMMARY`), after the
+    /// progress line is cleared (`DISPLAY_PROGRESS`); a file's only when
+    /// there is one file, or from level 3 (`FIO_shouldDisplayFileSummary`).
+    fn summary(&self, of_file: bool, msg: &str) {
+        if !self.summaries() {
+            return;
+        }
+        if self.c.progress != Some(false) {
+            err(self.c.display, 1, &format!("\r{:79}\r", ""));
+        }
+        if !of_file || self.c.files.len() <= 1 || self.c.display >= 3 {
+            err(self.c.display, 1, msg);
+        }
     }
 
     /// `FIO_openSrcFile`: stdin, or a regular file.
@@ -654,6 +736,12 @@ impl Ctx<'_> {
             for f in &files {
                 if self.compress_one(f, &mut sink).is_err() {
                     self.failed = true;
+                    if self.exit.is_some() {
+                        let _ = sink.flush();
+                        return;
+                    }
+                } else {
+                    self.processed += 1;
                 }
             }
             if self
@@ -671,6 +759,7 @@ impl Ctx<'_> {
             if files.len() == 1 && !self.failed && c.remove && files[0] != STDIN {
                 let _ = std::fs::remove_file(&files[0]);
             }
+            self.compressed_summary();
             return;
         }
         for f in &files {
@@ -689,6 +778,10 @@ impl Ctx<'_> {
                 continue;
             };
             let ok = self.compress_one(f, &mut sink).is_ok();
+            if self.exit.is_some() {
+                let _ = sink.flush();
+                return;
+            }
             if !ok {
                 drop(sink);
                 let _ = std::fs::remove_file(&dst);
@@ -699,13 +792,36 @@ impl Ctx<'_> {
                 self.failed = true;
                 continue;
             }
+            self.processed += 1;
             if c.remove {
                 let _ = std::fs::remove_file(f);
             }
         }
+        self.compressed_summary();
     }
 
-    fn compress_one(&self, src: &str, sink: &mut Sink) -> Result<(), ()> {
+    /// The files' summary, when there were several and one was done.
+    fn compressed_summary(&self) {
+        if self.c.files.len() <= 1 || self.processed == 0 {
+            return;
+        }
+        let (iv, ip, is) = z::human(self.total_in, false);
+        let (ov, op, os) = z::human(self.total_out, false);
+        let n = self.processed;
+        self.summary(
+            false,
+            &if self.total_in == 0 {
+                format!("{n:3} files compressed : ({iv:6.ip$}{is:>4} => {ov:6.op$}{os:>4})\n")
+            } else {
+                let pct = self.total_out as f64 / self.total_in as f64 * 100.0;
+                format!(
+                    "{n:3} files compressed : {pct:.2}% ({iv:6.ip$}{is:>4} => {ov:6.op$}{os:>4})\n"
+                )
+            },
+        );
+    }
+
+    fn compress_one(&mut self, src: &str, sink: &mut Sink) -> Result<(), ()> {
         let Some((mut input, meta)) = self.open_src(src) else {
             return Err(());
         };
@@ -714,27 +830,31 @@ impl Ctx<'_> {
             Ok((read, wrote)) => {
                 let dst = match sink {
                     Sink::File(_, n) => n.clone(),
-                    Sink::Stdout(_) => "/*stdout*\\".into(),
+                    Sink::Stdout(_) => STDOUT.into(),
                     Sink::Null => NULL.into(),
                 };
-                if self.c.display >= 2 {
-                    let pct = if read == 0 {
-                        0.0
-                    } else {
-                        wrote as f64 / read as f64 * 100.0
-                    };
-                    let (rv, rp, rs) = z::human(read, false);
-                    let (wv, wp, ws) = z::human(wrote, false);
-                    eprintln!(
-                        "{:<20} :{pct:6.2}%   ({rv:6.rp$}{rs} => {wv:6.wp$}{ws}, {}) ",
-                        shown(src),
-                        shown(&dst)
-                    );
-                }
+                self.total_in += read;
+                self.total_out += wrote;
+                let (rv, rp, rs) = z::human(read, false);
+                let (wv, wp, ws) = z::human(wrote, false);
+                let line = if read == 0 {
+                    format!("{src:<20} :  ({rv:6.rp$}{rs} => {wv:6.wp$}{ws}, {dst}) \n")
+                } else {
+                    let pct = wrote as f64 / read as f64 * 100.0;
+                    format!("{src:<20} :{pct:6.2}%   ({rv:6.rp$}{rs} => {wv:6.wp$}{ws}, {dst}) \n")
+                };
+                self.summary(true, &line);
                 Ok(())
             }
             Err(e) => {
-                self.say(1, &format!("zstd: {}: {e} \n", shown(src)));
+                // The library's errors end the command (`CHECK_V`, error
+                // 11); the files' are about the file.
+                if z::is_library_error(&e) {
+                    self.say(1, &format!("zstd: error 11 : {e} \n"));
+                    self.exit = Some(11);
+                } else {
+                    self.say(1, &format!("zstd: {src}: {e} \n"));
+                }
                 Err(())
             }
         }
@@ -815,6 +935,8 @@ impl Ctx<'_> {
             for f in &files {
                 if self.decompress_one(f, &mut sink, &out, &opts).is_err() {
                     self.failed = true;
+                } else {
+                    self.processed += 1;
                 }
             }
             if self
@@ -832,6 +954,7 @@ impl Ctx<'_> {
             if files.len() == 1 && !self.failed && c.remove && files[0] != STDIN {
                 let _ = std::fs::remove_file(&files[0]);
             }
+            self.decompressed_summary();
             return;
         }
         for f in &files {
@@ -863,9 +986,22 @@ impl Ctx<'_> {
                 self.failed = true;
                 continue;
             }
+            self.processed += 1;
             if c.remove {
                 let _ = std::fs::remove_file(f);
             }
+        }
+        self.decompressed_summary();
+    }
+
+    /// The files' summary, when there were several and one was done.
+    fn decompressed_summary(&self) {
+        if self.c.files.len() > 1 && self.processed > 0 {
+            let (n, total) = (self.processed, self.total_out);
+            self.summary(
+                false,
+                &format!("{n} files decompressed : {total:6} bytes total \n"),
+            );
         }
     }
 
@@ -895,7 +1031,7 @@ impl Ctx<'_> {
     }
 
     fn decompress_one(
-        &self,
+        &mut self,
         src: &str,
         sink: &mut Sink,
         dst: &str,
@@ -921,24 +1057,33 @@ impl Ctx<'_> {
         }
         match z::decompress(&mut input, sink, o) {
             Ok(n) => {
-                if self.c.display >= 2 && dst != STDOUT && self.c.op != Op::Test {
-                    eprintln!("{:<20}: {n} bytes ", shown(src));
-                }
+                self.total_out += n;
+                self.summary(true, &format!("{src:<20}: {n} bytes \n"));
                 Ok(())
             }
             Err(e) => {
-                let s = shown(src);
+                let s = src;
                 self.say(
                     1,
                     &match e {
                         Decode::Empty => format!("zstd: {s}: unexpected end of file \n"),
+                        Decode::Short => format!("zstd: {s}: unknown header \n"),
                         Decode::Format => format!("zstd: {s}: unsupported format \n"),
-                        Decode::Window(w) => format!(
-                            "{s} : Window size larger than maximum : {w} > {} \n{s} : Use --long={} or --memory={}MB \n",
-                            o.max_window,
-                            64 - (w - 1).leading_zeros(),
-                            w.div_ceil(1 << 20)
-                        ),
+                        Decode::Premature => format!("{s} : Read error (39) : premature end \n"),
+                        // `FIO_zstdErrorHelp`, after the library's error.
+                        Decode::Window(w) => {
+                            let log = 64 - (w - 1).leading_zeros();
+                            format!(
+                                "{s} : Decoding error (36) : Frame requires too much memory for decoding \n\
+                                 {s} : Window size larger than maximum : {w} > {} \n{}",
+                                o.max_window,
+                                if log <= 31 {
+                                    format!("{s} : Use --long={log} or --memory={}MB \n", w.div_ceil(1 << 20))
+                                } else {
+                                    format!("{s} : Window log larger than ZSTD_WINDOWLOG_MAX=31; not supported \n")
+                                }
+                            )
+                        }
                         Decode::Io(e) => format!("zstd: {s}: {e} \n"),
                         Decode::Corrupt(m) => format!("{s} : Decoding error (36) : {m} \n"),
                     },
@@ -989,7 +1134,7 @@ fn list(files: &[String], display: i32) -> u8 {
         err(
             display,
             1,
-            "zstd: --list does not support reading from standard input\n",
+            "zstd: --list does not support reading from standard input \n",
         );
         return 1;
     }
@@ -1020,7 +1165,7 @@ fn list(files: &[String], display: i32) -> u8 {
     let mut error = 0u8;
     for f in files {
         if !std::fs::metadata(f).is_ok_and(|m| m.is_file()) {
-            err(display, 1, &format!("Error : {f} is not a file\n"));
+            err(display, 1, &format!("Error : {f} is not a file \n"));
             if !table {
                 let _ = writeln!(out);
             }
@@ -1033,15 +1178,23 @@ fn list(files: &[String], display: i32) -> u8 {
                 err(
                     display,
                     1,
-                    &format!("Error: could not open source file {f}\n"),
+                    &format!("Error: could not open source file {f} \n"),
                 );
                 error = 1;
                 continue;
             }
         };
-        let (info, e) = z::info(&data);
+        let (info, e, dict_warnings) = z::info(&data);
+        for _ in 0..dict_warnings {
+            eprint!(
+                "WARNING: File contains multiple frames with different dictionary IDs. Showing dictID 0 instead"
+            );
+        }
+        if let Some(m) = e.as_ref().and_then(InfoError::message) {
+            err(display, 1, &m);
+        }
         match e {
-            Some(InfoError::NotZstd) => {
+            Some(InfoError::NotZstd(_)) => {
                 let _ = writeln!(out, "File \"{f}\" not compressed by zstd ");
                 if !table {
                     let _ = writeln!(out);
@@ -1049,7 +1202,7 @@ fn list(files: &[String], display: i32) -> u8 {
                 error = 1;
                 continue;
             }
-            Some(InfoError::Truncated) => {
+            Some(InfoError::Truncated { .. }) => {
                 let _ = writeln!(out, "File \"{f}\" is truncated ");
                 if !table {
                     let _ = writeln!(out);
@@ -1057,7 +1210,7 @@ fn list(files: &[String], display: i32) -> u8 {
                 error = 1;
                 continue;
             }
-            Some(InfoError::Frame) => {
+            Some(InfoError::Frame(_)) => {
                 err(display, 1, &format!("Error while parsing \"{f}\" \n"));
                 error = 1;
             }

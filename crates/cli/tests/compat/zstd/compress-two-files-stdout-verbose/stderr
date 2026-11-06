@@ -1,0 +1,6 @@
+*** Zstandard CLI (64-bit) v1.5.7, by Yann Collet ***
+zstd: WARNING: all input files will be processed and concatenated into stdout. 
+The concatenated output CANNOT regenerate original file names nor directory structure. 
+a.txt                : 18.10%   (  15.6 KiB =>   2.83 KiB, /*stdout*\) 
+b.txt                : 28.03%   (   999 B =>    280 B, /*stdout*\) 
+  2 files compressed : 18.68% (  16.6 KiB =>   3.10 KiB)

@@ -1,5 +1,5 @@
-//! `zstd`: Zstandard, by the zstd command's own library (libzstd 1.5.7, as
-//! zstd-sys bundles it, the version Debian 13's zstd is), with the
+//! `zstd`: Zstandard, by hivepack's port of the zstd command's own library
+//! (libzstd 1.5.7, the version Debian 13's zstd is), with the
 //! parameters its command line sets, so a frame is byte for byte the
 //! command's: its level, a checksum, the content size when it is known, and
 //! its multi-threaded mode (whose output does not depend on how many
@@ -7,11 +7,15 @@
 
 use std::io::{self, Read, Write};
 
+use hivepack::zstd::{
+    CCtx, CParameter, ContentSize, DCtx, DParameter, EndDirective, FRAMEHEADER_SIZE_MAX,
+    FrameHeaderState, InBuffer, OutBuffer, ParamSwitch, ResetDirective, cstream_in_size,
+    cstream_out_size, dstream_in_size, dstream_out_size, get_frame_content_size, get_frame_header,
+};
 use toolwing_core::{
     Category, Cli, Compat, Ctx, Error, InputKind, Meta, Output, Param, ParamKind, Reference, Score,
     Tool, Value, Values, en,
 };
-use zstd::zstd_safe::{CParameter, DParameter};
 
 /// What the command sets for a compression.
 #[derive(Clone, Debug)]
@@ -46,55 +50,87 @@ impl Default for Compress {
     }
 }
 
-/// `input` compressed into `out` as the command compresses it; the bytes
-/// read and written.
+/// `input` compressed into `out` as the command compresses it
+/// (`FIO_compressZstdFrame`): read in pieces of `ZSTD_CStreamInSize`, the
+/// last with `ZSTD_e_end`; the bytes read and written.
 pub fn compress(input: &mut dyn Read, out: &mut dyn Write, o: &Compress) -> io::Result<(u64, u64)> {
-    let mut counter = Counter { inner: out, n: 0 };
-    let read = {
-        let mut enc = match &o.dict {
-            Some(d) => zstd::stream::Encoder::with_dictionary(&mut counter, o.level, d)?,
-            None => zstd::stream::Encoder::new(&mut counter, o.level)?,
+    let mut cctx = CCtx::new();
+    // As `FIO_createCResources` sets them, in its order.
+    let set = |cctx: &mut CCtx, p: CParameter| cctx.set_parameter(p).map_err(io::Error::other);
+    set(&mut cctx, CParameter::ContentSizeFlag(o.content_size))?;
+    set(&mut cctx, CParameter::DictIdFlag(true))?;
+    set(&mut cctx, CParameter::ChecksumFlag(o.checksum))?;
+    set(&mut cctx, CParameter::CompressionLevel(o.level))?;
+    if o.size_hint > 0 {
+        set(&mut cctx, CParameter::SrcSizeHint(o.size_hint))?;
+    }
+    if o.long_window_log > 0 {
+        set(
+            &mut cctx,
+            CParameter::EnableLongDistanceMatching(ParamSwitch::Enable),
+        )?;
+        set(&mut cctx, CParameter::WindowLog(o.long_window_log))?;
+    }
+    set(&mut cctx, CParameter::EnableDedicatedDictSearch(true))?;
+    set(&mut cctx, CParameter::NbWorkers(o.workers))?;
+    if o.workers > 0 {
+        set(&mut cctx, CParameter::JobSize(o.job_size))?;
+    }
+    if let Some(d) = &o.dict {
+        cctx.load_dictionary(d).map_err(io::Error::other)?;
+    }
+    if let Some(n) = o.pledged {
+        cctx.set_pledged_src_size(n).map_err(io::Error::other)?;
+    }
+    let mut src = vec![0u8; cstream_in_size()];
+    let mut dst = vec![0u8; cstream_out_size()];
+    let (mut read, mut written) = (0u64, 0u64);
+    loop {
+        let n = fill(input, &mut src)?;
+        read += n as u64;
+        let end = n == 0 || o.pledged == Some(read);
+        let directive = if end {
+            EndDirective::End
+        } else {
+            EndDirective::Continue
         };
-        enc.set_parameter(CParameter::ContentSizeFlag(o.content_size))?;
-        enc.set_parameter(CParameter::DictIdFlag(true))?;
-        enc.set_parameter(CParameter::ChecksumFlag(o.checksum))?;
-        if o.size_hint > 0 {
-            enc.set_parameter(CParameter::SrcSizeHint(o.size_hint))?;
+        let mut inb = InBuffer::new(&src[..n]);
+        loop {
+            let mut outb = OutBuffer::new(&mut dst);
+            let left = cctx
+                .compress_stream2(&mut outb, &mut inb, directive)
+                .map_err(io::Error::other)?;
+            let w = outb.pos;
+            out.write_all(&dst[..w])?;
+            written += w as u64;
+            if inb.pos == n && (!end || left == 0) {
+                break;
+            }
         }
-        if o.long_window_log > 0 {
-            enc.set_parameter(CParameter::EnableLongDistanceMatching(true))?;
-            enc.set_parameter(CParameter::WindowLog(o.long_window_log))?;
+        if end {
+            return Ok((read, written));
         }
-        enc.set_parameter(CParameter::EnableDedicatedDictSearch(true))?;
-        enc.set_parameter(CParameter::NbWorkers(o.workers))?;
-        if o.workers > 0 {
-            enc.set_parameter(CParameter::JobSize(o.job_size))?;
-        }
-        if let Some(n) = o.pledged {
-            enc.set_pledged_src_size(Some(n))?;
-        }
-        let read = io::copy(input, &mut enc)?;
-        enc.finish()?;
-        read
-    };
-    Ok((read, counter.n))
+    }
 }
 
-struct Counter<'a> {
-    inner: &'a mut dyn Write,
-    n: u64,
+/// Whether an error of [`compress`] is the library's, not the input's or
+/// the output's: the command ends at once on those (error 11).
+pub fn is_library_error(e: &io::Error) -> bool {
+    e.get_ref().is_some_and(|x| x.is::<hivepack::zstd::Error>())
 }
 
-impl Write for Counter<'_> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let n = self.inner.write(buf)?;
-        self.n += n as u64;
-        Ok(n)
+/// As much of `buf` as `input` fills: all of it, unless the input ends.
+fn fill(input: &mut dyn Read, buf: &mut [u8]) -> io::Result<usize> {
+    let mut n = 0;
+    while n < buf.len() {
+        match input.read(&mut buf[n..]) {
+            Ok(0) => break,
+            Ok(k) => n += k,
+            Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+            Err(e) => return Err(e),
+        }
     }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
-    }
+    Ok(n)
 }
 
 /// What decompressing needs: the largest window to accept (`--memory`,
@@ -122,6 +158,10 @@ impl Default for Decompress {
 pub enum Decode {
     /// Not a zstd frame where one should start.
     Format,
+    /// Fewer than 4 bytes where a frame should start.
+    Short,
+    /// The input ends inside a frame.
+    Premature,
     /// Nothing at all.
     Empty,
     /// The frame needs a larger window than allowed.
@@ -136,21 +176,39 @@ fn is_skippable(m: u32) -> bool {
     m & 0xFFFF_FFF0 == 0x184D_2A50
 }
 
-/// Every frame of `input` decompressed into `out`, skippable ones skipped;
-/// the bytes written.
+/// Every frame of `input` decompressed into `out`, skippable ones skipped,
+/// as `FIO_decompressFrames` reads them; the bytes written.
 pub fn decompress(
     input: &mut dyn Read,
     out: &mut dyn Write,
     o: &Decompress,
 ) -> Result<u64, Decode> {
-    let mut input = io::BufReader::with_capacity(1 << 17, input);
+    let corrupt = |e: hivepack::zstd::Error| Decode::Corrupt(e.to_string());
+    let mut dctx = DCtx::new();
+    // The limit is checked below, in bytes, as the command checks it.
+    dctx.set_parameter(DParameter::WindowLogMax(31))
+        .map_err(corrupt)?;
+    if !o.check {
+        dctx.set_parameter(DParameter::ForceIgnoreChecksum(true))
+            .map_err(corrupt)?;
+    }
+    if let Some(d) = &o.dict {
+        dctx.load_dictionary(d).map_err(corrupt)?;
+    }
+    let mut src = Source {
+        input,
+        buf: vec![0u8; dstream_in_size()],
+        start: 0,
+        end: 0,
+    };
+    // The command's output buffer (`ZSTD_DStreamOutSize`): a frame's last
+    // piece is written only once its checksum is checked.
+    let mut dst = vec![0u8; dstream_out_size()];
     let mut written = 0u64;
     let mut first = true;
     loop {
-        let head = {
-            let buf = std::io::BufRead::fill_buf(&mut input).map_err(Decode::Io)?;
-            buf.to_vec()
-        };
+        src.fill(4).map_err(Decode::Io)?;
+        let head = src.loaded();
         if head.is_empty() {
             return if first {
                 Err(Decode::Empty)
@@ -160,46 +218,73 @@ pub fn decompress(
         }
         first = false;
         if head.len() < 4 {
-            return Err(Decode::Format);
+            return Err(Decode::Short);
         }
         let magic = u32::from_le_bytes([head[0], head[1], head[2], head[3]]);
         if magic != MAGIC && !is_skippable(magic) {
             return Err(Decode::Format);
         }
-        if let Some(w) = window_size(&head)
+        dctx.reset(ResetDirective::SessionOnly).map_err(corrupt)?;
+        src.fill(FRAMEHEADER_SIZE_MAX).map_err(Decode::Io)?;
+        if let Some(w) = window_size(src.loaded())
             && w > o.max_window
         {
             return Err(Decode::Window(w));
         }
-        let mut dec = match &o.dict {
-            Some(d) => zstd::stream::read::Decoder::with_dictionary(&mut input, d),
-            None => zstd::stream::read::Decoder::with_buffer(&mut input),
-        }
-        .map_err(Decode::Io)?
-        .single_frame();
-        // The limit is checked above, in bytes, as the command checks it.
-        dec.window_log_max(31).map_err(Decode::Io)?;
-        if !o.check {
-            dec.set_parameter(DParameter::ForceIgnoreChecksum(true))
-                .map_err(Decode::Io)?;
-        }
-        // In the command's output buffer (ZSTD_DStreamOutSize, 128 KiB): a
-        // frame's last piece is written only once its checksum is checked.
-        let mut buf = vec![0u8; 1 << 17];
         loop {
-            let n = dec.read(&mut buf).map_err(|e| match e.kind() {
-                io::ErrorKind::UnexpectedEof => Decode::Corrupt("premature end".into()),
-                io::ErrorKind::Other => Decode::Corrupt(e.to_string()),
-                _ if e.get_ref().is_some() => Decode::Corrupt(e.to_string()),
-                _ => Decode::Io(e),
-            })?;
-            if n == 0 {
+            let mut inb = InBuffer::new(src.loaded());
+            let mut outb = OutBuffer::new(&mut dst);
+            let hint = dctx
+                .decompress_stream(&mut outb, &mut inb)
+                .map_err(corrupt)?;
+            let (r, w) = (inb.pos, outb.pos);
+            out.write_all(&dst[..w]).map_err(Decode::Io)?;
+            written += w as u64;
+            src.start += r;
+            if hint == 0 {
                 break;
             }
-            out.write_all(&buf[..n]).map_err(Decode::Io)?;
-            written += n as u64;
+            let want = hint.min(dstream_in_size());
+            if src.loaded().len() < want && src.fill(want).map_err(Decode::Io)? == 0 {
+                return Err(Decode::Premature);
+            }
         }
-        dec.finish();
+    }
+}
+
+/// The command's read buffer: what is loaded and not yet decompressed.
+struct Source<'a> {
+    input: &'a mut dyn Read,
+    buf: Vec<u8>,
+    start: usize,
+    end: usize,
+}
+
+impl Source<'_> {
+    fn loaded(&self) -> &[u8] {
+        &self.buf[self.start..self.end]
+    }
+
+    /// At least `n` bytes loaded (`AIO_ReadPool_fillBuffer`), unless the
+    /// input ends first; the bytes this call read.
+    fn fill(&mut self, n: usize) -> io::Result<usize> {
+        if self.end - self.start >= n {
+            return Ok(0);
+        }
+        self.buf.copy_within(self.start..self.end, 0);
+        self.end -= self.start;
+        self.start = 0;
+        let before = self.end;
+        let want = n.min(self.buf.len());
+        while self.end < want {
+            match self.input.read(&mut self.buf[self.end..]) {
+                Ok(0) => break,
+                Ok(k) => self.end += k,
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(self.end - before)
     }
 }
 
@@ -249,39 +334,65 @@ pub struct Info {
     pub window: u64,
 }
 
+/// Why `zstd -l` stopped reading a file, with what the command says of it
+/// on stderr (`FIO_analyzeFrames`), when it says something.
 #[derive(Debug, PartialEq, Eq)]
 pub enum InfoError {
-    /// A frame that cannot be read; what was read is still listed.
-    Frame,
-    NotZstd,
-    Truncated,
+    /// A frame that cannot be read; what was read is still listed. Empty
+    /// when the reference would read bytes it does not have (a skippable
+    /// frame's size, cut short) and so has nothing to say.
+    Frame(&'static str),
+    /// Not zstd.
+    NotZstd(Option<&'static str>),
+    /// A frame's sizes go past the end of the file: where they lead.
+    Truncated { position: u64, size: u64 },
 }
 
-/// The frames of a file's bytes, as `FIO_analyzeFrames` walks them: a seek
-/// may pass the end (then the file is truncated), fewer than six bytes left
-/// is not zstd, and a frame that cannot be read is an error after what was
-/// read.
-pub fn info(data: &[u8]) -> (Info, Option<InfoError>) {
+impl InfoError {
+    /// The command's message, as it ends it (with " \n").
+    pub fn message(&self) -> Option<String> {
+        match self {
+            InfoError::Frame("") | InfoError::NotZstd(None) => None,
+            InfoError::Frame(m) | InfoError::NotZstd(Some(m)) => Some(format!("{m} \n")),
+            InfoError::Truncated { position, size } => Some(format!(
+                "Error: seeked to position {position}, which is beyond file size of {size}\n \n"
+            )),
+        }
+    }
+}
+
+/// The frames of a file's bytes, as `FIO_analyzeFrames` walks them: it reads
+/// up to a largest frame header at a time, and seeks over blocks and
+/// skippable frames, which may pass the end of the file (then the file is
+/// truncated). A frame that cannot be read is an error after what was read.
+/// With it, how many warnings of frames with different dictionaries it gives.
+pub fn info(data: &[u8]) -> (Info, Option<InfoError>, u32) {
     let mut info = Info {
         compressed: data.len() as u64,
         ..Info::default()
     };
+    let mut dict_warnings = 0u32;
     let len = data.len();
     let mut at = 0usize;
     loop {
-        let n = len.saturating_sub(at).min(18);
-        if n < 6 {
-            if n == 0 && len > 0 {
-                return (info, (at != len).then_some(InfoError::Truncated));
+        let rest = data.get(at..).unwrap_or_default();
+        let h = &rest[..rest.len().min(FRAMEHEADER_SIZE_MAX)];
+        if h.len() < 6 {
+            if h.is_empty() && len > 0 {
+                let e = (at != len).then_some(InfoError::Truncated {
+                    position: at as u64,
+                    size: len as u64,
+                });
+                return (info, e, dict_warnings);
             }
-            return (info, Some(InfoError::NotZstd));
+            let e = InfoError::NotZstd(Some("Error: reached end of file with incomplete frame"));
+            return (info, Some(e), dict_warnings);
         }
-        let rest = &data[at..at + n];
-        let magic = u32::from_le_bytes([rest[0], rest[1], rest[2], rest[3]]);
+        let magic = u32::from_le_bytes([h[0], h[1], h[2], h[3]]);
         if is_skippable(magic) {
             // Its size needs 8 bytes; the reference reads past what it has.
-            let Some(sz) = rest.get(4..8) else {
-                return (info, Some(InfoError::Frame));
+            let Some(sz) = h.get(4..8) else {
+                return (info, Some(InfoError::Frame("")), dict_warnings);
             };
             let size = u32::from_le_bytes([sz[0], sz[1], sz[2], sz[3]]);
             at += 8 + size as usize;
@@ -289,66 +400,51 @@ pub fn info(data: &[u8]) -> (Info, Option<InfoError>) {
             continue;
         }
         if magic != MAGIC {
-            return (info, Some(InfoError::NotZstd));
+            return (info, Some(InfoError::NotZstd(None)), dict_warnings);
         }
-        let fhd = rest[4];
-        let single = fhd & 0x20 != 0;
-        let dict_len = [0usize, 1, 2, 4][usize::from(fhd & 3)];
-        let fcs_len = match fhd >> 6 {
-            0 if single => 1,
-            0 => 0,
-            1 => 2,
-            2 => 4,
-            _ => 8,
-        };
-        let header = 5 + usize::from(!single) + dict_len + fcs_len;
-        // A header cut short, or its reserved bit set, cannot be read.
-        let Some(h) = rest.get(..header).filter(|_| fhd & 8 == 0) else {
-            info.decompressed_unknown = true;
-            return (info, Some(InfoError::Frame));
-        };
-        let le = |b: &[u8]| {
-            b.iter()
-                .enumerate()
-                .fold(0u64, |v, (i, &x)| v | u64::from(x) << (8 * i))
-        };
-        let p = 5 + usize::from(!single);
-        let dict_id = le(&h[p..p + dict_len]) as u32;
-        if fcs_len == 0 {
-            info.decompressed_unknown = true;
-        } else {
-            let v = le(&h[p + dict_len..header]);
-            // As the reference's 64-bit sum: it wraps.
-            info.decompressed =
-                info.decompressed
-                    .wrapping_add(if fcs_len == 2 { v + 256 } else { v });
+        match get_frame_content_size(h) {
+            ContentSize::Known(n) => info.decompressed = info.decompressed.wrapping_add(n),
+            _ => info.decompressed_unknown = true,
         }
-        info.dict_id = if info.dict_id != 0 && info.dict_id != dict_id {
-            0
-        } else {
-            dict_id
+        let header = match get_frame_header(h) {
+            Ok(FrameHeaderState::Complete(header)) => header,
+            _ => {
+                let e = InfoError::Frame("Error: could not decode frame header");
+                return (info, Some(e), dict_warnings);
+            }
         };
-        info.window = window_size(h).unwrap_or(0);
-        let mut q = at + header;
+        if info.dict_id != 0 && info.dict_id != header.dict_id {
+            dict_warnings += 1;
+            info.dict_id = 0;
+        } else {
+            info.dict_id = header.dict_id;
+        }
+        info.window = header.window_size;
+        let mut q = at + header.header_size as usize;
         loop {
             let Some(b) = data.get(q..q + 3) else {
-                return (info, Some(InfoError::Frame));
+                let e = InfoError::Frame("Error while reading block header");
+                return (info, Some(e), dict_warnings);
             };
             let bh = u32::from(b[0]) | u32::from(b[1]) << 8 | u32::from(b[2]) << 16;
             let ty = (bh >> 1) & 3;
             if ty == 3 {
-                return (info, Some(InfoError::Frame));
+                let e = InfoError::Frame("Error: unsupported block type");
+                return (info, Some(e), dict_warnings);
             }
             q += 3 + if ty == 1 { 1 } else { (bh >> 3) as usize };
             if bh & 1 == 1 {
                 break;
             }
         }
-        if fhd & 4 != 0 {
+        if h[4] & 4 != 0 {
             info.uses_check = true;
             match data.get(q..q + 4) {
                 Some(c) => info.checksum.copy_from_slice(c),
-                None => return (info, Some(InfoError::Frame)),
+                None => {
+                    let e = InfoError::Frame("Error: could not read checksum");
+                    return (info, Some(e), dict_warnings);
+                }
             }
             q += 4;
         }
@@ -497,7 +593,10 @@ impl Tool for DecompressTool {
             .unwrap_or_else(|_| input.to_vec());
         let mut out = Vec::new();
         decompress(&mut &bytes[..], &mut out, &Decompress::default()).map_err(|e| match e {
-            Decode::Format | Decode::Empty => Error::input("not a zstd frame (nor Base64 of one)"),
+            Decode::Format | Decode::Short | Decode::Empty => {
+                Error::input("not a zstd frame (nor Base64 of one)")
+            }
+            Decode::Premature => Error::input("the frame is cut short"),
             Decode::Window(w) => Error::input(format!(
                 "the frame's window is {w} bytes, more than 128 MiB"
             )),
@@ -539,8 +638,8 @@ mod tests {
             .map_err(|e| format!("{e:?}"));
         assert_eq!(n, Ok(data.len() as u64));
         assert_eq!(back, data);
-        let (i, err) = info(&z);
-        assert_eq!(err, None);
+        let (i, err, dict_warnings) = info(&z);
+        assert_eq!((err, dict_warnings), (None, 0));
         assert_eq!(
             (i.frames, i.decompressed, i.uses_check),
             (1, data.len() as u64, true)

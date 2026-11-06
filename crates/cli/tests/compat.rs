@@ -1,7 +1,9 @@
 //! Compatibility cases (docs/design/quality.md): each case under `compat/<group>/`
 //! was run against the reference tool by `scripts/compat_record.sh`, and `tw`
-//! must give the same stdout, byte for byte, and the same exit code. A case's
-//! `files/` folder, when it has one, is where the command runs.
+//! must give the same stdout, byte for byte, and the same exit code; and the
+//! same stderr, when the case has a `stderr` file (the groups whose messages
+//! are matched too). A case's `files/` folder, when it has one, is where the
+//! command runs.
 //!
 //! A case with a `known` file is a difference not yet fixed, the file saying
 //! why: it must still differ, so that a fix shows up as a failure here until
@@ -61,6 +63,7 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         .collect();
     let stdin = read("stdin")?;
     let want_stdout = read("stdout")?;
+    let want_stderr = fs::read(case.join("stderr")).ok();
     let want_exit: i32 = String::from_utf8_lossy(&read("exit")?)
         .trim()
         .parse()
@@ -80,7 +83,11 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         .args(&args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(if want_stderr.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .spawn()
         .map_err(|e| e.to_string())?;
     if let Some(mut input) = child.stdin.take() {
@@ -107,7 +114,36 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
             String::from_utf8_lossy(&want_stdout[..want_stdout.len().min(40)]),
         ));
     }
+    if let Some(want) = want_stderr {
+        let stderr = unix_wording(out.stderr);
+        let stderr = if group == "zstd" {
+            zstd_banner(&stderr)
+        } else {
+            stderr
+        };
+        if stderr != want {
+            return Err(format!(
+                "stderr differs:\n{}\nthe reference:\n{}",
+                String::from_utf8_lossy(&stderr),
+                String::from_utf8_lossy(&want),
+            ));
+        }
+    }
     Ok(())
+}
+
+/// `tw zstd -v`'s banner as zstd's: tw names itself there, as with `-V`.
+fn zstd_banner(stderr: &[u8]) -> Vec<u8> {
+    let text = String::from_utf8_lossy(stderr);
+    let Some(rest) = text.strip_prefix("*** tw zstd ") else {
+        return stderr.to_vec();
+    };
+    match rest.split_once(" ***\n") {
+        Some((_, after)) => {
+            format!("*** Zstandard CLI (64-bit) v1.5.7, by Yann Collet ***\n{after}").into_bytes()
+        }
+        None => stderr.to_vec(),
+    }
 }
 
 /// The OS's own words for an error, as the reference (on Linux) printed

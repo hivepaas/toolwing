@@ -13,6 +13,8 @@ crates/cli/tests/compat/base64/no-wrap/
   stdin    abc
   stdout   YWJj      recorded from the reference
   exit     0         recorded from the reference
+  stderr             recorded too for the groups whose messages are matched
+                     (zstd); compared when the case has it
   files/             optional: the folder the command runs in, with its files
   known              optional: why tw still differs; the case must then differ
 ```
