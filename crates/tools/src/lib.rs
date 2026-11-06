@@ -27,6 +27,7 @@ pub mod random;
 pub mod regex;
 pub mod time;
 pub mod ulid;
+pub mod uniq;
 pub mod url;
 pub mod uuid;
 pub mod wc;
@@ -131,6 +132,11 @@ pub static GROUPS: &[Group] = &[
         name: "wc",
         title: en!("Count"),
         summary: en!("Count lines, words, characters and bytes, as wc does"),
+    },
+    Group {
+        name: "uniq",
+        title: en!("Unique lines"),
+        summary: en!("Merge adjacent repeated lines, count or keep only them, as uniq does"),
     },
     Group {
         name: "hmac",
@@ -249,6 +255,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &gzip::CompressTool,
     &gzip::DecompressTool,
     &wc::CountTool,
+    &uniq::UniqTool,
     &hmac::Digest,
     &password::BcryptHash,
     &password::BcryptVerify,

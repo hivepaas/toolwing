@@ -2182,6 +2182,12 @@ pub fn is_print(c: u32) -> bool {
     class(c).1
 }
 
+/// `iswblank`: a tab, a space, and the other spaces that do not end a line
+/// (dumped from glibc as the table was).
+pub fn is_blank(c: u32) -> bool {
+    matches!(c, 0x09 | 0x20 | 0x1680 | 0x2000..=0x2006 | 0x2008..=0x200a | 0x205f | 0x3000)
+}
+
 /// `wcwidth`: the columns a character takes, -1 for none.
 pub fn width(c: u32) -> i32 {
     i32::from(class(c).2)

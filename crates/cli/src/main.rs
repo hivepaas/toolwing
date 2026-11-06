@@ -12,6 +12,7 @@ mod jq;
 mod qrencodes;
 mod quotearg;
 mod sums;
+mod uniqs;
 mod wcs;
 mod zstds;
 
@@ -67,6 +68,10 @@ fn main() -> ExitCode {
     // gzip's as its own getopt_long reads them (gzips.rs).
     if args.get(1).is_some_and(|a| a == "gzip") {
         return ExitCode::from(gzips::main(&args[2..]));
+    }
+    // uniq's too, in order (uniqs.rs).
+    if args.get(1).is_some_and(|a| a == "uniq") {
+        return ExitCode::from(uniqs::main(&args[2..]));
     }
     // wc's too (wcs.rs).
     if args.get(1).is_some_and(|a| a == "wc") {

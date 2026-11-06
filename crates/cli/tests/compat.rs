@@ -78,7 +78,19 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
         Some(_) => Some(Workdir::new(group, case)?),
         None => None,
     };
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_tw"));
+    // Under umask 022, as the recorder runs: a file the command makes gets
+    // its mode from it.
+    let mut cmd = if work.is_some() && cfg!(unix) {
+        let mut c = Command::new("sh");
+        c.args([
+            "-c",
+            "umask 022 && exec \"$0\" \"$@\"",
+            env!("CARGO_BIN_EXE_tw"),
+        ]);
+        c
+    } else {
+        Command::new(env!("CARGO_BIN_EXE_tw"))
+    };
     if let Some(w) = &work {
         cmd.current_dir(&w.path).env_remove("GZIP").env("TZ", "UTC");
         if let Ok(env) = fs::read_to_string(case.join("env")) {
@@ -172,6 +184,8 @@ fn check(group: &str, case: &Path) -> Result<(), String> {
 /// removed when done.
 struct Workdir {
     path: std::path::PathBuf,
+    /// When the command started: a file newer is listed as made "now".
+    started: u64,
 }
 
 impl Workdir {
@@ -185,7 +199,10 @@ impl Workdir {
         if files.is_dir() {
             copy_tree(&files, &path).map_err(|e| e.to_string())?;
         }
-        Ok(Workdir { path })
+        let started = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
+        Ok(Workdir { path, started })
     }
 
     /// What the folder holds, as the recorder lists it.
@@ -209,6 +226,11 @@ impl Workdir {
                 .ok()
                 .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                 .map_or(0, |d| d.as_secs());
+            let mtime = if mtime >= self.started {
+                "now".to_owned()
+            } else {
+                mtime.to_string()
+            };
             out.push_str(&format!(
                 "{:o} {mtime} {rel} {}\n",
                 mode(&meta),
