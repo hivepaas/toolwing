@@ -782,23 +782,11 @@ impl Ord for Val {
             (Self::Num(x), Self::Num(y)) => x.cmp(y),
             (Self::BStr(x) | Self::TStr(x), Self::BStr(y) | Self::TStr(y)) => x.cmp(y),
             (Self::Arr(x), Self::Arr(y)) => x.cmp(y),
-            (Self::Obj(x), Self::Obj(y)) => match (x.len(), y.len()) {
-                (0, 0) => Equal,
-                (0, _) => Less,
-                (_, 0) => Greater,
-                _ => {
-                    let mut l: Vec<_> = x.iter().collect();
-                    let mut r: Vec<_> = y.iter().collect();
-                    l.sort_by_key(|(k, _v)| *k);
-                    r.sort_by_key(|(k, _v)| *k);
-                    // TODO: make this nicer
-                    let kl = l.iter().map(|(k, _v)| k);
-                    let kr = r.iter().map(|(k, _v)| k);
-                    let vl = l.iter().map(|(_k, v)| v);
-                    let vr = r.iter().map(|(_k, v)| v);
-                    kl.cmp(kr).then_with(|| vl.cmp(vr))
-                }
-            },
+            // Objects by their keys sorted, then their values in that order;
+            // each sorted once (`Canon`), not again for every comparison of
+            // keys that are objects themselves, which nested such keys
+            // (from YAML or CBOR) made exponential.
+            (Self::Obj(_), Self::Obj(_)) => Canon::of(self).cmp(&Canon::of(other)),
 
             // nulls are smaller than anything else
             (Self::Null, _) => Less,
@@ -814,6 +802,54 @@ impl Ord for Val {
             (_, Self::BStr(_) | Self::TStr(_)) => Greater,
             (Self::Arr(_), _) => Less,
             (_, Self::Arr(_)) => Greater,
+        }
+    }
+}
+
+/// A value as `Val::cmp` orders it, its objects' entries sorted by key once
+/// and for all: comparing two is then lexicographic, without sorting again.
+#[derive(PartialEq, Eq)]
+enum Canon<'a> {
+    /// Null, a boolean, a number or a string.
+    Scalar(&'a Val),
+    Arr(Vec<Canon<'a>>),
+    /// The keys, sorted, then the values in their order.
+    Obj(Vec<Canon<'a>>, Vec<Canon<'a>>),
+}
+
+impl<'a> Canon<'a> {
+    fn of(v: &'a Val) -> Self {
+        match v {
+            Val::Arr(a) => Canon::Arr(a.iter().map(Canon::of).collect()),
+            Val::Obj(o) => {
+                let mut kvs: Vec<(Canon<'a>, Canon<'a>)> =
+                    o.iter().map(|(k, v)| (Canon::of(k), Canon::of(v))).collect();
+                kvs.sort_by(|a, b| a.0.cmp(&b.0));
+                let (ks, vs) = kvs.into_iter().unzip();
+                Canon::Obj(ks, vs)
+            }
+            _ => Canon::Scalar(v),
+        }
+    }
+}
+
+impl PartialOrd for Canon<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Canon<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        use Ordering::{Greater, Less};
+        match (self, other) {
+            (Canon::Scalar(x), Canon::Scalar(y)) => x.cmp(y),
+            (Canon::Arr(x), Canon::Arr(y)) => x.cmp(y),
+            (Canon::Obj(kx, vx), Canon::Obj(ky, vy)) => kx.cmp(ky).then_with(|| vx.cmp(vy)),
+            (Canon::Scalar(_), _) => Less,
+            (_, Canon::Scalar(_)) => Greater,
+            (Canon::Arr(_), _) => Less,
+            (_, Canon::Arr(_)) => Greater,
         }
     }
 }
@@ -849,10 +885,14 @@ impl Hash for Val {
             Self::Arr(a) => hash_with(6, a, state),
             Self::Obj(o) => {
                 state.write_u8(7);
-                // this is similar to what happens in `Val::cmp`
-                let mut kvs: Vec<_> = o.iter().collect();
-                kvs.sort_by_key(|(k, _v)| *k);
-                kvs.iter().for_each(|(k, v)| (k, v).hash(state));
+                // Whatever the order of the entries: each hashed on its own,
+                // and the hashes summed. Sorting them, as `Val::cmp` does,
+                // made nested keys that are objects exponential.
+                use core::hash::BuildHasher;
+                let fixed = foldhash::fast::FixedState::default();
+                let sum = o.iter().fold(0u64, |acc, kv| acc.wrapping_add(fixed.hash_one(kv)));
+                state.write_usize(o.len());
+                state.write_u64(sum);
             }
         }
     }
