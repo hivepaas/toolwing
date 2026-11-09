@@ -789,4 +789,20 @@ fn every_page_draws_and_runs() {
         "apple\nbanana\napple\ncherry"
     );
     ui.save("39-uniq");
+
+    // Sort lines: by number, as sort -n orders them.
+    let p = ui.tool("Sort lines");
+    ui.on(&p, |p, window, cx| {
+        p.set_input("10 apples\n9 pears\n-3 debts\n100 grapes\n", window, cx)
+    });
+    let q = p.clone();
+    ui.on(&p, |p, window, cx| {
+        p.set_value("numeric", Value::Bool(true), window, cx)
+    });
+    settle(&mut ui.cx, move |cx| q.read(cx).settled());
+    assert_eq!(
+        ui.cx.update(|cx| p.read(cx).output(cx)),
+        "-3 debts\n9 pears\n10 apples\n100 grapes"
+    );
+    ui.save("40-sort");
 }

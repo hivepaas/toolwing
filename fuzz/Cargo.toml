@@ -176,3 +176,10 @@ path = "fuzz_targets/uniq.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "sort"
+path = "fuzz_targets/sort.rs"
+test = false
+doc = false
+bench = false

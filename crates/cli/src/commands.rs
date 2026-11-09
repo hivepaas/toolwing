@@ -46,6 +46,7 @@ pub fn root() -> Command {
             None if g == "gzip" => crate::gzips::command(),
             None if g == "wc" => crate::wcs::command(),
             None if g == "uniq" => crate::uniqs::command(),
+            None if g == "sort" => crate::sorts::command(),
             None => group_command(g),
         });
     }

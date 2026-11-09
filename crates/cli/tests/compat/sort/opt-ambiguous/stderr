@@ -1,0 +1,2 @@
+sort: option '--s' is ambiguous; possibilities: '--sort' '--stable'
+Try 'sort --help' for more information.

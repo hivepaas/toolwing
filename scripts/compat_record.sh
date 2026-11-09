@@ -78,7 +78,7 @@ VERSION[gzip]="gzip 1.13"
 STDERR[gzip]=1
 WORKDIR[gzip]=1
 # The text tools: Debian's coreutils 9.7, in the C.UTF-8 locale tw's are.
-for tool in wc uniq; do
+for tool in wc uniq sort; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
   VERSION[$tool]="$tool (GNU coreutils) 9.7"

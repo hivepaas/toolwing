@@ -25,6 +25,7 @@ pub mod password;
 pub mod qr;
 pub mod random;
 pub mod regex;
+pub mod sort;
 pub mod time;
 pub mod ulid;
 pub mod uniq;
@@ -137,6 +138,11 @@ pub static GROUPS: &[Group] = &[
         name: "uniq",
         title: en!("Unique lines"),
         summary: en!("Merge adjacent repeated lines, count or keep only them, as uniq does"),
+    },
+    Group {
+        name: "sort",
+        title: en!("Sort lines"),
+        summary: en!("Sort lines by keys, numbers, versions or months, as sort does"),
     },
     Group {
         name: "hmac",
@@ -256,6 +262,7 @@ pub static TOOLS: &[&dyn Tool] = &[
     &gzip::DecompressTool,
     &wc::CountTool,
     &uniq::UniqTool,
+    &sort::SortTool,
     &hmac::Digest,
     &password::BcryptHash,
     &password::BcryptVerify,

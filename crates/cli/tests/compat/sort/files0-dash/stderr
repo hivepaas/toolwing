@@ -1,0 +1,1 @@
+sort: when reading file names from stdin, no file name of '-' allowed

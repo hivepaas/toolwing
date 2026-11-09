@@ -1,0 +1,9 @@
+sort: invalid argument ‘x’ for ‘--sort’
+Valid arguments are:
+  - ‘general-numeric’
+  - ‘human-numeric’
+  - ‘month’
+  - ‘numeric’
+  - ‘random’
+  - ‘version’
+Try 'sort --help' for more information.

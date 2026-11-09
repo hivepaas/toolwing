@@ -1,0 +1,3 @@
+sort: text ordering performed using ‘C.UTF-8’ sorting rules
+sort: obsolescent key ‘+1 -2’ used; consider ‘-k 2,2’ instead
+sort: leading blanks are significant in key 1; consider also specifying 'b'

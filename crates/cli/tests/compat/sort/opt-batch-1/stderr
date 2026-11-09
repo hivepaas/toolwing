@@ -1,0 +1,2 @@
+sort: invalid --batch-size argument ‘1’
+sort: minimum --batch-size argument is ‘2’

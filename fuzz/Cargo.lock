@@ -2138,6 +2138,7 @@ dependencies = [
  "jiff",
  "jsonwebtoken",
  "md-5 0.11.0",
+ "num-bigint",
  "percent-encoding",
  "png",
  "qrcode",
