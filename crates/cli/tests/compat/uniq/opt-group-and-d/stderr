@@ -1,0 +1,2 @@
+uniq: --group is mutually exclusive with -c/-d/-D/-u
+Try 'uniq --help' for more information.

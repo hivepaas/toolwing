@@ -180,3 +180,134 @@ pub fn getopt_errors<T: Copy + PartialEq>(
     }
     (opts, operands)
 }
+
+/// Whether a long option takes a value.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Has {
+    No,
+    Required,
+    /// Only as `--name=value` (`optional_argument`).
+    Optional,
+}
+
+/// What `getopt_long` gives in order when its option string starts with
+/// `-` (`RETURN_IN_ORDER`): options, operands where they stand, and `--`.
+pub enum Event<T> {
+    Opt(Got<T>),
+    Operand(String),
+    Err(OptError),
+    /// `--`: getopt returns -1; what follows is left at `optind`.
+    End(Vec<String>),
+}
+
+/// `getopt_long` in `RETURN_IN_ORDER` mode, with optional values.
+pub fn getopt_in_order<T: Copy + PartialEq>(
+    args: &[String],
+    short: &str,
+    short_opt: impl Fn(char) -> T,
+    long: &[(&'static str, Has, T)],
+) -> Vec<Event<T>> {
+    let mut events = Vec::new();
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        i += 1;
+        if a == "--" {
+            events.push(Event::End(args[i..].to_vec()));
+            return events;
+        }
+        if let Some(body) = a.strip_prefix("--") {
+            let (name, value) = match body.split_once('=') {
+                Some((n, v)) => (n, Some(v.to_owned())),
+                None => (body, None),
+            };
+            let found: &(&'static str, Has, T) = match long.iter().find(|(n, ..)| *n == name) {
+                Some(o) => o,
+                None => {
+                    let matches: Vec<&(&'static str, Has, T)> =
+                        long.iter().filter(|(n, ..)| n.starts_with(name)).collect();
+                    match matches.as_slice() {
+                        [] => {
+                            events.push(Event::Err(OptError::Unrecognized(body.to_owned())));
+                            continue;
+                        }
+                        [first, rest @ ..] => {
+                            let differ: Vec<_> = rest
+                                .iter()
+                                .filter(|o| o.1 != first.1 || o.2 != first.2)
+                                .collect();
+                            if !differ.is_empty() {
+                                let mut names = vec![first.0.to_owned()];
+                                names.extend(differ.iter().map(|o| o.0.to_owned()));
+                                events
+                                    .push(Event::Err(OptError::Ambiguous(body.to_owned(), names)));
+                                continue;
+                            }
+                            first
+                        }
+                    }
+                }
+            };
+            let (full, has, opt) = *found;
+            let got = |value| {
+                Event::Opt(Got {
+                    opt,
+                    value,
+                    long: true,
+                    name: Some(full),
+                })
+            };
+            match (has, value) {
+                (Has::No, Some(_)) => {
+                    events.push(Event::Err(OptError::NoValueTaken(full.to_owned())));
+                }
+                (Has::No, None) | (Has::Optional, None) => events.push(got(None)),
+                (_, Some(v)) => events.push(got(Some(v))),
+                (Has::Required, None) => match args.get(i) {
+                    Some(v) => {
+                        i += 1;
+                        events.push(got(Some(v.clone())));
+                    }
+                    None => events.push(Event::Err(OptError::LongNeedsValue(full.to_owned()))),
+                },
+            }
+            continue;
+        }
+        if a.len() > 1 && a.starts_with('-') {
+            let chars: Vec<char> = a[1..].chars().collect();
+            let mut k = 0;
+            while k < chars.len() {
+                let c = chars[k];
+                k += 1;
+                let Some(pos) = short.find(c).filter(|_| c != ':' && c != '-') else {
+                    events.push(Event::Err(OptError::Invalid(c)));
+                    continue;
+                };
+                let short_got = |value| {
+                    Event::Opt(Got {
+                        opt: short_opt(c),
+                        value,
+                        long: false,
+                        name: None,
+                    })
+                };
+                if !short[pos + c.len_utf8()..].starts_with(':') {
+                    events.push(short_got(None));
+                    continue;
+                }
+                if k < chars.len() {
+                    events.push(short_got(Some(chars[k..].iter().collect())));
+                } else if let Some(v) = args.get(i) {
+                    i += 1;
+                    events.push(short_got(Some(v.clone())));
+                } else {
+                    events.push(Event::Err(OptError::ShortNeedsValue(c)));
+                }
+                break;
+            }
+            continue;
+        }
+        events.push(Event::Operand(a.clone()));
+    }
+    events
+}

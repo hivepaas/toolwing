@@ -17,7 +17,8 @@
 # to 1700000000, in the group's LOCALE if it has one,
 # stdin through a pipe, TZ=UTC, with the variables of the case's `env` file
 # (NAME=VALUE a line); and what the folder holds after is written to the
-# case's `after`: each file's mode, time and name, and the SHA-256 of its
+# case's `after`: each file's mode, time ("now" when made by the run, under
+# umask 022) and name, and the SHA-256 of its
 # bytes; for a gzip file, its header (10 bytes, and the name it keeps), its
 # last 8 bytes and the SHA-256 of what it decompresses to ("bad" when it does
 # not), since tw's deflate bytes are not gzip's.
@@ -77,7 +78,7 @@ VERSION[gzip]="gzip 1.13"
 STDERR[gzip]=1
 WORKDIR[gzip]=1
 # The text tools: Debian's coreutils 9.7, in the C.UTF-8 locale tw's are.
-for tool in wc; do
+for tool in wc uniq; do
   IMAGE[$tool]=debian:13
   COMMAND[$tool]=$tool
   VERSION[$tool]="$tool (GNU coreutils) 9.7"
@@ -119,7 +120,9 @@ for group in "${groups[@]}"; do
         else
           d=$(sha256sum < "$f" | cut -c1-64)
         fi
-        echo "$(stat -c %a "$f") $(stat -c %Y "$f") $f $d"
+        t=$(stat -c %Y "$f")
+        if [ "$t" -ge "$started" ]; then t=now; fi
+        echo "$(stat -c %a "$f") $t $f $d"
       done
     )
     got=$(${version_of:-"$command" --version} | sed -n 1p)
@@ -138,6 +141,8 @@ for group in "${groups[@]}"; do
         if [ -n "$locale" ]; then envs+=("LC_ALL=$locale"); fi
         if [ -f "$case/env" ]; then mapfile -t more < "$case/env"; envs+=("${more[@]}"); fi
         cd "$work"
+        umask 022
+        started=$(date +%s)
         set +e
         cat "$case/stdin" | env "${envs[@]}" "$command" "${args[@]}" > "$case/stdout" 2> "$case/stderr"
         # The status of the command, not of cat (which a command not reading

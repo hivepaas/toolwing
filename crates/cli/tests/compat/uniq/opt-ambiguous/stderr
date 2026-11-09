@@ -1,0 +1,2 @@
+uniq: option '--c' is ambiguous; possibilities: '--count' '--check-chars'
+Try 'uniq --help' for more information.
