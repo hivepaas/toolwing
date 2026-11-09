@@ -37,6 +37,12 @@ Changed so that `tw jq` behaves as jq 1.8.2 (docs/design/jq.md):
   bytes as jq cuts them. With them, jq's rules: an object is indexed and set
   by strings only, and `null` by a key, an index or a slice only.
 - `length` keeps a literal (`-1.50 | length` is `1.50`).
+- **Objects' order and hash** without sorting again and again: `Ord`
+  sorts each object's entries once (`Canon`) and compares them
+  lexicographically, as before; `Hash` sums each entry's hash, whatever
+  their order. Sorting the entries for every comparison of keys that are
+  objects too (YAML's and CBOR's keys can be) was exponential in their
+  depth: a 1 KB YAML document took minutes (found by fuzzing).
 
 Each change is marked with a `toolwing:` comment.
 

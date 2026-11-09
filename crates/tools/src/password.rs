@@ -16,11 +16,18 @@ use toolwing_core::{
 
 /// bcrypt's Base64: its own alphabet, no padding (OpenBSD's `bcrypt.c`).
 fn bcrypt_base64() -> data_encoding::Encoding {
+    bcrypt_base64_checked(false)
+}
+
+/// bcrypt's Base64; with `strict`, the unused bits of the last character
+/// must be zero, as bcrypt writes them.
+fn bcrypt_base64_checked(strict: bool) -> data_encoding::Encoding {
     let mut spec = data_encoding::Specification::new();
     spec.symbols
         .push_str("./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
-    // A salt's last character holds 4 unused bits; OpenBSD ignores them.
-    spec.check_trailing_bits = false;
+    // A salt's last character holds 4 unused bits; OpenBSD ignores them
+    // in a salt given to hash with.
+    spec.check_trailing_bits = strict;
     // 64 distinct symbols, tested: it cannot fail.
     spec.encoding()
         .expect("bcrypt's alphabet is 64 distinct symbols")
@@ -174,9 +181,10 @@ pub fn bcrypt_parts(hash: &str) -> Result<BcryptParts, Error> {
         }
         _ => return Err(bad(&format!("${prefix}$ is not a bcrypt prefix"))),
     }
-    let cost: u32 = hash[4..6]
-        .parse()
-        .ok()
+    // Two digits, as crypt_blowfish reads them: "+4" is not a cost.
+    let cost: u32 = Some(&hash[4..6])
+        .filter(|c| c.bytes().all(|b| b.is_ascii_digit()))
+        .and_then(|c| c.parse().ok())
         .filter(|c| (4..=31).contains(c))
         .ok_or_else(|| bad("its cost is not 04 to 31"))?;
     let rest = &hash[7..];
@@ -184,6 +192,15 @@ pub fn bcrypt_parts(hash: &str) -> Result<BcryptParts, Error> {
     let (salt, sum) = rest.as_bytes().split_at(22);
     if alphabet.decode(salt).is_err() || alphabet.decode(sum).is_err() {
         return Err(bad("its salt and hash are not bcrypt's Base64"));
+    }
+    // A hash bcrypt wrote: the unused bits of the salt's and the hash's
+    // last characters are zero. crypt_blowfish writes them so and compares
+    // the strings, so another can never match (found by fuzzing).
+    let strict = bcrypt_base64_checked(true);
+    if strict.decode(salt).is_err() || strict.decode(sum).is_err() {
+        return Err(bad(
+            "its salt or hash ends in a character bcrypt never writes there",
+        ));
     }
     Ok(BcryptParts {
         prefix: prefix.to_owned(),
@@ -937,6 +954,9 @@ mod tests {
             "$2x$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW",
             "$2a$03$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW",
             "$2a$05$CCCC",
+            // A sign is not a digit; unused bits are zero (found by fuzzing).
+            "$2b$+4$00uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuUuuuuuuuuuuuuuuuuuuuuZ",
+            "$2b$04$0000000000000p0000000000142021525300000142021525sssgg",
             "$argon2id$v=19$m=4096,t=3,p=1$c29tZXNhbHQ$qLml5cbqFAO6YxVHhrSBHP0UWdxrIxk",
         ] {
             let e = run(&BcryptVerify, b"U*U", &[("hash", Value::Text(bad.into()))]);

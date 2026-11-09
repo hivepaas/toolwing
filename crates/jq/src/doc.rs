@@ -215,6 +215,32 @@ mod tests {
     }
 
     #[test]
+    fn objects_as_keys_stay_quick() {
+        // Objects with objects as keys, the deepest first among small ones at
+        // each level (as fuzzing built them): hashing or comparing an object
+        // sorted its entries again for every comparison of its keys, so
+        // each level multiplied the work.
+        // 16 levels took the old code about a minute; it takes well under a
+        // millisecond now.
+        let mut yaml = String::from("{a: 1}");
+        for i in 0..16 {
+            yaml = format!(
+                "{{? {yaml} : x, ? {{b: {i}}} : x, ? {{c: {i}}} : x, ? {{d: {i}}} : x, ? {{e: {i}}} : x}}"
+            );
+        }
+        let start = std::time::Instant::now();
+        let vals = parse(Format::Yaml, yaml.as_bytes()).map_err(|e| e.message);
+        assert_eq!(vals.map(|v| v.len()), Ok(1));
+        assert!(start.elapsed() < std::time::Duration::from_secs(2));
+        // Objects still order by their sorted keys, then their values.
+        let one = |s: &[u8]| parse(Format::Json, s).unwrap_or_default().remove(0);
+        let a = one(br#"{"b":1,"a":2}"#);
+        assert!(a < one(br#"{"a":2,"c":0}"#));
+        assert!(one(br#"{"a":1,"b":1}"#) < a);
+        assert_eq!(a, one(br#"{"a":2,"b":1}"#));
+    }
+
+    #[test]
     fn json_written_as_jq_writes_it() {
         let vals = parse(Format::Json, br#"{"b":1.0,"a":[1e3,10]} 2"#).unwrap_or_default();
         assert_eq!(vals.len(), 2);

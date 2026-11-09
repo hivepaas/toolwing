@@ -6,3 +6,5 @@ crates/cli/tests/compat/** -text
 crates/cli/tests/jq-suite/** -text
 crates/tools/testdata/** -text
 crates/tools/src/testdata/** -text
+# And the help texts the commands print as they are (sort's, qrencode's).
+crates/cli/src/*.txt -text
