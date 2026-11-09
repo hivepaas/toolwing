@@ -1,0 +1,15 @@
+:5:q
+^ no match for key
+____
+a:10:y
+^ no match for key
+______
+a:1:z
+^ no match for key
+_____
+b:2:x
+^ no match for key
+_____
+c:2:a
+^ no match for key
+_____

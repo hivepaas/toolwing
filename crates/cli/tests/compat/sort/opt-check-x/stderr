@@ -1,0 +1,5 @@
+sort: invalid argument ‘x’ for ‘--check’
+Valid arguments are:
+  - ‘quiet’, ‘silent’
+  - ‘diagnose-first’
+Try 'sort --help' for more information.

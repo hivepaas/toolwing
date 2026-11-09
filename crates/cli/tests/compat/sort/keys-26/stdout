@@ -1,0 +1,15 @@
+  d 3 b
+      ^ no match for key
+_______
+a 1 z
+    ^ no match for key
+_____
+a 10 y
+     ^ no match for key
+______
+b 2 x
+    ^ no match for key
+_____
+c 2 a
+    ^ no match for key
+_____

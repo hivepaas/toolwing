@@ -11,6 +11,7 @@ mod ipcalcs;
 mod jq;
 mod qrencodes;
 mod quotearg;
+mod sorts;
 mod sums;
 mod uniqs;
 mod wcs;
@@ -68,6 +69,10 @@ fn main() -> ExitCode {
     // gzip's as its own getopt_long reads them (gzips.rs).
     if args.get(1).is_some_and(|a| a == "gzip") {
         return ExitCode::from(gzips::main(&args[2..]));
+    }
+    // sort's too, in order (sorts.rs).
+    if args.get(1).is_some_and(|a| a == "sort") {
+        return ExitCode::from(sorts::main(&args[2..]));
     }
     // uniq's too, in order (uniqs.rs).
     if args.get(1).is_some_and(|a| a == "uniq") {
